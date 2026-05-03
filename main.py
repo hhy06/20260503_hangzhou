@@ -1,93 +1,139 @@
-"""Example simulation with warehouse nodes and edges."""
+"""Main simulation entry point: builds system from config, runs with management."""
 
 import salabim as sim
 
-from src.edge import Edge, TransferMode
-from src.warehouse_node import WarehouseNode, OutboundOrder, InboundShipment
+from src.config import SKUS, PALLET_SIZE, NODES, EDGES, SIM_DURATION
+from src.edge import Edge
+from src.warehouse_node import WarehouseNode, SourceNode, SinkNode
+from src.management import JobManager, JOBS
 
 
-def print_state(warehouse: WarehouseNode):
-    print(f"  {warehouse.node_name}: pallets={warehouse.current_pallets()}/{warehouse.node_max_pallets}")
-    for sku, qty in sorted(warehouse.inventory.items()):
-        print(f"    {sku}: {qty} items ({warehouse.pallets_for_quantity(sku, qty)} pallets)")
+def build_nodes(env: sim.Environment) -> dict[str, object]:
+    nodes = {}
+    for node_name, cfg in NODES.items():
+        cf = dict(PALLET_SIZE)
+        node_type = cfg["type"]
+
+        if node_type == "source":
+            node = SourceNode(
+                name=node_name,
+                conversion_factors=cf,
+                env=env,
+                dispatch_interval=cfg["dispatch_interval"],
+                dispatch_max_pallets=cfg["dispatch_max_pallets"],
+            )
+        elif node_type == "sink":
+            node = SinkNode(
+                name=node_name,
+                conversion_factors=cf,
+                env=env,
+            )
+        else:
+            node = WarehouseNode(
+                name=node_name,
+                max_pallets=cfg["max_pallets"],
+                conversion_factors=cf,
+                env=env,
+                dispatch_interval=cfg["dispatch_interval"],
+                dispatch_max_pallets=cfg["dispatch_max_pallets"],
+            )
+        nodes[node_name] = node
+    return nodes
 
 
-def run_example():
+def build_edges(nodes: dict[str, object]) -> list[Edge]:
+    edges = []
+    for ecfg in EDGES:
+        from_node = nodes[ecfg["from_node"]]
+        to_node = nodes[ecfg["to_node"]]
+        edge = Edge(
+            from_node=from_node,
+            to_node=to_node,
+            transfer_mode=ecfg["transfer_mode"],
+            transfer_time=ecfg["transfer_time"],
+            batch_size=ecfg.get("batch_size", 1),
+        )
+        from_node.add_edge_out(edge)
+        to_node.add_edge_in(edge)
+        edges.append(edge)
+    return edges
+
+
+def run_simulation():
     sim.yieldless(False)
     env = sim.Environment(trace=False)
 
-    warehouse_a = WarehouseNode(
-        name="WarehouseA",
-        max_pallets=100,
-        conversion_factors={"SKU_A": 50, "SKU_B": 20, "SKU_C": 100},
-        env=env,
-        dispatch_interval=5,
-        dispatch_max_pallets=3,
-    )
+    nodes = build_nodes(env)
+    edges = build_edges(nodes)
+    job_manager = JobManager(JOBS, env)
 
-    warehouse_b = WarehouseNode(
-        name="WarehouseB",
-        max_pallets=80,
-        conversion_factors={"SKU_A": 50, "SKU_B": 20, "SKU_C": 100},
-        env=env,
-        dispatch_interval=5,
-        dispatch_max_pallets=2,
-    )
+    print("=" * 70)
+    print("SIMULATION CONFIGURATION")
+    print("=" * 70)
+    print(f"SKUs: {SKUS}")
+    print(f"Pallet sizes: {PALLET_SIZE}")
+    print()
+    print("Nodes:")
+    for name, cfg in NODES.items():
+        print(f"  {name}: type={cfg['type']}, max_pallets={cfg.get('max_pallets', 'inf')}")
+    print()
+    print("Edges:")
+    for e in edges:
+        print(f"  {e.name} | mode={e.transfer_mode.value}, time={e.transfer_time}, batch={e.batch_size}")
+    print()
+    print("Jobs:")
+    for j in JOBS:
+        print(f"  t={j.time}: issue to {j.target_node} -> {[(o.sku, o.quantity) for o in j.orders]}")
+    print("=" * 70)
+    print()
 
-    edge_a_b = Edge(
-        from_node=warehouse_a,
-        to_node=warehouse_b,
-        transfer_mode=TransferMode.BATCH,
-        transfer_time=10,
-        batch_size=5,
-    )
-    warehouse_a.add_edge_out(edge_a_b)
-    warehouse_b.add_edge_in(edge_a_b)
+    def process_events_at(t):
+        events = job_manager.issue_pending_jobs(nodes)
+        for ev in events:
+            print(f"  [t={ev['time']:.1f}] JOB ISSUED to {ev['target']}:")
+            for sku, qty, pri in ev["orders"]:
+                print(f"    -> Order: {sku} x{qty} (priority={pri})")
+        for name, node in nodes.items():
+            new_logs = [l for l in node.log if l["time"] == t]
+            for entry in new_logs:
+                if entry["type"] == "order_added":
+                    print(f"  [t={entry['time']:.1f}] {name}: order queued -> {entry['sku']} x{entry['quantity']} (pri={entry['priority']})")
+                elif entry["type"] == "dispatched":
+                    items_str = ", ".join(f"{sku}x{qty}" for sku, qty in entry["items"])
+                    print(f"  [t={entry['time']:.1f}] {name}: dispatched -> {items_str}")
+                elif entry["type"] == "received":
+                    print(f"  [t={entry['time']:.1f}] {name}: received {entry['sku']} x{entry['quantity']} from {entry['source']}")
 
-    warehouse_a.inventory = {"SKU_A": 200, "SKU_B": 100, "SKU_C": 500}
+    def print_state_snapshot(t):
+        print(f"\n  [t={t:.1f}] === State snapshot ===")
+        for name, node in nodes.items():
+            if hasattr(node, 'received'):
+                print(f"    {name}: received_total={dict(sorted(node.received.items()))}")
+            elif hasattr(node, 'inventory'):
+                pallets = node.current_pallets()
+                max_p = node.node_max_pallets
+                print(f"    {name}: {pallets}/{max_p} pallets | inventory={dict(sorted(node.inventory.items()))}")
+        print()
 
-    warehouse_a.add_outbound_order(OutboundOrder(sku="SKU_A", quantity=100, priority=1))
-    warehouse_a.add_outbound_order(OutboundOrder(sku="SKU_B", quantity=60, priority=2))
-    warehouse_a.add_outbound_order(OutboundOrder(sku="SKU_C", quantity=300, priority=3))
+    step = 1
+    process_events_at(0)
+    while env.now() < SIM_DURATION:
+        next_t = min(env.now() + step, SIM_DURATION)
+        env.run(next_t)
+        process_events_at(env.now())
 
-    print("Initial state:")
-    print_state(warehouse_a)
+        if env.now() % 20 == 0:
+            print_state_snapshot(env.now())
 
-    print("\nOutput queue:")
-    for order in warehouse_a.output_queue:
-        print(f"  {order.sku}: qty={order.quantity}, priority={order.priority}")
-
-    print("\n--- Simulation starts ---")
-
-    last_pallets = warehouse_a.current_pallets()
-    while env.now() < 30:
-        env.run(env.now() + 5)
-        current_pallets = warehouse_a.current_pallets()
-        if current_pallets != last_pallets:
-            print(f"  t={env.now():.1f}: dispatched, remaining pallets={current_pallets}/{warehouse_a.node_max_pallets}")
-            print("  Inventory:")
-            for sku, qty in sorted(warehouse_a.inventory.items()):
-                print(f"    {sku}: {qty} items")
-            last_pallets = current_pallets
-
-    print("\n--- Final state ---")
-    print_state(warehouse_a)
-    print_state(warehouse_b)
-
-    print(f"\nEdge transfer test:")
-    print(f"  {edge_a_b.name}:")
-    print(f"    3 pallets via batch mode: {edge_a_b.transfer_duration(3)} time units")
-    print(f"    5 pallets via batch mode: {edge_a_b.transfer_duration(5)} time units")
-    print(f"    6 pallets via batch mode: {edge_a_b.transfer_duration(6)} time units")
-
-    edge_per_pallet = Edge(
-        from_node=warehouse_a,
-        to_node=warehouse_b,
-        transfer_mode=TransferMode.PER_PALLET,
-        transfer_time=2,
-    )
-    print(f"\n  Per-pallet edge: {edge_per_pallet.transfer_duration(3)} time units for 3 pallets")
+    print("=" * 70)
+    print("SIMULATION COMPLETE")
+    print("=" * 70)
+    for name, node in nodes.items():
+        if hasattr(node, 'received'):
+            print(f"  {name} final: {node.received}")
+        elif hasattr(node, 'inventory'):
+            print(f"  {name} final inventory: {node.inventory}")
 
 
 if __name__ == "__main__":
-    run_example()
+    run_simulation()
