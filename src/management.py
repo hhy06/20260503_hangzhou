@@ -7,14 +7,16 @@ from src.warehouse_node import OutboundOrder
 @dataclass
 class Job:
     time: float
-    target_node: str
+    from_node: str
+    to_node: str
     orders: list[OutboundOrder]
 
 
 JOBS = [
     Job(
         time=0,
-        target_node="Source",
+        from_node="Source",
+        to_node="Sink",
         orders=[
             OutboundOrder(sku="SKU_A", quantity=500, priority=1),
             OutboundOrder(sku="SKU_B", quantity=200, priority=2),
@@ -23,7 +25,8 @@ JOBS = [
     ),
     Job(
         time=30,
-        target_node="Source",
+        from_node="Source",
+        to_node="Sink",
         orders=[
             OutboundOrder(sku="SKU_A", quantity=300, priority=1),
             OutboundOrder(sku="SKU_B", quantity=100, priority=2),
@@ -31,9 +34,18 @@ JOBS = [
     ),
     Job(
         time=60,
-        target_node="Source",
+        from_node="Source",
+        to_node="Sink",
         orders=[
             OutboundOrder(sku="SKU_C", quantity=500, priority=1),
+        ],
+    ),
+    Job(
+        time=80,
+        from_node="Source",
+        to_node="Sink",
+        orders=[
+            OutboundOrder(sku="SKU_A", quantity=200, priority=1),
         ],
     ),
 ]
@@ -50,17 +62,19 @@ class JobManager:
         while self.next_job_idx < len(self.jobs):
             job = self.jobs[self.next_job_idx]
             if job.time <= self.env.now() + 1e-9:
-                node = nodes[job.target_node]
+                node = nodes[job.from_node]
                 for order in job.orders:
                     node.add_outbound_order(OutboundOrder(
                         sku=order.sku,
                         quantity=order.quantity,
                         priority=order.priority,
+                        destination=job.to_node,
                     ))
                 events.append({
                     "time": job.time,
                     "type": "job_issued",
-                    "target": job.target_node,
+                    "from": job.from_node,
+                    "to": job.to_node,
                     "orders": [(o.sku, o.quantity, o.priority) for o in job.orders],
                 })
                 self.next_job_idx += 1

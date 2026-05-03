@@ -12,6 +12,7 @@ class OutboundOrder:
     sku: str
     quantity: int
     priority: int
+    destination: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -20,7 +21,15 @@ class InboundShipment:
     sku: str
     quantity: int
     source: Any = None
+    destination: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+def _find_edge_for_destination(edges_out: list, destination: str) -> list:
+    immediate_dests = [e.to_node.node_name for e in edges_out]
+    if destination in immediate_dests:
+        return [e for e in edges_out if e.to_node.node_name == destination]
+    return edges_out
 
 
 class WarehouseNode(sim.Component):
@@ -95,11 +104,12 @@ class WarehouseNode(sim.Component):
             "quantity": shipment.quantity,
             "source": shipment.source.node_name if hasattr(shipment.source, 'node_name') else str(shipment.source),
         })
-        if self.edges_out:
+        if self.edges_out and shipment.destination and shipment.destination != self.node_name:
             self.add_outbound_order(OutboundOrder(
                 sku=shipment.sku,
                 quantity=shipment.quantity,
                 priority=shipment.metadata.get("priority", 10),
+                destination=shipment.destination,
             ))
         return True
 
@@ -112,75 +122,94 @@ class WarehouseNode(sim.Component):
             "sku": order.sku,
             "quantity": order.quantity,
             "priority": order.priority,
+            "destination": order.destination,
         })
 
-    def compute_dispatch_plan(self, max_pallets: int) -> list[tuple[str, int]]:
-        plan: list[tuple[str, int]] = []
-        remaining_pallets = max_pallets
+    def _dispatch_for_destination(self, destination: str) -> list[tuple[str, int]]:
+        orders = [o for o in self.output_queue if o.destination == destination]
+        if not orders:
+            return []
 
-        sorted_orders = sorted(self.output_queue, key=lambda o: o.priority)
+        plan = []
+        remaining_pallets = self.dispatch_max_pallets
+        sorted_orders = sorted(orders, key=lambda o: o.priority)
 
         for order in sorted_orders:
             if remaining_pallets <= 0:
                 break
-
             sku = order.sku
-            available_qty = self.inventory.get(sku, 0)
-            if available_qty <= 0:
+            avail = self.inventory.get(sku, 0)
+            if avail <= 0:
                 continue
-
             order_pallets = self.pallets_for_quantity(sku, order.quantity)
-            available_pallets = self.pallets_for_quantity(sku, available_qty)
-            usable_pallets = min(order_pallets, available_pallets, remaining_pallets)
-
-            if usable_pallets <= 0:
+            avail_pallets = self.pallets_for_quantity(sku, avail)
+            usable = min(order_pallets, avail_pallets, remaining_pallets)
+            if usable <= 0:
                 continue
+            dq = self.quantity_for_pallets(sku, usable)
+            if dq > 0:
+                plan.append((sku, dq))
+                remaining_pallets -= usable
 
-            dispatch_qty = self.quantity_for_pallets(sku, usable_pallets)
-            if dispatch_qty > 0:
-                plan.append((sku, dispatch_qty))
-                remaining_pallets -= usable_pallets
+        if not plan:
+            return []
 
-        return plan
-
-    def execute_dispatch(self, plan: list[tuple[str, int]]) -> list[tuple[str, int]]:
         dispatched = []
-        for sku, qty in plan:
-            actual = min(qty, self.inventory.get(sku, 0))
+        for sku, target_qty in plan:
+            rem = target_qty
+            for order in orders:
+                taken = min(rem, order.quantity)
+                order.quantity -= taken
+                rem -= taken
+                if rem <= 0:
+                    break
+            actual = target_qty - rem
             if actual > 0:
                 self.inventory[sku] -= actual
                 if self.inventory[sku] == 0:
                     del self.inventory[sku]
                 dispatched.append((sku, actual))
 
-        for order in self.output_queue:
-            for sku, qty in dispatched:
-                if order.sku == sku:
-                    order.quantity -= qty
         self.output_queue = [o for o in self.output_queue if o.quantity > 0]
         self.output_queue.sort(key=lambda o: o.priority)
+
+        if dispatched:
+            self.log.append({
+                "time": self.env.now(),
+                "type": "dispatched",
+                "destination": destination,
+                "items": dispatched,
+            })
+            target_edges = _find_edge_for_destination(self.edges_out, destination)
+            for sku, qty in dispatched:
+                for edge in target_edges:
+                    shipment = InboundShipment(
+                        sku=sku,
+                        quantity=qty,
+                        source=self,
+                        destination=destination,
+                        metadata={"priority": 10},
+                    )
+                    if edge.to_node.can_accept(sku, qty):
+                        edge.to_node.receive(shipment)
+
         return dispatched
 
     def dispatch_step(self) -> list[tuple[str, int]]:
         if not self.output_queue or not self.edges_out:
             return []
-        plan = self.compute_dispatch_plan(self.dispatch_max_pallets)
-        if not plan:
-            return []
-        dispatched = self.execute_dispatch(plan)
-        if dispatched:
-            self.log.append({
-                "time": self.env.now(),
-                "type": "dispatched",
-                "items": dispatched,
-            })
-            for sku, qty in dispatched:
-                for edge in self.edges_out:
-                    shipment = InboundShipment(sku=sku, quantity=qty, source=self)
-                    target = edge.to_node
-                    if target.can_accept(sku, qty):
-                        target.receive(shipment)
-        return dispatched
+
+        all_dispatched = []
+        destinations = set()
+        for order in self.output_queue:
+            if order.destination is not None:
+                destinations.add(order.destination)
+
+        for dest in sorted(destinations):
+            d = self._dispatch_for_destination(dest)
+            all_dispatched.extend(d)
+
+        return all_dispatched
 
     def add_edge_out(self, edge):
         self.edges_out.append(edge)
@@ -249,41 +278,76 @@ class SourceNode(sim.Component):
             "sku": order.sku,
             "quantity": order.quantity,
             "priority": order.priority,
+            "destination": order.destination,
         })
 
     def dispatch_step(self) -> list[tuple[str, int]]:
-        plan = []
-        remaining_pallets = self.dispatch_max_pallets
-        sorted_orders = sorted(self.output_queue, key=lambda o: o.priority)
+        if not self.output_queue or not self.edges_out:
+            return []
 
-        for order in sorted_orders:
-            if remaining_pallets <= 0:
-                break
-            sku = order.sku
-            order_pallets = self.pallets_for_quantity(sku, order.quantity)
-            usable_pallets = min(order_pallets, remaining_pallets)
-            if usable_pallets <= 0:
+        all_dispatched = []
+        destinations = set()
+        for order in self.output_queue:
+            if order.destination is not None:
+                destinations.add(order.destination)
+
+        for dest in sorted(destinations):
+            orders = [o for o in self.output_queue if o.destination == dest]
+            if not orders:
                 continue
-            dispatch_qty = self.quantity_for_pallets(sku, usable_pallets)
-            if dispatch_qty > 0:
-                plan.append((sku, dispatch_qty))
-                remaining_pallets -= usable_pallets
 
-        dispatched = []
-        for sku, qty in plan:
-            order.quantity -= qty
-            dispatched.append((sku, qty))
+            plan = []
+            remaining_pallets = self.dispatch_max_pallets
+            sorted_orders = sorted(orders, key=lambda o: o.priority)
 
-        self.output_queue = [o for o in self.output_queue if o.quantity > 0]
-        self.output_queue.sort(key=lambda o: o.priority)
+            for order in sorted_orders:
+                if remaining_pallets <= 0:
+                    break
+                sku = order.sku
+                op = self.pallets_for_quantity(sku, order.quantity)
+                usable = min(op, remaining_pallets)
+                if usable <= 0:
+                    continue
+                dq = self.quantity_for_pallets(sku, usable)
+                if dq > 0:
+                    plan.append((sku, dq))
+                    remaining_pallets -= usable
 
-        if dispatched:
-            self.log.append({
-                "time": self.env.now(),
-                "type": "dispatched",
-                "items": dispatched,
-            })
-        return dispatched
+            dispatched = []
+            for sku, target_qty in plan:
+                rem = target_qty
+                for order in orders:
+                    taken = min(rem, order.quantity)
+                    order.quantity -= taken
+                    rem -= taken
+                    if rem <= 0:
+                        break
+                dispatched.append((sku, target_qty - rem))
+
+            self.output_queue = [o for o in self.output_queue if o.quantity > 0]
+            self.output_queue.sort(key=lambda o: o.priority)
+
+            if dispatched:
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "dispatched",
+                    "destination": dest,
+                    "items": dispatched,
+                })
+                for sku, qty in dispatched:
+                    target_edges = _find_edge_for_destination(self.edges_out, dest)
+                    for edge in target_edges:
+                        shipment = InboundShipment(
+                            sku=sku,
+                            quantity=qty,
+                            source=self,
+                            destination=dest,
+                        )
+                        if edge.to_node.can_accept(sku, qty):
+                            edge.to_node.receive(shipment)
+                all_dispatched.extend(dispatched)
+
+        return all_dispatched
 
     def add_edge_out(self, edge):
         self.edges_out.append(edge)
@@ -294,14 +358,7 @@ class SourceNode(sim.Component):
     def process(self):
         while True:
             if self.output_queue:
-                dispatched = self.dispatch_step()
-                if dispatched:
-                    for sku, qty in dispatched:
-                        for edge in self.edges_out:
-                            shipment = InboundShipment(sku=sku, quantity=qty, source=self)
-                            target = edge.to_node
-                            if target.can_accept(sku, qty):
-                                target.receive(shipment)
+                self.dispatch_step()
             yield self.hold(self.dispatch_interval)
 
 
