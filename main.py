@@ -83,47 +83,51 @@ def run_simulation():
     print()
     print("Jobs:")
     for j in JOBS:
-        print(f"  t={j.time}: issue to {j.target_node} -> {[(o.sku, o.quantity) for o in j.orders]}")
+        print(f"  t={j.time}: {j.from_node} -> {j.to_node}: {[(o.sku, o.quantity) for o in j.orders]}")
     print("=" * 70)
     print()
 
     def process_events_at(t):
         events = job_manager.issue_pending_jobs(nodes)
         for ev in events:
-            print(f"  [t={ev['time']:.1f}] JOB ISSUED to {ev['target']}:")
+            print(f"  [t={ev['time']:.1f}] JOB ISSUED: {ev['from']} -> {ev['to']}:")
             for sku, qty, pri in ev["orders"]:
                 print(f"    -> Order: {sku} x{qty} (priority={pri})")
-        for name, node in nodes.items():
-            new_logs = [l for l in node.log if l["time"] == t]
-            for entry in new_logs:
-                if entry["type"] == "order_added":
-                    print(f"  [t={entry['time']:.1f}] {name}: order queued -> {entry['sku']} x{entry['quantity']} (pri={entry['priority']})")
-                elif entry["type"] == "dispatched":
-                    items_str = ", ".join(f"{sku}x{qty}" for sku, qty in entry["items"])
-                    print(f"  [t={entry['time']:.1f}] {name}: dispatched -> {items_str}")
-                elif entry["type"] == "received":
-                    print(f"  [t={entry['time']:.1f}] {name}: received {entry['sku']} x{entry['quantity']} from {entry['source']}")
 
-    def print_state_snapshot(t):
-        print(f"\n  [t={t:.1f}] === State snapshot ===")
+    def process_all_logs(since_t, up_to_t, seen):
+        all_new = []
         for name, node in nodes.items():
-            if hasattr(node, 'received'):
-                print(f"    {name}: received_total={dict(sorted(node.received.items()))}")
-            elif hasattr(node, 'inventory'):
-                pallets = node.current_pallets()
-                max_p = node.node_max_pallets
-                print(f"    {name}: {pallets}/{max_p} pallets | inventory={dict(sorted(node.inventory.items()))}")
-        print()
+            for i, l in enumerate(node.log):
+                if since_t <= l["time"] <= up_to_t + 1e-9:
+                    key = (name, i)
+                    if key not in seen:
+                        seen.add(key)
+                        all_new.append((name, l))
+        all_new.sort(key=lambda x: x[1]["time"])
+        for name, entry in all_new:
+            if entry["type"] == "order_added":
+                dest_str = f" -> {entry.get('destination', '?')}" if entry.get('destination') else ""
+                print(f"  [t={entry['time']:.1f}] {name}: order queued -> {entry['sku']} x{entry['quantity']} (pri={entry['priority']}){dest_str}")
+            elif entry["type"] == "dispatched":
+                dest_str = f" -> {entry.get('destination', '?')}" if entry.get('destination') else ""
+                items_str = ", ".join(f"{sku}x{qty}" for sku, qty in entry["items"])
+                print(f"  [t={entry['time']:.1f}] {name}: dispatched{dest_str} -> {items_str}")
+            elif entry["type"] == "received":
+                print(f"  [t={entry['time']:.1f}] {name}: received {entry['sku']} x{entry['quantity']} from {entry['source']}")
 
+    seen = set()
     step = 1
     process_events_at(0)
-    while env.now() < SIM_DURATION:
-        next_t = min(env.now() + step, SIM_DURATION)
+    last_t = 0
+    while last_t < SIM_DURATION:
+        next_t = min(last_t + step, SIM_DURATION)
         env.run(next_t)
         process_events_at(env.now())
+        process_all_logs(last_t, env.now(), seen)
+        last_t = env.now()
 
-        if env.now() % 20 == 0:
-            print_state_snapshot(env.now())
+        if last_t % 20 == 0:
+            print_state_snapshot(last_t)
 
     print("=" * 70)
     print("SIMULATION COMPLETE")
