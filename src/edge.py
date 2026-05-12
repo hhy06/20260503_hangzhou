@@ -27,8 +27,14 @@ class Edge:
         if transfer_mode == TransferMode.BATCH and batch_size < 1:
             raise ValueError("batch_size must be >= 1 for batch mode")
 
-        node_name_from = getattr(from_node, 'node_name', None) or from_node.name
-        node_name_to = getattr(to_node, 'node_name', None) or to_node.name
+        node_name_from = (
+            getattr(from_node, 'node_name', None) or from_node.name
+            if from_node is not None else "?"
+        )
+        node_name_to = (
+            getattr(to_node, 'node_name', None) or to_node.name
+            if to_node is not None else "?"
+        )
         self.name = name or f"{node_name_from} -> {node_name_to}"
 
     def transfer_duration(self, num_pallets: int) -> float:

@@ -7,6 +7,8 @@ Usage:
 """
 
 import importlib
+from dataclasses import dataclass, field
+from typing import Any
 import sys
 
 import salabim as sim
@@ -14,6 +16,50 @@ import salabim as sim
 from src.edge import Edge
 from src.warehouse_node import WarehouseNode, NodeRole
 from src.management import JobManager
+
+
+# ---------------------------------------------------------------------------
+# Simulation result (returned by run_scenario for programmatic inspection)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class SimulationResult:
+    """Holds the final state and event log after a simulation run.
+
+    Access pattern:
+        result.warehouse_inventories  -> {node_name: {sku: qty}}
+        result.sink_received          -> {sink_name: {sku: qty}}
+        result.all_logs               -> sorted list of {node, time, type, ...}
+    """
+    scenario_name: str
+    nodes: dict[str, WarehouseNode]
+    config: Any
+
+    @property
+    def warehouse_inventories(self) -> dict[str, dict[str, int]]:
+        return {
+            name: dict(node.inventory)
+            for name, node in self.nodes.items()
+            if node.role == NodeRole.WAREHOUSE
+        }
+
+    @property
+    def sink_received(self) -> dict[str, dict[str, int]]:
+        return {
+            name: dict(node.received)
+            for name, node in self.nodes.items()
+            if node.role == NodeRole.SINK
+        }
+
+    @property
+    def all_logs(self) -> list[dict]:
+        """All log entries from all nodes, sorted by simulation time."""
+        logs: list[dict] = []
+        for name, node in self.nodes.items():
+            for entry in node.log:
+                logs.append({"node": name, **entry})
+        logs.sort(key=lambda x: x["time"])
+        return logs
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +168,7 @@ def process_all_logs(since_t, up_to_t, nodes, seen):
 # Scenario runner
 # ---------------------------------------------------------------------------
 
-def run_scenario(scenario_name: str):
+def run_scenario(scenario_name: str) -> SimulationResult:
     config = importlib.import_module(f"{scenario_name}.config")
     jobs_module = importlib.import_module(f"{scenario_name}.config_static_jobs")
 
@@ -181,6 +227,13 @@ def run_scenario(scenario_name: str):
             print(f"  {name} final inventory: {node.inventory}")
         elif node.role == NodeRole.SINK:
             print(f"  {name} final inventory: {node.received}")
+
+    # -- build & return result for programmatic consumption ----------------
+    return SimulationResult(
+        scenario_name=scenario_name,
+        nodes=nodes,
+        config=config,
+    )
 
 
 # ---------------------------------------------------------------------------
