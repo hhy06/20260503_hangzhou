@@ -1,0 +1,4 @@
+since we're a des simulation, we do not aim to produce stuff one item by one item. we will do it in batch. 
+Say the bom is [one SKU_A = 1x wip_X + 1x wip_Y, lead time = 5 minutes], we also specify a sku-specific production-speed: 10 SKU_A per minute. We fix a simulation wide time step of  10 minutes. That means, if we assign a job of 250 items of SKU_A to a production line, it  immediately consumes all materials needed (250 wip_X and 250 wip_Y), and wait 5 minutes, and wait another 10 minutes, produce 100 SKU_A to downstream warehouse, wait another 10 minutes, produce 100 sku_A to downstream wh, and wait 5 minutes, produce 50 sku_A, finish. 
+
+
