@@ -20,7 +20,7 @@ JOBS = [
         ],
     ),
     Job(
-        time=100,
+        time=10,
         from_node="Source",
         to_node="Warehouse",
         orders=[

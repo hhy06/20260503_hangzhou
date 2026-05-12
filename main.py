@@ -177,10 +177,10 @@ def run_scenario(scenario_name: str):
     print("SIMULATION COMPLETE")
     print("=" * 70)
     for name, node in nodes.items():
-        if node.role == NodeRole.SINK:
-            print(f"  {name} final: {node.received}")
-        elif node.role == NodeRole.WAREHOUSE:
+        if node.role == NodeRole.WAREHOUSE:
             print(f"  {name} final inventory: {node.inventory}")
+        elif node.role == NodeRole.SINK:
+            print(f"  {name} final inventory: {node.received}")
 
 
 # ---------------------------------------------------------------------------

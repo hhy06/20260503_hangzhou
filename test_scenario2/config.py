@@ -42,4 +42,4 @@ EDGES = [
     },
 ]
 
-SIM_DURATION = 50
+SIM_DURATION = 1000
