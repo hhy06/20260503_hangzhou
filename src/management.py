@@ -1,6 +1,12 @@
-"""Management layer: issues jobs at different time junctions during simulation."""
+"""Management layer: issues jobs at scheduled times during simulation.
 
+The JobManager reads a list of Jobs (provided by the scenario layer)
+and injects outbound orders into warehouse nodes as simulation time advances.
+"""
+
+from collections.abc import Mapping
 from dataclasses import dataclass
+
 from src.warehouse_node import OutboundOrder
 
 
@@ -12,52 +18,16 @@ class Job:
     orders: list[OutboundOrder]
 
 
-JOBS = [
-    Job(
-        time=0,
-        from_node="Source",
-        to_node="Sink",
-        orders=[
-            OutboundOrder(sku="SKU_A", quantity=500, priority=1),
-            OutboundOrder(sku="SKU_B", quantity=200, priority=2),
-            OutboundOrder(sku="SKU_C", quantity=1000, priority=3),
-        ],
-    ),
-    Job(
-        time=30,
-        from_node="Source",
-        to_node="Sink",
-        orders=[
-            OutboundOrder(sku="SKU_A", quantity=300, priority=1),
-            OutboundOrder(sku="SKU_B", quantity=100, priority=2),
-        ],
-    ),
-    Job(
-        time=60,
-        from_node="Source",
-        to_node="Sink",
-        orders=[
-            OutboundOrder(sku="SKU_C", quantity=500, priority=1),
-        ],
-    ),
-    Job(
-        time=80,
-        from_node="Source",
-        to_node="Sink",
-        orders=[
-            OutboundOrder(sku="SKU_A", quantity=200, priority=1),
-        ],
-    ),
-]
-
-
 class JobManager:
+    """Holds a sorted list of Jobs and releases them to the node graph as simulation time
+    advances.  Called from the main simulation loop."""
+
     def __init__(self, jobs: list[Job], env):
         self.jobs = sorted(jobs, key=lambda j: j.time)
         self.env = env
         self.next_job_idx = 0
 
-    def issue_pending_jobs(self, nodes: dict[str, object]) -> list[dict]:
+    def issue_pending_jobs(self, nodes: Mapping[str, object]) -> list[dict]:
         events = []
         while self.next_job_idx < len(self.jobs):
             job = self.jobs[self.next_job_idx]
