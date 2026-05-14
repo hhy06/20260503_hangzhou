@@ -70,9 +70,11 @@ class ProductionNode(sim.Component):
         downstream_node,
         env: sim.Environment | None = None,
         global_time_step: float = 10.0,
+        display_name: str | None = None,
         **kwargs,
     ):
         self._node_name = name
+        self.display_name = display_name or name
         super().__init__(name=name, env=env, **kwargs)
 
         self.bom: dict = bom
@@ -93,6 +95,9 @@ class ProductionNode(sim.Component):
     @property
     def node_name(self) -> str:
         return self._node_name
+
+    def __repr__(self) -> str:
+        return self.display_name
 
     # ------------------------------------------------------------------
     # queue management
@@ -144,7 +149,7 @@ class ProductionNode(sim.Component):
                 "type": "production_output",
                 "output_sku": sku,
                 "quantity": quantity,
-                "destination": self.downstream_node.node_name,
+                "destination": self.downstream_node.display_name,
             })
         else:
             self.log.append({
@@ -152,7 +157,7 @@ class ProductionNode(sim.Component):
                 "type": "production_output_lost",
                 "output_sku": sku,
                 "quantity": quantity,
-                "destination": self.downstream_node.node_name,
+                "destination": self.downstream_node.display_name,
                 "reason": "downstream_full",
             })
 

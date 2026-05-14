@@ -19,9 +19,22 @@ from src.management import JobManager
 from src.production_node import ProductionNode
 
 
+def _dn(node: object) -> str:
+    """Return display name for a node object, falling back to str()."""
+    if hasattr(node, "display_name"):
+        return node.display_name
+    return str(node)
+
+
+def _sku_display(sku_id: str, sku_map: dict[str, str]) -> str:
+    """Translate a SKU ID to its human-readable display name."""
+    return sku_map.get(sku_id, sku_id)
+
+
 # ---------------------------------------------------------------------------
 # Simulation result (returned by run_scenario for programmatic inspection)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SimulationResult:
@@ -32,6 +45,7 @@ class SimulationResult:
         result.sink_received          -> {sink_name: {sku: qty}}
         result.all_logs               -> sorted list of {node, time, type, ...}
     """
+
     scenario_name: str
     nodes: dict[str, Any]
     config: Any
@@ -41,7 +55,7 @@ class SimulationResult:
         return {
             name: dict(node.inventory)
             for name, node in self.nodes.items()
-            if hasattr(node, 'role') and node.role == NodeRole.WAREHOUSE
+            if hasattr(node, "role") and node.role == NodeRole.WAREHOUSE
         }
 
     @property
@@ -49,7 +63,7 @@ class SimulationResult:
         return {
             name: dict(node.received)
             for name, node in self.nodes.items()
-            if hasattr(node, 'role') and node.role == NodeRole.SINK
+            if hasattr(node, "role") and node.role == NodeRole.SINK
         }
 
     @property
@@ -57,7 +71,7 @@ class SimulationResult:
         """All log entries from all nodes, sorted by simulation time."""
         logs: list[dict] = []
         for name, node in self.nodes.items():
-            if hasattr(node, 'log'):
+            if hasattr(node, "log"):
                 for entry in node.log:
                     logs.append({"node": name, **entry})
         logs.sort(key=lambda x: x["time"])
@@ -67,6 +81,7 @@ class SimulationResult:
 # ---------------------------------------------------------------------------
 # Build helpers
 # ---------------------------------------------------------------------------
+
 
 def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
     """Build all nodes in two passes:
@@ -89,6 +104,7 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
                 max_pallets=cfg.get("max_pallets"),
                 dispatch_interval=cfg.get("dispatch_interval", 1.0),
                 dispatch_max_pallets=cfg.get("dispatch_max_pallets", 1),
+                display_name=cfg.get("display_name", node_name),
             )
             nodes[node_name] = node
 
@@ -103,6 +119,7 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
                 downstream_node=nodes[cfg["downstream"]],
                 env=env,
                 global_time_step=cfg.get("global_time_step", 10.0),
+                display_name=cfg.get("display_name", node_name),
             )
             nodes[node_name] = node
 
@@ -131,91 +148,127 @@ def build_edges(config, nodes: dict[str, Any]) -> list[Edge]:
 # Log printers
 # ---------------------------------------------------------------------------
 
+
 def print_state_snapshot(t: float, nodes: dict[str, Any]) -> None:
     """Prints a brief capacity snapshot at the given time."""
     print(f"  --- SNAPSHOT t={t} ---")
     for name, node in nodes.items():
-        if hasattr(node, 'role') and node.role == NodeRole.WAREHOUSE:
+        if hasattr(node, "role") and node.role == NodeRole.WAREHOUSE:
             pal = node.current_pallets()
-            print(f"    {name}: {pal} pallets / {node.node_max_pallets} used")
+            print(f"    {_dn(node)}: {pal} pallets / {node.node_max_pallets} used")
     print("  ---")
 
 
 def process_events(
     job_manager: JobManager,
     nodes: dict[str, Any],
+    sku_map: dict[str, str] | None = None,
 ):
     events = job_manager.issue_pending_jobs(nodes)
     for ev in events:
-        print(f"  [t={ev['time']:.1f}] JOB ISSUED: {ev['from']} -> {ev['to']}:")
+        from_node = nodes.get(ev["from"])
+        to_node = nodes.get(ev["to"])
+        from_dn = _dn(from_node) if from_node else ev["from"]
+        to_dn = _dn(to_node) if to_node else ev["to"]
+        print(f"  [t={ev['time']:.1f}] JOB ISSUED: {from_dn} -> {to_dn}:")
         for sku, qty, pri in ev["orders"]:
-            print(f"    -> Order: {sku} x{qty} (priority={pri})")
+            sku_name = _sku_display(sku, sku_map) if sku_map else sku
+            print(f"    -> Order: {sku_name} x{qty} (priority={pri})")
 
 
-def process_all_logs(since_t, up_to_t, nodes, seen):
+def _lookup_display(nodes: dict[str, Any], internal_name: str) -> str:
+    """Translate an internal node name to its display name via nodes dict."""
+    node = nodes.get(internal_name)
+    return _dn(node) if node else internal_name
+
+
+def process_all_logs(since_t, up_to_t, nodes, seen, sku_map: dict[str, str] | None = None):
     all_new = []
     for name, node in nodes.items():
-        if not hasattr(node, 'log'):
+        if not hasattr(node, "log"):
             continue
         for i, l in enumerate(node.log):
             if since_t <= l["time"] <= up_to_t + 1e-9:
-                key = (name, i)
+                key = (node.node_name, i)
                 if key not in seen:
                     seen.add(key)
-                    all_new.append((name, l))
+                    all_new.append((node, l))
     all_new.sort(key=lambda x: x[1]["time"])
-    for name, entry in all_new:
+    for node, entry in all_new:
+        ndn = _dn(node)
         t = entry["time"]
         if entry["type"] == "order_added":
-            dest_str = (
-                f" -> {entry.get('destination', '?')}"
-                if entry.get("destination")
-                else ""
-            )
+            dest_raw = entry.get("destination")
+            dest_str = f" -> {_lookup_display(nodes, dest_raw)}" if dest_raw else ""
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
-                f"  [t={t:.1f}] {name}: order queued"
-                f" -> {entry['sku']} x{entry['quantity']}"
+                f"  [t={t:.1f}] {ndn}: order queued"
+                f" -> {sku_name} x{entry['quantity']}"
                 f" (pri={entry['priority']}){dest_str}"
             )
         elif entry["type"] == "dispatched":
-            dest_str = (
-                f" -> {entry.get('destination', '?')}"
-                if entry.get("destination")
-                else ""
-            )
-            items_str = ", ".join(f"{sku}x{qty}" for sku, qty in entry["items"])
-            print(f"  [t={t:.1f}] {name}: dispatched{dest_str} -> {items_str}")
+            dest_raw = entry.get("destination")
+            dest_str = f" -> {_lookup_display(nodes, dest_raw)}" if dest_raw else ""
+            items_parts = []
+            for sku, qty in entry["items"]:
+                sku_name = _sku_display(sku, sku_map) if sku_map else sku
+                items_parts.append(f"{sku_name}x{qty}")
+            items_str = ", ".join(items_parts)
+            print(f"  [t={t:.1f}] {ndn}: dispatched{dest_str} -> {items_str}")
         elif entry["type"] == "received":
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
-                f"  [t={t:.1f}] {name}: received"
-                f" {entry['sku']} x{entry['quantity']}"
+                f"  [t={t:.1f}] {ndn}: received"
+                f" {sku_name} x{entry['quantity']}"
                 f" from {entry['source']}"
             )
         # -- production events --
         elif entry["type"] == "materials_consumed":
-            inputs_str = ", ".join(f"{sku}x{qty}" for sku, qty in entry["inputs"].items())
-            print(f"  [t={t:.1f}] {name}: consumed {inputs_str} for job #{entry['job_id']}")
+            inputs_parts = []
+            for sku, qty in entry["inputs"].items():
+                sku_name = _sku_display(sku, sku_map) if sku_map else sku
+                inputs_parts.append(f"{sku_name}x{qty}")
+            inputs_str = ", ".join(inputs_parts)
+            print(
+                f"  [t={t:.1f}] {ndn}: consumed {inputs_str} for job #{entry['job_id']}"
+            )
         elif entry["type"] == "production_started":
-            print(f"  [t={t:.1f}] {name}: production started job #{entry['job_id']}"
-                  f" -> {entry['output_sku']} x{entry['quantity']}")
+            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: production started job #{entry['job_id']}"
+                f" -> {sku_name} x{entry['quantity']}"
+            )
         elif entry["type"] == "production_output":
-            print(f"  [t={t:.1f}] {name}: produced {entry['output_sku']} x{entry['quantity']}"
-                  f" -> {entry.get('destination', '?')}")
+            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: produced {sku_name} x{entry['quantity']}"
+                f" -> {entry.get('destination', '?')}"
+            )
         elif entry["type"] == "production_output_lost":
-            print(f"  [t={t:.1f}] {name}: ** OUTPUT LOST **"
-                  f" {entry['output_sku']} x{entry['quantity']}"
-                  f" (downstream full)")
+            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: ** OUTPUT LOST **"
+                f" {sku_name} x{entry['quantity']}"
+                f" (downstream full)"
+            )
         elif entry["type"] == "production_completed":
-            print(f"  [t={t:.1f}] {name}: production completed job #{entry['job_id']}"
-                  f" -> {entry['output_sku']} x{entry['quantity']}")
+            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: production completed job #{entry['job_id']}"
+                f" -> {sku_name} x{entry['quantity']}"
+            )
         elif entry["type"] == "production_failed":
-            print(f"  [t={t:.1f}] {name}: ** PRODUCTION FAILED ** job #{entry['job_id']}"
-                  f" -> {entry['output_sku']} (insufficient material)")
+            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** job #{entry['job_id']}"
+                f" -> {sku_name} (insufficient material)"
+            )
 
 
 # ---------------------------------------------------------------------------
 # Scenario runner
 # ---------------------------------------------------------------------------
+
 
 def run_scenario(scenario_name: str) -> SimulationResult:
     config = importlib.import_module(f"{scenario_name}.config")
@@ -228,11 +281,16 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     edges = build_edges(config, nodes)
 
     # -- load production orders into production nodes -----------------------
-    if hasattr(jobs_module, 'PRODUCTION_JOBS'):
+    if hasattr(jobs_module, "PRODUCTION_JOBS"):
         for pjob in jobs_module.PRODUCTION_JOBS:
             target = nodes.get(pjob.node_name)
-            if target is not None and hasattr(target, 'add_production_order'):
+            if target is not None and hasattr(target, "add_production_order"):
                 target.add_production_order(pjob)
+
+    sku_map: dict[str, str] = getattr(config, "SKUS", {})
+    if isinstance(sku_map, (list, tuple)):
+        # Legacy: SKUS is a list — build identity map for backward compat
+        sku_map = {s: s for s in sku_map}
 
     job_manager = JobManager(jobs_module.JOBS, env)
 
@@ -240,15 +298,21 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("=" * 70)
     print(f"SIMULATION: {scenario_name}")
     print("=" * 70)
-    print(f"SKUs: {config.SKUS}")
+    if isinstance(config.SKUS, dict):
+        print("SKUs:")
+        for sid, sname in config.SKUS.items():
+            print(f"  {sid}: {sname}")
+    else:
+        print(f"SKUs: {config.SKUS}")
     print(f"Pallet sizes: {config.PALLET_SIZE}")
     print()
     print("Nodes:")
     for name, cfg in config.NODES.items():
+        display = cfg.get("display_name", name)
         extra = ""
         if cfg["type"] == "production":
             extra = f", upstream={cfg['upstream']}, downstream={cfg['downstream']}"
-        print(f"  {name}: type={cfg['type']}{extra}")
+        print(f"  {display} ({name}): type={cfg['type']}{extra}")
     print()
     print("Edges:")
     for e in edges:
@@ -259,25 +323,35 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print()
     print("Jobs:")
     for j in jobs_module.JOBS:
-        print(f"  t={j.time}: {j.from_node} -> {j.to_node}:"
-              f" {[(o.sku, o.quantity) for o in j.orders]}")
-    if hasattr(jobs_module, 'PRODUCTION_JOBS'):
+        orders_str = ", ".join(
+            f"{_sku_display(o.sku, sku_map)} x{o.quantity}" for o in j.orders
+        )
+        print(
+            f"  t={j.time}: {j.from_node} -> {j.to_node}:"
+            f" [{orders_str}]"
+        )
+    if hasattr(jobs_module, "PRODUCTION_JOBS"):
         print("Production orders:")
         for pj in jobs_module.PRODUCTION_JOBS:
-            print(f"  t={pj.start_time}: {pj.node_name}: {pj.output_sku} x{pj.quantity} (job #{pj.job_id})")
+            target_node = nodes.get(pj.node_name)
+            ndn = _dn(target_node) if target_node else pj.node_name
+            output_name = _sku_display(pj.output_sku, sku_map)
+            print(
+                f"  t={pj.start_time}: {ndn}: {output_name} x{pj.quantity} (job #{pj.job_id})"
+            )
     print("=" * 70)
     print()
 
     # -- simulation loop ---------------------------------------------------
     seen = set()
     step = 1
-    process_events(job_manager, nodes)
+    process_events(job_manager, nodes, sku_map)
     last_t = 0
     while last_t < config.SIM_DURATION:
         next_t = min(last_t + step, config.SIM_DURATION)
         env.run(next_t)
-        process_events(job_manager, nodes)
-        process_all_logs(last_t, env.now(), nodes, seen)
+        process_events(job_manager, nodes, sku_map)
+        process_all_logs(last_t, env.now(), nodes, seen, sku_map)
         last_t = env.now()
 
         if last_t % 20 == 0:
@@ -288,13 +362,18 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("SIMULATION COMPLETE")
     print("=" * 70)
     for name, node in nodes.items():
-        if hasattr(node, 'role'):
+        ndn = _dn(node)
+        if hasattr(node, "role"):
             if node.role == NodeRole.WAREHOUSE:
-                print(f"  {name} final inventory: {node.inventory}")
+                inv_display = {_sku_display(k, sku_map): v for k, v in node.inventory.items()}
+                print(f"  {ndn} final inventory: {inv_display}")
             elif node.role == NodeRole.SINK:
-                print(f"  {name} final received: {node.received}")
+                recv_display = {_sku_display(k, sku_map): v for k, v in node.received.items()}
+                print(f"  {ndn} final received: {recv_display}")
         elif isinstance(node, ProductionNode):
-            print(f"  {name} (production): completed {len([e for e in node.log if e['type'] == 'production_completed'])} jobs")
+            print(
+                f"  {ndn} (production): completed {len([e for e in node.log if e['type'] == 'production_completed'])} jobs"
+            )
 
     # -- build & return result for programmatic consumption ----------------
     return SimulationResult(

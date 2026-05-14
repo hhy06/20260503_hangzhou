@@ -49,9 +49,11 @@ class WarehouseNode(sim.Component):
         max_pallets: int | None = None,
         dispatch_interval: float = 1.0,
         dispatch_max_pallets: int = 1,
+        display_name: str | None = None,
         **kwargs,
     ):
         self._node_name = name
+        self.display_name = display_name or name
         super().__init__(name=name, env=env, **kwargs)
         self.role = role
         self.conversion_factors: dict[str, int] = dict(conversion_factors)
@@ -75,6 +77,9 @@ class WarehouseNode(sim.Component):
     @property
     def node_name(self) -> str:
         return self._node_name
+
+    def __repr__(self) -> str:
+        return self.display_name
 
     # --- conversion helpers ---
 
@@ -130,8 +135,8 @@ class WarehouseNode(sim.Component):
                 "type": "received",
                 "sku": shipment.sku,
                 "quantity": shipment.quantity,
-                "source": shipment.source.node_name
-                if hasattr(shipment.source, "node_name")
+                "source": shipment.source.display_name
+                if hasattr(shipment.source, "display_name")
                 else str(shipment.source),
             })
             return True
@@ -147,8 +152,8 @@ class WarehouseNode(sim.Component):
             "type": "received",
             "sku": shipment.sku,
             "quantity": shipment.quantity,
-            "source": shipment.source.node_name
-            if hasattr(shipment.source, "node_name")
+            "source": shipment.source.display_name
+            if hasattr(shipment.source, "display_name")
             else str(shipment.source),
         })
         if self.edges_out and shipment.destination and shipment.destination != self.node_name:
