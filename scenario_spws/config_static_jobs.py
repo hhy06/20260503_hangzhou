@@ -7,8 +7,8 @@ Jobs
 
 Production orders
 -----------------
-- t=0:  productionlien starts sku_a x100  (consumes 300 raw, speed 1/min, ~100 min)
-- t=0:  productionlien starts sku_b x100  (consumes 200 raw, speed 2/min, ~50 min)
+- t=0:  productionline starts sku_a x100  (consumes 300 raw, speed 1/min, ~100 min)
+- t=0:  productionline starts sku_b x100  (consumes 200 raw, speed 2/min, ~50 min)
         → runs sequentially on the same line (sku_a first by job_id)
 """
 
@@ -42,13 +42,13 @@ PRODUCTION_JOBS = [
         output_sku="sku_a",
         quantity=100,
         start_time=0,
-        node_name="productionlien",
+        node_name="productionline",
     ),
     ProductionOrder(
         job_id=2,
         output_sku="sku_b",
-        quantity=100,
+        quantity=200,
         start_time=0,
-        node_name="productionlien",
+        node_name="productionline",
     ),
 ]

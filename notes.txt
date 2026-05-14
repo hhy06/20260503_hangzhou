@@ -2,3 +2,101 @@ since we're a des simulation, we do not aim to produce stuff one item by one ite
 Say the bom is [one SKU_A = 1x wip_X + 1x wip_Y, lead time = 5 minutes], we also specify a sku-specific production-speed: 10 SKU_A per minute. We fix a simulation wide time step of  10 minutes. That means, if we assign a job of 250 items of SKU_A to a production line, it  immediately consumes all materials needed (250 wip_X and 250 wip_Y), and wait 5 minutes, and wait another 10 minutes, produce 100 SKU_A to downstream warehouse, wait another 10 minutes, produce 100 sku_A to downstream wh, and wait 5 minutes, produce 50 sku_A, finish. 
 
 
+
+
+
+======================================================================
+LLM COMMENTARY
+======================================================================
+### Commentary on Simulation Run: `scenario_spws2`
+
+---
+
+#### **1. Workflow Sketch**
+
+The material flow follows this path:
+
+- **Source → Raw Warehouse (`raw_wh`)**
+  - Batch transport of `raw` material (batch size = 50, time = 1).
+  - Initial shipment: `raw x3000`.
+
+- **Raw Warehouse → Production Line (`productionline`)**
+  - No explicit edge; assumed instantaneous or implicit transfer.
+  - Raw consumption occurs directly at start of each production job.
+
+- **Production Line → Finished Goods Warehouse (`warehouse`)**
+  - Output from production is sent to warehouse as produced.
+  - Batches vary by product (e.g., `sku_c` arrives in small increments).
+
+- **Warehouse → Sink**
+  - Batched dispatches to sink with batch size = 50 and time = 1.
+  - Orders placed for all SKUs at t=0.
+
+---
+
+#### **2. Jobs**
+
+##### Transport Jobs:
+- One transport job issued:
+  - `[t=0]`: Source → `raw_wh`: `raw x3000`
+  - ✅ Completed successfully.
+
+##### Production Jobs:
+Four production jobs initiated at t=0:
+1. Job #1: `sku_a x100` → ✅ Completed at t=10
+2. Job #2: `sku_b x200` → ✅ Completed at t=50
+3. Job #3: `sku_c x300` → ❌ Partially completed (only ~150 units shipped)
+4. Job #4: `sku_d x400` → ⛔ Never started
+
+Only two production jobs fully completed.
+
+##### Shipment Jobs:
+Orders placed to ship:
+- `sku_a x100`, `sku_b x200`, `sku_c x300`, `sku_d x400`
+All except `sku_a` and `sku_b` were only partially fulfilled.
+
+---
+
+#### **3. Execution Quality**
+
+❌ Not satisfactory overall due to several issues:
+
+- **Incomplete fulfillment**: Only `sku_a` and `sku_b` met their shipping targets.
+- **Missing shipments**:
+  - `sku_c`: Ordered 300, shipped 150
+  - `sku_d`: Ordered 400, none shipped
+- **Inventory anomaly**:
+  - Final warehouse inventory shows `-10` for `sku_c`, indicating an under-shipment beyond just zero stock.
+- **Unstarted job**:
+  - Job #4 (`sku_d x400`) was never initiated despite being scheduled.
+
+No outright failures reported, but significant shortfall in execution.
+
+---
+
+#### **4. Phenomena / Bugs / Unexpectedness**
+
+🔍 Key anomalies observed:
+
+- **Under-production of `sku_c`**:
+  - Expected 300 units, only about 150 made it through to sink.
+  - Inventory went negative (-10), suggesting more was ordered out than available.
+
+- **Job sequencing stall**:
+  - After completing job #2 (at t=50), job #3 began consuming large amounts of raw (600 units upfront).
+  - But production rate dropped significantly—only 20 units per cycle instead of expected 50+.
+  - This may indicate a bug in how batch sizes are handled during production steps.
+
+- **Job #4 never triggered**:
+  - Despite being listed in initial plan, no log entries show any activity related to producing `sku_d`.
+  - Likely caused by premature exhaustion of `raw` inventory or logic error.
+
+- **Timing inconsistencies**:
+  - `sku_b` took longer than `sku_a` despite higher volume, possibly due to batching delays.
+  - `sku_c` had very slow incremental output (~20/unit intervals), which seems inefficient given pallet size of 50.
+
+---
+
+**Summary Verdict:**
+Simulation exhibits partial success but reveals clear execution flaws including incomplete production runs, stalled workflows, and potential bugs in scheduling/resource allocation. The system failed to fulfill over half of its outbound commitments.
+======================================================================

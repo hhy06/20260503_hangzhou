@@ -200,7 +200,10 @@ class WarehouseNode(sim.Component):
                 avail = self.inventory.get(sku, 0)
                 if avail <= 0:
                     continue
-                avail_pallets = self.pallets_for_quantity(sku, avail)
+                # Use floor division: only count fully-fillable pallets.
+                # ceil(avail/pallet_size) would overstate how many units we can ship,
+                # e.g. 20 units with pallet_size=50 → ceil(20/50)=1 → 50 units, but we only have 20.
+                avail_pallets = avail // self.conversion_factors[sku]
             else:  # SOURCE: infinite supply
                 avail_pallets = float("inf")
 

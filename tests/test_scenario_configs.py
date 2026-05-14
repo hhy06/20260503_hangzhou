@@ -27,6 +27,7 @@ SCENARIOS = [
     "scenario_hangzhou0",
     "scenario_production",
     "scenario_spws",
+    "scenario_spws2",
 ]
 
 
