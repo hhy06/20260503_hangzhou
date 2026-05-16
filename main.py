@@ -15,7 +15,7 @@ import salabim as sim
 
 from src.edge import Edge
 from src.warehouse_node import WarehouseNode, NodeRole
-from src.management import JobManager
+from src.management import JobManager, DECISION_INTERVAL
 from src.production_node import ProductionNode
 
 
@@ -159,30 +159,20 @@ def print_state_snapshot(t: float, nodes: dict[str, Any]) -> None:
     print("  ---")
 
 
-def process_events(
-    job_manager: JobManager,
-    nodes: dict[str, Any],
-    sku_map: dict[str, str] | None = None,
-):
-    events = job_manager.issue_pending_jobs(nodes)
-    for ev in events:
-        from_node = nodes.get(ev["from"])
-        to_node = nodes.get(ev["to"])
-        from_dn = _dn(from_node) if from_node else ev["from"]
-        to_dn = _dn(to_node) if to_node else ev["to"]
-        print(f"  [t={ev['time']:.1f}] JOB ISSUED: {from_dn} -> {to_dn}:")
-        for sku, qty, pri in ev["orders"]:
-            sku_name = _sku_display(sku, sku_map) if sku_map else sku
-            print(f"    -> Order: {sku_name} x{qty} (priority={pri})")
-
-
 def _lookup_display(nodes: dict[str, Any], internal_name: str) -> str:
     """Translate an internal node name to its display name via nodes dict."""
     node = nodes.get(internal_name)
     return _dn(node) if node else internal_name
 
 
-def process_all_logs(since_t, up_to_t, nodes, seen, sku_map: dict[str, str] | None = None):
+def process_all_logs(
+    since_t,
+    up_to_t,
+    nodes,
+    seen,
+    sku_map: dict[str, str] | None = None,
+    job_manager: JobManager | None = None,
+):
     all_new = []
     for name, node in nodes.items():
         if not hasattr(node, "log"):
@@ -193,6 +183,13 @@ def process_all_logs(since_t, up_to_t, nodes, seen, sku_map: dict[str, str] | No
                 if key not in seen:
                     seen.add(key)
                     all_new.append((node, l))
+    if job_manager is not None:
+        for i, l in enumerate(job_manager.log):
+            if since_t <= l["time"] <= up_to_t + 1e-9:
+                key = ("__job_manager__", i)
+                if key not in seen:
+                    seen.add(key)
+                    all_new.append((job_manager, l))
     all_new.sort(key=lambda x: x[1]["time"])
     for node, entry in all_new:
         ndn = _dn(node)
@@ -263,6 +260,13 @@ def process_all_logs(since_t, up_to_t, nodes, seen, sku_map: dict[str, str] | No
                 f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** job #{entry['job_id']}"
                 f" -> {sku_name} (insufficient material)"
             )
+        elif entry["type"] == "job_issued":
+            from_dn = _lookup_display(nodes, entry["from"])
+            to_dn = _lookup_display(nodes, entry["to"])
+            print(f"  [t={t:.1f}] JOB ISSUED: {from_dn} -> {to_dn}:")
+            for sku, qty, pri in entry["orders"]:
+                sku_name = _sku_display(sku, sku_map) if sku_map else sku
+                print(f"    -> Order: {sku_name} x{qty} (priority={pri})")
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +296,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
         # Legacy: SKUS is a list — build identity map for backward compat
         sku_map = {s: s for s in sku_map}
 
-    job_manager = JobManager(jobs_module.JOBS, env)
+    job_manager = JobManager(jobs_module.JOBS, nodes, env)
 
     # -- print setup -------------------------------------------------------
     print("=" * 70)
@@ -345,13 +349,11 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     # -- simulation loop ---------------------------------------------------
     seen = set()
     step = 1
-    process_events(job_manager, nodes, sku_map)
     last_t = 0
     while last_t < config.SIM_DURATION:
         next_t = min(last_t + step, config.SIM_DURATION)
         env.run(next_t)
-        process_events(job_manager, nodes, sku_map)
-        process_all_logs(last_t, env.now(), nodes, seen, sku_map)
+        process_all_logs(last_t, env.now(), nodes, seen, sku_map, job_manager=job_manager)
         last_t = env.now()
 
         if last_t % 20 == 0:
