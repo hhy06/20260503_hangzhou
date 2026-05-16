@@ -64,14 +64,73 @@ class JobManager(sim.Component):
     # ------------------------------------------------------------------
 
     def process(self):
-        """Periodic wake cycle: issue pending orders, then sleep."""
+        """Periodic wake cycle: gather info, make decisions, then sleep."""
         while True:
-            self._issue_pending_jobs()
+            self.gather_info()
+            self.make_decisions()
             yield self.hold(DECISION_INTERVAL)
 
     # ------------------------------------------------------------------
-    # Core issuance logic
+    # Info collection
     # ------------------------------------------------------------------
+
+    def gather_info(self) -> None:
+        """Collect current simulation state into ``self.info``.
+
+        Delegates to ``collect_info()`` which can be overridden by a future
+        AI-driven agent for richer state gathering.
+        """
+        self.info = self.collect_info()
+
+    def collect_info(self) -> dict:
+        """Snapshot current node state and pending future demand.
+
+        Returns a dict with keys:
+          stock        - {node_name: {sku: qty}} current warehouse inventory
+          queues       - {node_name: list} pending outbound orders per node
+          future_demand - list of unissued Job objects (time, from, to, orders)
+        """
+        stock: dict[str, dict[str, int]] = {}
+        queues: dict[str, list] = {}
+        for name, node in self.nodes.items():
+            if hasattr(node, "inventory"):
+                stock[name] = dict(node.inventory)
+            if hasattr(node, "output_queue"):
+                queues[name] = [
+                    {"sku": o.sku, "quantity": o.quantity,
+                     "priority": o.priority, "destination": o.destination}
+                    for o in node.output_queue
+                ]
+            if hasattr(node, "production_queue"):
+                queues.setdefault(name, []).extend([
+                    {"job_id": j.job_id, "output_sku": j.output_sku,
+                     "quantity": j.quantity, "start_time": j.start_time}
+                    for j in node.production_queue
+                ])
+
+        future_demand = [
+            {"time": j.time, "from": j.from_node, "to": j.to_node,
+             "orders": [(o.sku, o.quantity, o.priority) for o in j.orders]}
+            for j in self.jobs[self.next_job_idx:]
+        ]
+
+        return {
+            "stock": stock,
+            "queues": queues,
+            "future_demand": future_demand,
+        }
+
+    # ------------------------------------------------------------------
+    # Decision making
+    # ------------------------------------------------------------------
+
+    def make_decisions(self) -> None:
+        """Issue orders based on current info.
+
+        Current version: issue static jobs whose scheduled time has arrived.
+        Future version: an AI agent will decide dynamically using ``self.info``.
+        """
+        self._issue_pending_jobs()
 
     def _issue_pending_jobs(self) -> list[dict]:
         """Issue any jobs whose scheduled time has been reached.
