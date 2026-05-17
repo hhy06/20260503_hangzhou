@@ -24,9 +24,11 @@ from src.management import Job
 SCENARIOS = [
     "test_scenario2",
     "scenario_hangzhou0",
+    "scenario_hangzhou1",
     "scenario_production",
     "scenario_spws",
     "scenario_spws2",
+    "scenario_spws3",
 ]
 
 
