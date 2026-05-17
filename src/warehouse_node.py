@@ -219,6 +219,11 @@ class WarehouseNode(sim.Component):
         if not plan:
             return []
 
+        merged = {}
+        for sku, qty in plan:
+            merged[sku] = merged.get(sku, 0) + qty
+        plan = list(merged.items())
+
         dispatched = []
         for sku, target_qty in plan:
             rem = target_qty

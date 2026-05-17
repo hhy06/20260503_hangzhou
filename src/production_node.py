@@ -266,6 +266,14 @@ class ProductionNode(sim.Component):
 
             eligible.sort(key=lambda j: j.job_id)
             job = eligible[0]
-            self.production_queue.remove(job)
 
+            bom_entry = self.bom[job.output_sku]
+            required = {}
+            for input_sku, qty_per in bom_entry["inputs"].items():
+                required[input_sku] = qty_per * job.quantity
+            if not self._check_materials(required):
+                yield self.hold(1.0)
+                continue
+
+            self.production_queue.remove(job)
             yield from self._execute_job(job)
