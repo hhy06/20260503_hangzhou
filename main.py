@@ -303,6 +303,8 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     pallet_sizes = getattr(config, "PALLET_SIZE", {})
     job_manager = JobManager(
         jobs_module.JOBS, nodes, env, demand=demand, pallet_sizes=pallet_sizes,
+        day_length=config.DAY, shift_starts=config.SHIFT_STARTS,
+        shift_duration=config.SHIFT_DURATION,
     )
 
     # -- print setup -------------------------------------------------------
@@ -353,7 +355,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("=" * 70)
     print()
 
-    DAY = 1440
+    DAY = config.DAY
     sink_node = next(
         (n for n in nodes.values() if hasattr(n, "role") and n.role == NodeRole.SINK),
         None,

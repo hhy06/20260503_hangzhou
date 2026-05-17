@@ -28,6 +28,9 @@ class JobManager(sim.Component):
         env: sim.Environment | None = None,
         demand: dict | None = None,
         pallet_sizes: dict[str, int] | None = None,
+        day_length: int = 1440,
+        shift_starts: list[int] | None = None,
+        shift_duration: int = 690,
         **kwargs,
     ):
         self._node_name = "__management__"
@@ -38,6 +41,9 @@ class JobManager(sim.Component):
         self.nodes = nodes
         self.demand = demand or {}
         self.pallet_sizes = pallet_sizes or {}
+        self.DAY = day_length
+        self.SHIFT_STARTS = shift_starts or [480, 1200]
+        self.SHIFT_DURATION = shift_duration
         self.log: list[dict] = []
 
         self._next_job_counter = 1000
@@ -52,6 +58,24 @@ class JobManager(sim.Component):
             self.gather_info()
             self.make_decisions()
             yield self.hold(DECISION_INTERVAL)
+
+    def _next_shift_start(self, after: float | None = None) -> float:
+        if after is None:
+            after = self.env.now()
+        day_start = (int(after // self.DAY)) * self.DAY
+        for ss in self.SHIFT_STARTS:
+            t = day_start + ss
+            if t >= after - 1e-9:
+                return t
+        return (int(after // self.DAY) + 1) * self.DAY + self.SHIFT_STARTS[0]
+
+    def _prev_shift_start(self, before: float) -> float:
+        day_start = (int(before // self.DAY)) * self.DAY
+        for ss in reversed(self.SHIFT_STARTS):
+            t = day_start + ss
+            if t <= before + 1e-9:
+                return t
+        return (int(before // self.DAY) - 1) * self.DAY + self.SHIFT_STARTS[-1]
 
     def gather_info(self) -> None:
         self.info = self.collect_info()
@@ -83,6 +107,12 @@ class JobManager(sim.Component):
                      "quantity": j.quantity, "start_time": j.start_time}
                     for j in node.production_queue
                 ])
+            if hasattr(node, "in_process_quantity"):
+                for sku, qty in node.in_process_quantity.items():
+                    queues.setdefault(name, []).append({
+                        "output_sku": sku, "quantity": qty,
+                        "status": "in_process",
+                    })
             if hasattr(node, "bom"):
                 for out_sku, bom_entry in node.bom.items():
                     producer_for[out_sku] = name
@@ -114,13 +144,12 @@ class JobManager(sim.Component):
         """
         info = self.info
         now = self.env.now()
-        DAY = 1440
 
-        current_day = int(now // DAY) + 1
+        current_day = int(now // self.DAY) + 1
 
         fg_need: dict[str, int] = defaultdict(int)
         for day, skus in info["demand"].items():
-            if day <= current_day + 1:
+            if day <= current_day:
                 for sku, qty in skus.items():
                     fg_need[sku] += qty
 
@@ -197,11 +226,12 @@ class JobManager(sim.Component):
         net_prod = self._round_up(sku, net)
 
         job_id = self._next_job_id()
+        start_time = self._next_shift_start(now)
         prod_node.add_production_order(ProductionOrder(
             job_id=job_id,
             output_sku=sku,
             quantity=net_prod,
-            start_time=now,
+            start_time=start_time,
             node_name=producer_name,
         ))
         self.log.append({
@@ -277,11 +307,12 @@ class JobManager(sim.Component):
             self._ensure_material_at(input_sku, needed, factory_upstream, info)
 
         job_id = self._next_job_id()
+        start_time = self._next_shift_start(self.env.now())
         prod_node.add_production_order(ProductionOrder(
             job_id=job_id,
             output_sku=wip_sku,
             quantity=net_prod,
-            start_time=self.env.now(),
+            start_time=start_time,
             node_name=producer_name,
         ))
         self.log.append({

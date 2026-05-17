@@ -294,7 +294,8 @@ EDGES = [
      "transfer_mode": TransferMode.BATCH, "transfer_time": 1, "batch_size": 50},
 ]
 
+BASIC_TIME_UNIT = "MINUTE"
 SIM_DURATION = 15000   # ~10.4 days  (1 day = 1440)
-
-# Day length in simulation minutes
-DAY = 1440
+DAY = 60 * 24
+SHIFT_STARTS = [480, 1200]     # 08:00, 20:00 (minutes from midnight)
+SHIFT_DURATION = 690           # 11.5 hours per shift

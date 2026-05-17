@@ -84,6 +84,7 @@ class ProductionNode(sim.Component):
         self.global_time_step: float = global_time_step
 
         self.production_queue: list[ProductionOrder] = []
+        self._in_process: dict[str, int] = {}
         self.edges_out: list = []
         self.edges_in: list = []
         self.log: list[dict] = []
@@ -91,6 +92,10 @@ class ProductionNode(sim.Component):
     # ------------------------------------------------------------------
     # properties
     # ------------------------------------------------------------------
+
+    @property
+    def in_process_quantity(self) -> dict[str, int]:
+        return dict(self._in_process)
 
     @property
     def node_name(self) -> str:
@@ -276,4 +281,10 @@ class ProductionNode(sim.Component):
                 continue
 
             self.production_queue.remove(job)
+            self._in_process[job.output_sku] = (
+                self._in_process.get(job.output_sku, 0) + job.quantity
+            )
             yield from self._execute_job(job)
+            self._in_process[job.output_sku] -= job.quantity
+            if self._in_process[job.output_sku] <= 0:
+                del self._in_process[job.output_sku]
