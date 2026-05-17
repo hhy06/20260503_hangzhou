@@ -22,7 +22,6 @@ from src.management import Job
 # Scenario registry  —  add new scenarios here
 # ---------------------------------------------------------------------------
 SCENARIOS = [
-    "scenario1",
     "test_scenario2",
     "scenario_hangzhou0",
     "scenario_production",

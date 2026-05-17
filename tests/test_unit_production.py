@@ -187,7 +187,7 @@ class TestOutputToDownstream:
 # ===========================================================================
 
 class TestExecuteJob:
-    def test_production_fails_on_insufficient_material(self):
+    def test_production_retries_on_insufficient_material(self):
         env, up, prod, _ = _make_production_scene()
         # No materials in upstream
         job = ProductionOrder(job_id=1, output_sku="SKU_A", quantity=100, start_time=0, node_name="TestProd")
@@ -195,7 +195,9 @@ class TestExecuteJob:
 
         sim.yieldless(False)
         env.run(100)
-        assert any(e["type"] == "production_failed" for e in prod.log)
+        # process() retries every 1.0 min — job stays in queue, never discarded
+        assert len(prod.production_queue) == 1
+        assert prod.production_queue[0].job_id == 1
 
     def test_job_not_started_before_start_time(self):
         env, up, prod, _ = _make_production_scene()

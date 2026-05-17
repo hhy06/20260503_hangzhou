@@ -298,13 +298,20 @@ def run_scenario(scenario_name: str) -> SimulationResult:
         # Legacy: SKUS is a list — build identity map for backward compat
         sku_map = {s: s for s in sku_map}
 
-    demand_module = importlib.import_module(f"{scenario_name}.static_demand")
-    demand = getattr(demand_module, "DEMAND", {})
+    demand = {}
+    try:
+        demand_module = importlib.import_module(f"{scenario_name}.static_demand")
+        demand = getattr(demand_module, "DEMAND", {})
+    except ModuleNotFoundError:
+        pass
     pallet_sizes = getattr(config, "PALLET_SIZE", {})
+    day_length = getattr(config, "DAY", 1440)
+    shift_starts = getattr(config, "SHIFT_STARTS", [480, 1200])
+    shift_duration = getattr(config, "SHIFT_DURATION", 690)
     job_manager = JobManager(
         jobs_module.JOBS, nodes, env, demand=demand, pallet_sizes=pallet_sizes,
-        day_length=config.DAY, shift_starts=config.SHIFT_STARTS,
-        shift_duration=config.SHIFT_DURATION,
+        day_length=day_length, shift_starts=shift_starts,
+        shift_duration=shift_duration,
     )
 
     # -- print setup -------------------------------------------------------
@@ -355,7 +362,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("=" * 70)
     print()
 
-    DAY = config.DAY
+    DAY = day_length
     sink_node = next(
         (n for n in nodes.values() if hasattr(n, "role") and n.role == NodeRole.SINK),
         None,

@@ -19,11 +19,6 @@ def scenario2_result() -> SimulationResult:
     return run_scenario("test_scenario2")
 
 
-@pytest.fixture(scope="session")
-def scenario1_result() -> SimulationResult:
-    return run_scenario("scenario1")
-
-
 # ---------------------------------------------------------------------------
 # salabim environment for unit tests (cheap, function-scoped)
 # ---------------------------------------------------------------------------

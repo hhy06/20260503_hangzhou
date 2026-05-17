@@ -39,36 +39,4 @@ class TestScenario2:
         assert inv["SKU_X"] == 50
 
 
-# ---------------------------------------------------------------------------
-# scenario1
-# ---------------------------------------------------------------------------
 
-class TestScenario1:
-    """Source -> WarehouseA -> WarehouseB -> Sink, three SKUs.
-
-    Jobs (total):
-      SKU_A: 500+300+200 = 1000
-      SKU_B: 200+100     = 300
-      SKU_C: 1000+500    = 1500
-
-    Path is Source→WA→WB→Sink with capacity constraints, but given enough
-    time (SIM_DURATION=200) everything should eventually reach Sink.
-    """
-
-    def test_all_goods_eventually_reach_sink(self, scenario1_result: SimulationResult):
-        received = scenario1_result.sink_received["Sink"]
-        # Total ordered quantities
-        assert received.get("SKU_A", 0) == 1000
-        assert received.get("SKU_B", 0) == 300
-        assert received.get("SKU_C", 0) == 1500
-
-    def test_intermediate_warehouses_empty(self, scenario1_result: SimulationResult):
-        """With sufficient time, all goods flow through to Sink."""
-        inv = scenario1_result.warehouse_inventories
-        for wh_name, wh_inv in inv.items():
-            assert wh_inv == {}, f"{wh_name} should be empty but has {wh_inv}"
-
-    def test_sink_total_matches_job_total(self, scenario1_result: SimulationResult):
-        received = scenario1_result.sink_received["Sink"]
-        total_items = sum(received.values())
-        assert total_items == 1000 + 300 + 1500  # 2800

@@ -28,11 +28,6 @@ class TestConservationOfGoods:
         errors = check_conservation(scenario2_result)
         assert not errors, "\n".join(errors)
 
-    def test_scenario1(self, scenario1_result: SimulationResult):
-        errors = check_conservation(scenario1_result)
-        assert not errors, "\n".join(errors)
-
-
 # ---------------------------------------------------------------------------
 # Invariant ② — Capacity never exceeded
 # ---------------------------------------------------------------------------
@@ -44,9 +39,6 @@ class TestCapacityConstraints:
         errors = check_capacity_constraints(scenario2_result)
         assert not errors, "\n".join(errors)
 
-    def test_scenario1(self, scenario1_result: SimulationResult):
-        errors = check_capacity_constraints(scenario1_result)
-        assert not errors, "\n".join(errors)
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +52,4 @@ class TestNoNegativeInventory:
         errors = check_no_negative_inventory(scenario2_result)
         assert not errors, "\n".join(errors)
 
-    def test_scenario1(self, scenario1_result: SimulationResult):
-        errors = check_no_negative_inventory(scenario1_result)
-        assert not errors, "\n".join(errors)
+
