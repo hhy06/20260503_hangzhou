@@ -362,9 +362,6 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     seen = set()
     step = DECISION_INTERVAL
     last_t = 0
-    prev_day_received: dict[str, int] = {}
-    day_satisfaction: dict[int, dict] = {}
-    current_day = 1
 
     while last_t < config.SIM_DURATION:
         next_t = min(last_t + step, config.SIM_DURATION)
@@ -372,43 +369,23 @@ def run_scenario(scenario_name: str) -> SimulationResult:
         process_all_logs(last_t, env.now(), nodes, seen, sku_map, job_manager=job_manager)
         last_t = env.now()
 
-        day_idx = int(last_t // DAY) + 1
-        if day_idx > current_day or last_t >= config.SIM_DURATION - 1e-9:
-            if sink_node is not None:
-                day_received: dict[str, int] = {}
-                for sku in demand.get(current_day, {}):
-                    cum = sink_node.received.get(sku, 0)
-                    prev = prev_day_received.get(sku, 0)
-                    day_received[sku] = cum - prev
-                day_satisfaction[current_day] = day_received
-                prev_day_received = dict(sink_node.received)
-
-            print(f"\n  --- Day {current_day} checkpoint (t={last_t:.0f}) ---")
-            if current_day in day_satisfaction:
-                day_data = day_satisfaction[current_day]
-                day_demand = demand.get(current_day, {})
-                if day_demand:
-                    print(f"  {'SKU':<12} {'Demand':<8} {'Received':<10} {'Satisfaction':<12}")
-                    print(f"  {'-'*42}")
-                    for sku in sorted(day_demand):
-                        dem = day_demand[sku]
-                        recv = day_data.get(sku, 0)
-                        pct = min(recv / dem * 100, 100) if dem > 0 else 100.0
-                        sku_name = _sku_display(sku, sku_map)
-                        print(f"  {sku_name:<12} {dem:<8} {recv:<10} {pct:>5.1f}%")
-                else:
-                    print("  (no demand this day)")
-            print()
-            current_day = day_idx
-
-    # -- final report ------------------------------------------------------
     print("=" * 70)
     print("SIMULATION COMPLETE")
     print("=" * 70)
 
+    day_received: dict[int, dict[str, int]] = {}
+    if sink_node is not None:
+        for entry in sink_node.log:
+            if entry["type"] == "received":
+                day = int(entry["time"] // DAY) + 1
+                if day not in day_received:
+                    day_received[day] = {}
+                day_received[day][entry["sku"]] = (
+                    day_received[day].get(entry["sku"], 0) + entry["quantity"]
+                )
+
     if demand:
         print("\nDay-by-Day FG Satisfaction Rate")
-    print(f"{'Day':<6} ", end="")
     all_fg_skus = sorted({sku for d in demand.values() for sku in d})
     col_width = 10
     for sku in all_fg_skus:
@@ -421,13 +398,16 @@ def run_scenario(scenario_name: str) -> SimulationResult:
 
     for day in sorted(demand):
         day_demand = demand[day]
-        day_recv = day_satisfaction.get(day, {})
+        day_recv = day_received.get(day, {})
         print(f"{day:<6} ", end="")
         for sku in all_fg_skus:
             dem = day_demand.get(sku, 0)
             recv = day_recv.get(sku, 0)
-            pct = min(recv / dem * 100, 100) if dem > 0 else 0.0
-            print(f"{pct:>5.1f}%    ", end="")
+            if dem > 0:
+                label = f"{recv}/{dem}"
+            else:
+                label = f"{recv}/0"
+            print(f"{label:>{col_width}} ", end="")
         print()
     print()
 
