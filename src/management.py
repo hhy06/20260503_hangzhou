@@ -215,10 +215,29 @@ class JobManager(sim.Component):
             for input_sku, qty_per in inputs.items():
                 needed = qty_per * total_pending
                 self._ensure_material_at(input_sku, needed, upstream_name, info)
+            # Ensure total raw at the factories' upstream (line_side).
+            # Each individual _ensure_material_at above cascades to
+            # per-package raw checks that only see one SKU's need at a
+            # time.  When line_side stock is low the aggregate factory
+            # requirement (4 packages × total_pending) can trigger a
+            # raw transport that the individual calls miss.
+            total_raw = 0
+            raw_node = None
+            for input_sku, qty_per in inputs.items():
+                pkg_producer = info["producer_for"].get(input_sku)
+                if pkg_producer is not None:
+                    raw_node = info["upstream_of"].get(pkg_producer, "")
+                pkg_bom = info["bom_for"].get(input_sku, {})
+                for mat_sku, mat_qty in pkg_bom.get("inputs", {}).items():
+                    total_raw += mat_qty * qty_per * total_pending
+            if total_raw > 0 and raw_node:
+                self._ensure_material_at("raw", total_raw, raw_node, info)
 
         if net <= 0:
-            if fg_stock > 0 and fg_stock >= required - received:
-                self._issue_transport("fg_wh", "sink", sku, fg_stock)
+            if fg_stock > 0:
+                to_ship = min(fg_stock, required - received)
+                if to_ship > 0:
+                    self._issue_transport("fg_wh", "sink", sku, to_ship)
             return
 
         if fg_stock > 0:
@@ -232,14 +251,13 @@ class JobManager(sim.Component):
         if producer_name is None:
             return
         prod_node = self._find_node(producer_name)
-        net_prod = self._round_up(sku, net)
 
         job_id = self._next_job_id()
         start_time = self._next_shift_start(now)
         prod_node.add_production_order(ProductionOrder(
             job_id=job_id,
             output_sku=sku,
-            quantity=net_prod,
+            quantity=net,
             start_time=start_time,
             node_name=producer_name,
         ))
@@ -317,10 +335,9 @@ class JobManager(sim.Component):
         bom_entry = info["bom_for"].get(wip_sku, {})
         inputs = bom_entry.get("inputs", {})
         factory_upstream = info["upstream_of"].get(producer_name, "")
-        net_prod = self._round_up(wip_sku, net)
 
         for input_sku, qty_per in inputs.items():
-            needed = qty_per * net_prod
+            needed = qty_per * net
             self._ensure_material_at(input_sku, needed, factory_upstream, info)
 
         job_id = self._next_job_id()
@@ -328,7 +345,7 @@ class JobManager(sim.Component):
         prod_node.add_production_order(ProductionOrder(
             job_id=job_id,
             output_sku=wip_sku,
-            quantity=net_prod,
+            quantity=net,
             start_time=start_time,
             node_name=producer_name,
         ))
@@ -349,11 +366,6 @@ class JobManager(sim.Component):
             "start_time": start_time,
         })
 
-    def _round_up(self, sku: str, quantity: int) -> int:
-        ps = self.pallet_sizes.get(sku, 1)
-        if ps <= 1:
-            return quantity
-        return ((quantity + ps - 1) // ps) * ps
 
     def _pending_transport(self, from_node: str, sku: str, dest: str,
                            info: dict) -> int:
@@ -368,7 +380,7 @@ class JobManager(sim.Component):
         node = self._find_node(from_node)
         if node is None:
             return
-        qty = self._round_up(sku, quantity)
+        qty = quantity
         if qty <= 0:
             return
         already = self._pending_transport(from_node, sku, to_node, self.info)
