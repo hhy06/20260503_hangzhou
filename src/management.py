@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import salabim as sim
 
+from src.component_logger import ComponentLogger
 from src.warehouse_node import OutboundOrder
 from src.production_node import ProductionOrder
 
@@ -31,6 +32,7 @@ class JobManager(sim.Component):
         day_length: int = 1440,
         shift_starts: list[int] | None = None,
         shift_duration: int = 690,
+        logger: ComponentLogger | None = None,
         **kwargs,
     ):
         self._node_name = "__management__"
@@ -45,6 +47,8 @@ class JobManager(sim.Component):
         self.SHIFT_STARTS = shift_starts or [480, 1200]
         self.SHIFT_DURATION = shift_duration
         self.log: list[dict] = []
+        self._logger = logger
+        self._decisions_this_cycle: list[dict] = []
 
         self._next_job_counter = 1000
 
@@ -54,9 +58,14 @@ class JobManager(sim.Component):
 
     def process(self):
         while True:
+            self._decisions_this_cycle = []
             self._issue_pending_jobs()
             self.gather_info()
+            if self._logger is not None:
+                self._logger.log_management_info(self)
             self.make_decisions()
+            if self._logger is not None:
+                self._logger.log_management_decisions(self)
             yield self.hold(DECISION_INTERVAL)
 
     def _next_shift_start(self, after: float | None = None) -> float:
@@ -242,6 +251,14 @@ class JobManager(sim.Component):
             "quantity": net,
             "node": producer_name,
         })
+        self._decisions_this_cycle.append({
+            "type": "production_order",
+            "job_id": job_id,
+            "sku": sku,
+            "qty": net,
+            "node": producer_name,
+            "start_time": start_time,
+        })
 
     def _incoming_to(self, target_node: str, sku: str, info: dict) -> int:
         total = 0
@@ -323,6 +340,14 @@ class JobManager(sim.Component):
             "quantity": net,
             "node": producer_name,
         })
+        self._decisions_this_cycle.append({
+            "type": "production_order",
+            "job_id": job_id,
+            "sku": wip_sku,
+            "qty": net,
+            "node": producer_name,
+            "start_time": start_time,
+        })
 
     def _round_up(self, sku: str, quantity: int) -> int:
         ps = self.pallet_sizes.get(sku, 1)
@@ -356,6 +381,13 @@ class JobManager(sim.Component):
             priority=1,
             destination=to_node,
         ))
+        self._decisions_this_cycle.append({
+            "type": "transport",
+            "from": from_node,
+            "to": to_node,
+            "sku": sku,
+            "qty": qty,
+        })
 
     def _issue_pending_jobs(self) -> list[dict]:
         events = []
@@ -380,6 +412,12 @@ class JobManager(sim.Component):
                 }
                 events.append(event)
                 self.log.append(event)
+                self._decisions_this_cycle.append({
+                    "type": "issue_job",
+                    "from": job.from_node,
+                    "to": job.to_node,
+                    "orders": [(o.sku, o.quantity) for o in job.orders],
+                })
                 self.next_job_idx += 1
             else:
                 break

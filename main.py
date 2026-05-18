@@ -19,6 +19,7 @@ from src.edge import Edge
 from src.warehouse_node import WarehouseNode, NodeRole
 from src.management import JobManager, DECISION_INTERVAL
 from src.production_node import ProductionNode
+from src.component_logger import ComponentLogger
 
 
 def _dn(node: object) -> str:
@@ -85,7 +86,11 @@ class SimulationResult:
 # ---------------------------------------------------------------------------
 
 
-def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
+def build_nodes(
+    config,
+    env: sim.Environment,
+    logger: ComponentLogger | None = None,
+) -> dict[str, Any]:
     """Build all nodes in two passes:
 
     1. Source / warehouse / sink nodes (WarehouseNode).
@@ -107,6 +112,7 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
                 dispatch_interval=cfg.get("dispatch_interval", 1.0),
                 dispatch_max_pallets=cfg.get("dispatch_max_pallets", 1),
                 display_name=cfg.get("display_name", node_name),
+                logger=logger,
             )
             nodes[node_name] = node
 
@@ -122,6 +128,7 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
                 env=env,
                 global_time_step=cfg.get("global_time_step", 10.0),
                 display_name=cfg.get("display_name", node_name),
+                logger=logger,
             )
             nodes[node_name] = node
 
@@ -283,7 +290,8 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     sim.yieldless(False)
     env = sim.Environment(trace=False)
 
-    nodes = build_nodes(config, env)
+    logger = ComponentLogger()
+    nodes = build_nodes(config, env, logger=logger)
     edges = build_edges(config, nodes)
 
     # -- load production orders into production nodes -----------------------
@@ -311,7 +319,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     job_manager = JobManager(
         jobs_module.JOBS, nodes, env, demand=demand, pallet_sizes=pallet_sizes,
         day_length=day_length, shift_starts=shift_starts,
-        shift_duration=shift_duration,
+        shift_duration=shift_duration, logger=logger,
     )
 
     # -- print setup -------------------------------------------------------
@@ -433,6 +441,8 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             print(
                 f"  {ndn} (production): completed {len([e for e in node.log if e['type'] == 'production_completed'])} jobs"
             )
+
+    logger.close()
 
     # -- build & return result for programmatic consumption ----------------
     return SimulationResult(

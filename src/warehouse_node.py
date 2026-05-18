@@ -7,6 +7,8 @@ from typing import Any
 
 import salabim as sim
 
+from src.component_logger import ComponentLogger
+
 
 @dataclass
 class OutboundOrder:
@@ -50,6 +52,7 @@ class WarehouseNode(sim.Component):
         dispatch_interval: float = 1.0,
         dispatch_max_pallets: int = 1,
         display_name: str | None = None,
+        logger: ComponentLogger | None = None,
         **kwargs,
     ):
         self._node_name = name
@@ -59,6 +62,7 @@ class WarehouseNode(sim.Component):
         self.conversion_factors: dict[str, int] = dict(conversion_factors)
         self.dispatch_interval = dispatch_interval
         self.dispatch_max_pallets = dispatch_max_pallets
+        self._logger = logger
 
         if role == NodeRole.WAREHOUSE:
             self.node_max_pallets = max_pallets
@@ -268,21 +272,27 @@ class WarehouseNode(sim.Component):
 
         return dispatched
 
-    def dispatch_step(self) -> list[tuple[str, int]]:
+    def dispatch_step(self) -> list[dict[str, Any]]:
         if self.role == NodeRole.SINK:
             return []
         if not self.output_queue or not self.edges_out:
             return []
 
-        all_dispatched = []
+        all_dispatched: list[dict[str, Any]] = []
         destinations = set()
         for order in self.output_queue:
             if order.destination is not None:
                 destinations.add(order.destination)
 
         for dest in sorted(destinations):
-            d = self._dispatch_for_destination(dest)
-            all_dispatched.extend(d)
+            items = self._dispatch_for_destination(dest)
+            for sku, qty in items:
+                if qty > 0:
+                    all_dispatched.append({
+                        "sku": sku,
+                        "quantity": qty,
+                        "destination": dest,
+                    })
 
         return all_dispatched
 
@@ -298,6 +308,9 @@ class WarehouseNode(sim.Component):
             return
 
         while True:
+            dispatched: list[dict[str, Any]] = []
             if self.output_queue:
-                self.dispatch_step()
+                dispatched = self.dispatch_step()
+            if self._logger is not None:
+                self._logger.log_warehouse_activation(self, dispatched)
             yield self.hold(self.dispatch_interval)

@@ -16,6 +16,7 @@ from typing import Any
 
 import salabim as sim
 
+from src.component_logger import ComponentLogger
 from src.warehouse_node import InboundShipment
 
 
@@ -71,6 +72,7 @@ class ProductionNode(sim.Component):
         env: sim.Environment | None = None,
         global_time_step: float = 10.0,
         display_name: str | None = None,
+        logger: ComponentLogger | None = None,
         **kwargs,
     ):
         self._node_name = name
@@ -82,6 +84,7 @@ class ProductionNode(sim.Component):
         self.upstream_node = upstream_node
         self.downstream_node = downstream_node
         self.global_time_step: float = global_time_step
+        self._logger = logger
 
         self.production_queue: list[ProductionOrder] = []
         self._in_process: dict[str, int] = {}
@@ -266,6 +269,8 @@ class ProductionNode(sim.Component):
             ]
 
             if not eligible:
+                if self._logger is not None:
+                    self._logger.log_production_activation(self, None)
                 yield self.hold(1.0)
                 continue
 
@@ -277,8 +282,13 @@ class ProductionNode(sim.Component):
             for input_sku, qty_per in bom_entry["inputs"].items():
                 required[input_sku] = qty_per * job.quantity
             if not self._check_materials(required):
+                if self._logger is not None:
+                    self._logger.log_production_activation(self, None)
                 yield self.hold(1.0)
                 continue
+
+            if self._logger is not None:
+                self._logger.log_production_activation(self, job)
 
             self.production_queue.remove(job)
             self._in_process[job.output_sku] = (
