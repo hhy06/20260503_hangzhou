@@ -1,0 +1,1465 @@
+{"type": "meta", "time": 0, "scenario": "scenario_hangzhou1", "sim_duration": 15000, "day_length": 1440, "shift_starts": [480, 1200], "shift_duration": 690, "skus": {"raw": "原料", "powerpackage_a": "粉包A", "saucepackage_a": "酱包A", "vegpackage_a": "菜包A", "outerpackage_a": "外包A", "powerpackage_b": "粉包B", "saucepackage_b": "酱包B", "vegpackage_b": "菜包B", "outerpackage_b": "外包B", "powerpackage_c": "粉包C", "saucepackage_c": "酱包C", "vegpackage_c": "菜包C", "outerpackage_c": "外包C", "powerpackage_d": "粉包D", "saucepackage_d": "酱包D", "vegpackage_d": "菜包D", "outerpackage_d": "外包D", "sku_a": "成品A", "sku_b": "成品B", "sku_c": "成品C", "sku_d": "成品D"}, "pallet_sizes": {"raw": 100, "powerpackage_a": 100, "saucepackage_a": 100, "vegpackage_a": 100, "outerpackage_a": 100, "powerpackage_b": 100, "saucepackage_b": 100, "vegpackage_b": 100, "outerpackage_b": 100, "powerpackage_c": 100, "saucepackage_c": 100, "vegpackage_c": 100, "outerpackage_c": 100, "powerpackage_d": 100, "saucepackage_d": 100, "vegpackage_d": 100, "outerpackage_d": 100, "sku_a": 50, "sku_b": 50, "sku_c": 50, "sku_d": 50}, "nodes": {"source": {"display_name": "供应商", "type": "source", "dispatch_interval": 1, "dispatch_max_pallets": 999}, "raw_wh": {"display_name": "原料库", "type": "warehouse", "max_pallets": 2000, "dispatch_interval": 2, "dispatch_max_pallets": 20}, "line_side": {"display_name": "线边仓", "type": "warehouse", "max_pallets": 2000, "dispatch_interval": 2, "dispatch_max_pallets": 20}, "factory_power": {"display_name": "粉包车间", "type": "production", "upstream": "line_side", "downstream": "pkg_wh", "global_time_step": 10.0, "output_skus": ["powerpackage_a", "powerpackage_b", "powerpackage_c", "powerpackage_d"]}, "factory_sauce": {"display_name": "酱包车间", "type": "production", "upstream": "line_side", "downstream": "pkg_wh", "global_time_step": 10.0, "output_skus": ["saucepackage_a", "saucepackage_b", "saucepackage_c", "saucepackage_d"]}, "factory_veg": {"display_name": "菜包车间", "type": "production", "upstream": "line_side", "downstream": "pkg_wh", "global_time_step": 10.0, "output_skus": ["vegpackage_a", "vegpackage_b", "vegpackage_c", "vegpackage_d"]}, "factory_outer": {"display_name": "外包车间", "type": "production", "upstream": "line_side", "downstream": "pkg_wh", "global_time_step": 10.0, "output_skus": ["outerpackage_a", "outerpackage_b", "outerpackage_c", "outerpackage_d"]}, "pkg_wh": {"display_name": "料包库", "type": "warehouse", "max_pallets": 5000, "dispatch_interval": 2, "dispatch_max_pallets": 999}, "assembly_a": {"display_name": "装配线A", "type": "production", "upstream": "pkg_wh", "downstream": "fg_wh", "global_time_step": 10.0, "output_skus": ["sku_a"]}, "assembly_b": {"display_name": "装配线B", "type": "production", "upstream": "pkg_wh", "downstream": "fg_wh", "global_time_step": 10.0, "output_skus": ["sku_b"]}, "assembly_c": {"display_name": "装配线C", "type": "production", "upstream": "pkg_wh", "downstream": "fg_wh", "global_time_step": 10.0, "output_skus": ["sku_c"]}, "assembly_d": {"display_name": "装配线D", "type": "production", "upstream": "pkg_wh", "downstream": "fg_wh", "global_time_step": 10.0, "output_skus": ["sku_d"]}, "fg_wh": {"display_name": "成品库", "type": "warehouse", "max_pallets": 2000, "dispatch_interval": 2, "dispatch_max_pallets": 20}, "sink": {"display_name": "发货", "type": "sink"}}, "edges": [{"from": "source", "to": "raw_wh", "mode": "batch", "time": 1, "batch_size": 50}, {"from": "raw_wh", "to": "line_side", "mode": "batch", "time": 1, "batch_size": 50}, {"from": "fg_wh", "to": "sink", "mode": "batch", "time": 1, "batch_size": 50}], "layout": {}}
+{"node": "source", "time": 0.0, "type": "order_added", "sku": "raw", "quantity": 5000, "priority": 1, "destination": "raw_wh"}
+{"node": "raw_wh", "time": 0.0, "type": "order_added", "sku": "raw", "quantity": 2000, "priority": 1, "destination": "line_side"}
+{"node": "__management__", "time": 0, "type": "job_issued", "from": "source", "to": "raw_wh", "orders": [["raw", 5000, 1]]}
+{"node": "__management__", "time": 0, "type": "job_issued", "from": "raw_wh", "to": "line_side", "orders": [["raw", 2000, 1]]}
+{"node": "factory_power", "time": 0.0, "type": "production_ordered", "job_id": 1001, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 0.0, "type": "production_ordered", "job_id": 1002, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 0.0, "type": "production_ordered", "job_id": 1003, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 0.0, "type": "production_ordered", "job_id": 1004, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "assembly_a", "time": 0.0, "type": "production_ordered", "job_id": 1005, "output_sku": "sku_a", "quantity": 80}
+{"node": "factory_power", "time": 0.0, "type": "production_ordered", "job_id": 1006, "output_sku": "powerpackage_b", "quantity": 60}
+{"node": "factory_sauce", "time": 0.0, "type": "production_ordered", "job_id": 1007, "output_sku": "saucepackage_b", "quantity": 60}
+{"node": "factory_veg", "time": 0.0, "type": "production_ordered", "job_id": 1008, "output_sku": "vegpackage_b", "quantity": 60}
+{"node": "factory_outer", "time": 0.0, "type": "production_ordered", "job_id": 1009, "output_sku": "outerpackage_b", "quantity": 60}
+{"node": "assembly_b", "time": 0.0, "type": "production_ordered", "job_id": 1010, "output_sku": "sku_b", "quantity": 60}
+{"node": "factory_power", "time": 0.0, "type": "production_ordered", "job_id": 1011, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 0.0, "type": "production_ordered", "job_id": 1012, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 0.0, "type": "production_ordered", "job_id": 1013, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 0.0, "type": "production_ordered", "job_id": 1014, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "assembly_c", "time": 0.0, "type": "production_ordered", "job_id": 1015, "output_sku": "sku_c", "quantity": 40}
+{"node": "source", "time": 1.0, "type": "dispatched", "destination": "raw_wh", "items": [["raw", 5000]]}
+{"node": "raw_wh", "time": 1.0, "type": "received", "sku": "raw", "quantity": 5000, "source": "供应商"}
+{"node": "raw_wh", "time": 2.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 2000]]}
+{"node": "line_side", "time": 2.0, "type": "received", "sku": "raw", "quantity": 2000, "source": "原料库"}
+{"node": "factory_power", "time": 480.0, "type": "materials_consumed", "job_id": 1001, "output_sku": "powerpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 480.0, "type": "production_started", "job_id": 1001, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 480.0, "type": "materials_consumed", "job_id": 1002, "output_sku": "saucepackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 480.0, "type": "production_started", "job_id": 1002, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 480.0, "type": "materials_consumed", "job_id": 1003, "output_sku": "vegpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 480.0, "type": "production_started", "job_id": 1003, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 480.0, "type": "materials_consumed", "job_id": 1004, "output_sku": "outerpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 480.0, "type": "production_started", "job_id": 1004, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "assembly_a", "time": 480.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_a", "job_id": 1005}
+{"node": "assembly_b", "time": 480.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_b", "job_id": 1010}
+{"node": "assembly_c", "time": 480.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_c", "job_id": 1015}
+{"node": "pkg_wh", "time": 484.0, "type": "received", "sku": "powerpackage_a", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 484.0, "type": "received", "sku": "saucepackage_a", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 484.0, "type": "received", "sku": "vegpackage_a", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 484.0, "type": "received", "sku": "outerpackage_a", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 484.0, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 484.0, "type": "production_completed", "job_id": 1001, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_power", "time": 484.0, "type": "materials_consumed", "job_id": 1006, "output_sku": "powerpackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_power", "time": 484.0, "type": "production_started", "job_id": 1006, "output_sku": "powerpackage_b", "quantity": 60}
+{"node": "factory_sauce", "time": 484.0, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 484.0, "type": "production_completed", "job_id": 1002, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 484.0, "type": "materials_consumed", "job_id": 1007, "output_sku": "saucepackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_sauce", "time": 484.0, "type": "production_started", "job_id": 1007, "output_sku": "saucepackage_b", "quantity": 60}
+{"node": "factory_veg", "time": 484.0, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 484.0, "type": "production_completed", "job_id": 1003, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 484.0, "type": "materials_consumed", "job_id": 1008, "output_sku": "vegpackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_veg", "time": 484.0, "type": "production_started", "job_id": 1008, "output_sku": "vegpackage_b", "quantity": 60}
+{"node": "factory_outer", "time": 484.0, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 484.0, "type": "production_completed", "job_id": 1004, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 484.0, "type": "materials_consumed", "job_id": 1009, "output_sku": "outerpackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_outer", "time": 484.0, "type": "production_started", "job_id": 1009, "output_sku": "outerpackage_b", "quantity": 60}
+{"node": "assembly_a", "time": 484.0, "type": "materials_consumed", "job_id": 1005, "output_sku": "sku_a", "quantity": 80, "inputs": {"powerpackage_a": 80, "saucepackage_a": 80, "vegpackage_a": 80, "outerpackage_a": 80}}
+{"node": "assembly_a", "time": 484.0, "type": "production_started", "job_id": 1005, "output_sku": "sku_a", "quantity": 80}
+{"node": "pkg_wh", "time": 487.0, "type": "received", "sku": "powerpackage_b", "quantity": 60, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 487.0, "type": "received", "sku": "saucepackage_b", "quantity": 60, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 487.0, "type": "received", "sku": "vegpackage_b", "quantity": 60, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 487.0, "type": "received", "sku": "outerpackage_b", "quantity": 60, "source": "外包车间"}
+{"node": "factory_power", "time": 487.0, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_power", "time": 487.0, "type": "production_completed", "job_id": 1006, "output_sku": "powerpackage_b", "quantity": 60}
+{"node": "factory_power", "time": 487.0, "type": "materials_consumed", "job_id": 1011, "output_sku": "powerpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_power", "time": 487.0, "type": "production_started", "job_id": 1011, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 487.0, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_sauce", "time": 487.0, "type": "production_completed", "job_id": 1007, "output_sku": "saucepackage_b", "quantity": 60}
+{"node": "factory_sauce", "time": 487.0, "type": "materials_consumed", "job_id": 1012, "output_sku": "saucepackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_sauce", "time": 487.0, "type": "production_started", "job_id": 1012, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 487.0, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_veg", "time": 487.0, "type": "production_completed", "job_id": 1008, "output_sku": "vegpackage_b", "quantity": 60}
+{"node": "factory_veg", "time": 487.0, "type": "materials_consumed", "job_id": 1013, "output_sku": "vegpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_veg", "time": 487.0, "type": "production_started", "job_id": 1013, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 487.0, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_outer", "time": 487.0, "type": "production_completed", "job_id": 1009, "output_sku": "outerpackage_b", "quantity": 60}
+{"node": "factory_outer", "time": 487.0, "type": "materials_consumed", "job_id": 1014, "output_sku": "outerpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_outer", "time": 487.0, "type": "production_started", "job_id": 1014, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "assembly_b", "time": 487.0, "type": "materials_consumed", "job_id": 1010, "output_sku": "sku_b", "quantity": 60, "inputs": {"powerpackage_b": 60, "saucepackage_b": 60, "vegpackage_b": 60, "outerpackage_b": 60}}
+{"node": "assembly_b", "time": 487.0, "type": "production_started", "job_id": 1010, "output_sku": "sku_b", "quantity": 60}
+{"node": "pkg_wh", "time": 489.0, "type": "received", "sku": "powerpackage_c", "quantity": 40, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 489.0, "type": "received", "sku": "saucepackage_c", "quantity": 40, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 489.0, "type": "received", "sku": "vegpackage_c", "quantity": 40, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 489.0, "type": "received", "sku": "outerpackage_c", "quantity": 40, "source": "外包车间"}
+{"node": "factory_power", "time": 489.0, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_power", "time": 489.0, "type": "production_completed", "job_id": 1011, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_power", "time": 489.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 489.0, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_sauce", "time": 489.0, "type": "production_completed", "job_id": 1012, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 489.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 489.0, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_veg", "time": 489.0, "type": "production_completed", "job_id": 1013, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 489.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 489.0, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_outer", "time": 489.0, "type": "production_completed", "job_id": 1014, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 489.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_c", "time": 489.0, "type": "materials_consumed", "job_id": 1015, "output_sku": "sku_c", "quantity": 40, "inputs": {"powerpackage_c": 40, "saucepackage_c": 40, "vegpackage_c": 40, "outerpackage_c": 40}}
+{"node": "assembly_c", "time": 489.0, "type": "production_started", "job_id": 1015, "output_sku": "sku_c", "quantity": 40}
+{"node": "factory_power", "time": 490.0, "type": "production_ordered", "job_id": 1016, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 490.0, "type": "production_ordered", "job_id": 1017, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 490.0, "type": "production_ordered", "job_id": 1018, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 490.0, "type": "production_ordered", "job_id": 1019, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "factory_power", "time": 490.0, "type": "production_ordered", "job_id": 1020, "output_sku": "powerpackage_b", "quantity": 60}
+{"node": "factory_sauce", "time": 490.0, "type": "production_ordered", "job_id": 1021, "output_sku": "saucepackage_b", "quantity": 60}
+{"node": "factory_veg", "time": 490.0, "type": "production_ordered", "job_id": 1022, "output_sku": "vegpackage_b", "quantity": 60}
+{"node": "factory_outer", "time": 490.0, "type": "production_ordered", "job_id": 1023, "output_sku": "outerpackage_b", "quantity": 60}
+{"node": "factory_power", "time": 490.0, "type": "production_ordered", "job_id": 1024, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 490.0, "type": "production_ordered", "job_id": 1025, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 490.0, "type": "production_ordered", "job_id": 1026, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 490.0, "type": "production_ordered", "job_id": 1027, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "fg_wh", "time": 492.0, "type": "received", "sku": "sku_a", "quantity": 80, "source": "装配线A"}
+{"node": "assembly_a", "time": 492.0, "type": "production_output", "output_sku": "sku_a", "quantity": 80, "destination": "成品库"}
+{"node": "assembly_a", "time": 492.0, "type": "production_completed", "job_id": 1005, "output_sku": "sku_a", "quantity": 80}
+{"node": "assembly_a", "time": 492.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 493.0, "type": "received", "sku": "sku_b", "quantity": 60, "source": "装配线B"}
+{"node": "fg_wh", "time": 493.0, "type": "received", "sku": "sku_c", "quantity": 40, "source": "装配线C"}
+{"node": "assembly_b", "time": 493.0, "type": "production_output", "output_sku": "sku_b", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_b", "time": 493.0, "type": "production_completed", "job_id": 1010, "output_sku": "sku_b", "quantity": 60}
+{"node": "assembly_b", "time": 493.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_c", "time": 493.0, "type": "production_output", "output_sku": "sku_c", "quantity": 40, "destination": "成品库"}
+{"node": "assembly_c", "time": 493.0, "type": "production_completed", "job_id": 1015, "output_sku": "sku_c", "quantity": 40}
+{"node": "assembly_c", "time": 493.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 500.0, "type": "order_added", "sku": "sku_a", "quantity": 80, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 500.0, "type": "order_added", "sku": "sku_b", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 500.0, "type": "order_added", "sku": "sku_c", "quantity": 40, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 500.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 80], ["sku_b", 60], ["sku_c", 40]]}
+{"node": "sink", "time": 500.0, "type": "received", "sku": "sku_a", "quantity": 80, "source": "成品库"}
+{"node": "sink", "time": 500.0, "type": "received", "sku": "sku_b", "quantity": 60, "source": "成品库"}
+{"node": "sink", "time": 500.0, "type": "received", "sku": "sku_c", "quantity": 40, "source": "成品库"}
+{"node": "factory_power", "time": 1200.0, "type": "materials_consumed", "job_id": 1016, "output_sku": "powerpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 1200.0, "type": "production_started", "job_id": 1016, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 1200.0, "type": "materials_consumed", "job_id": 1017, "output_sku": "saucepackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 1200.0, "type": "production_started", "job_id": 1017, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 1200.0, "type": "materials_consumed", "job_id": 1018, "output_sku": "vegpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 1200.0, "type": "production_started", "job_id": 1018, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 1200.0, "type": "materials_consumed", "job_id": 1019, "output_sku": "outerpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 1200.0, "type": "production_started", "job_id": 1019, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "pkg_wh", "time": 1204.0, "type": "received", "sku": "powerpackage_a", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 1204.0, "type": "received", "sku": "saucepackage_a", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 1204.0, "type": "received", "sku": "vegpackage_a", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 1204.0, "type": "received", "sku": "outerpackage_a", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 1204.0, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 1204.0, "type": "production_completed", "job_id": 1016, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_power", "time": 1204.0, "type": "materials_consumed", "job_id": 1020, "output_sku": "powerpackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_power", "time": 1204.0, "type": "production_started", "job_id": 1020, "output_sku": "powerpackage_b", "quantity": 60}
+{"node": "factory_sauce", "time": 1204.0, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 1204.0, "type": "production_completed", "job_id": 1017, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 1204.0, "type": "materials_consumed", "job_id": 1021, "output_sku": "saucepackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_sauce", "time": 1204.0, "type": "production_started", "job_id": 1021, "output_sku": "saucepackage_b", "quantity": 60}
+{"node": "factory_veg", "time": 1204.0, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 1204.0, "type": "production_completed", "job_id": 1018, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 1204.0, "type": "materials_consumed", "job_id": 1022, "output_sku": "vegpackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_veg", "time": 1204.0, "type": "production_started", "job_id": 1022, "output_sku": "vegpackage_b", "quantity": 60}
+{"node": "factory_outer", "time": 1204.0, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 1204.0, "type": "production_completed", "job_id": 1019, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 1204.0, "type": "materials_consumed", "job_id": 1023, "output_sku": "outerpackage_b", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_outer", "time": 1204.0, "type": "production_started", "job_id": 1023, "output_sku": "outerpackage_b", "quantity": 60}
+{"node": "pkg_wh", "time": 1207.0, "type": "received", "sku": "powerpackage_b", "quantity": 60, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 1207.0, "type": "received", "sku": "saucepackage_b", "quantity": 60, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 1207.0, "type": "received", "sku": "vegpackage_b", "quantity": 60, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 1207.0, "type": "received", "sku": "outerpackage_b", "quantity": 60, "source": "外包车间"}
+{"node": "factory_power", "time": 1207.0, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_power", "time": 1207.0, "type": "production_completed", "job_id": 1020, "output_sku": "powerpackage_b", "quantity": 60}
+{"node": "factory_power", "time": 1207.0, "type": "materials_consumed", "job_id": 1024, "output_sku": "powerpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_power", "time": 1207.0, "type": "production_started", "job_id": 1024, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 1207.0, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_sauce", "time": 1207.0, "type": "production_completed", "job_id": 1021, "output_sku": "saucepackage_b", "quantity": 60}
+{"node": "factory_sauce", "time": 1207.0, "type": "materials_consumed", "job_id": 1025, "output_sku": "saucepackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_sauce", "time": 1207.0, "type": "production_started", "job_id": 1025, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 1207.0, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_veg", "time": 1207.0, "type": "production_completed", "job_id": 1022, "output_sku": "vegpackage_b", "quantity": 60}
+{"node": "factory_veg", "time": 1207.0, "type": "materials_consumed", "job_id": 1026, "output_sku": "vegpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_veg", "time": 1207.0, "type": "production_started", "job_id": 1026, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 1207.0, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 60, "destination": "料包库"}
+{"node": "factory_outer", "time": 1207.0, "type": "production_completed", "job_id": 1023, "output_sku": "outerpackage_b", "quantity": 60}
+{"node": "factory_outer", "time": 1207.0, "type": "materials_consumed", "job_id": 1027, "output_sku": "outerpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_outer", "time": 1207.0, "type": "production_started", "job_id": 1027, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "pkg_wh", "time": 1209.0, "type": "received", "sku": "powerpackage_c", "quantity": 40, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 1209.0, "type": "received", "sku": "saucepackage_c", "quantity": 40, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 1209.0, "type": "received", "sku": "vegpackage_c", "quantity": 40, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 1209.0, "type": "received", "sku": "outerpackage_c", "quantity": 40, "source": "外包车间"}
+{"node": "factory_power", "time": 1209.0, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_power", "time": 1209.0, "type": "production_completed", "job_id": 1024, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_power", "time": 1209.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 1209.0, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_sauce", "time": 1209.0, "type": "production_completed", "job_id": 1025, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 1209.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 1209.0, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_veg", "time": 1209.0, "type": "production_completed", "job_id": 1026, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 1209.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 1209.0, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_outer", "time": 1209.0, "type": "production_completed", "job_id": 1027, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 1209.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_a", "time": 1440.0, "type": "production_ordered", "job_id": 1028, "output_sku": "sku_a", "quantity": 60}
+{"node": "factory_power", "time": 1440.0, "type": "production_ordered", "job_id": 1029, "output_sku": "powerpackage_b", "quantity": 30}
+{"node": "factory_sauce", "time": 1440.0, "type": "production_ordered", "job_id": 1030, "output_sku": "saucepackage_b", "quantity": 30}
+{"node": "factory_veg", "time": 1440.0, "type": "production_ordered", "job_id": 1031, "output_sku": "vegpackage_b", "quantity": 30}
+{"node": "factory_outer", "time": 1440.0, "type": "production_ordered", "job_id": 1032, "output_sku": "outerpackage_b", "quantity": 30}
+{"node": "assembly_b", "time": 1440.0, "type": "production_ordered", "job_id": 1033, "output_sku": "sku_b", "quantity": 90}
+{"node": "factory_power", "time": 1440.0, "type": "production_ordered", "job_id": 1034, "output_sku": "powerpackage_d", "quantity": 50}
+{"node": "factory_sauce", "time": 1440.0, "type": "production_ordered", "job_id": 1035, "output_sku": "saucepackage_d", "quantity": 50}
+{"node": "factory_veg", "time": 1440.0, "type": "production_ordered", "job_id": 1036, "output_sku": "vegpackage_d", "quantity": 50}
+{"node": "factory_outer", "time": 1440.0, "type": "production_ordered", "job_id": 1037, "output_sku": "outerpackage_d", "quantity": 50}
+{"node": "assembly_d", "time": 1440.0, "type": "production_ordered", "job_id": 1038, "output_sku": "sku_d", "quantity": 50}
+{"node": "factory_power", "time": 1920.0, "type": "materials_consumed", "job_id": 1029, "output_sku": "powerpackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_power", "time": 1920.0, "type": "production_started", "job_id": 1029, "output_sku": "powerpackage_b", "quantity": 30}
+{"node": "factory_sauce", "time": 1920.0, "type": "materials_consumed", "job_id": 1030, "output_sku": "saucepackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_sauce", "time": 1920.0, "type": "production_started", "job_id": 1030, "output_sku": "saucepackage_b", "quantity": 30}
+{"node": "factory_veg", "time": 1920.0, "type": "materials_consumed", "job_id": 1031, "output_sku": "vegpackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_veg", "time": 1920.0, "type": "production_started", "job_id": 1031, "output_sku": "vegpackage_b", "quantity": 30}
+{"node": "factory_outer", "time": 1920.0, "type": "materials_consumed", "job_id": 1032, "output_sku": "outerpackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_outer", "time": 1920.0, "type": "production_started", "job_id": 1032, "output_sku": "outerpackage_b", "quantity": 30}
+{"node": "assembly_a", "time": 1920.0, "type": "materials_consumed", "job_id": 1028, "output_sku": "sku_a", "quantity": 60, "inputs": {"powerpackage_a": 60, "saucepackage_a": 60, "vegpackage_a": 60, "outerpackage_a": 60}}
+{"node": "assembly_a", "time": 1920.0, "type": "production_started", "job_id": 1028, "output_sku": "sku_a", "quantity": 60}
+{"node": "assembly_b", "time": 1920.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_b", "job_id": 1033}
+{"node": "assembly_d", "time": 1920.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_d", "job_id": 1038}
+{"node": "pkg_wh", "time": 1921.5, "type": "received", "sku": "powerpackage_b", "quantity": 30, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 1921.5, "type": "received", "sku": "saucepackage_b", "quantity": 30, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 1921.5, "type": "received", "sku": "vegpackage_b", "quantity": 30, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 1921.5, "type": "received", "sku": "outerpackage_b", "quantity": 30, "source": "外包车间"}
+{"node": "factory_power", "time": 1921.5, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_power", "time": 1921.5, "type": "production_completed", "job_id": 1029, "output_sku": "powerpackage_b", "quantity": 30}
+{"node": "factory_power", "time": 1921.5, "type": "materials_consumed", "job_id": 1034, "output_sku": "powerpackage_d", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_power", "time": 1921.5, "type": "production_started", "job_id": 1034, "output_sku": "powerpackage_d", "quantity": 50}
+{"node": "factory_sauce", "time": 1921.5, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_sauce", "time": 1921.5, "type": "production_completed", "job_id": 1030, "output_sku": "saucepackage_b", "quantity": 30}
+{"node": "factory_sauce", "time": 1921.5, "type": "materials_consumed", "job_id": 1035, "output_sku": "saucepackage_d", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_sauce", "time": 1921.5, "type": "production_started", "job_id": 1035, "output_sku": "saucepackage_d", "quantity": 50}
+{"node": "factory_veg", "time": 1921.5, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_veg", "time": 1921.5, "type": "production_completed", "job_id": 1031, "output_sku": "vegpackage_b", "quantity": 30}
+{"node": "factory_veg", "time": 1921.5, "type": "materials_consumed", "job_id": 1036, "output_sku": "vegpackage_d", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_veg", "time": 1921.5, "type": "production_started", "job_id": 1036, "output_sku": "vegpackage_d", "quantity": 50}
+{"node": "factory_outer", "time": 1921.5, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_outer", "time": 1921.5, "type": "production_completed", "job_id": 1032, "output_sku": "outerpackage_b", "quantity": 30}
+{"node": "factory_outer", "time": 1921.5, "type": "materials_consumed", "job_id": 1037, "output_sku": "outerpackage_d", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_outer", "time": 1921.5, "type": "production_started", "job_id": 1037, "output_sku": "outerpackage_d", "quantity": 50}
+{"node": "assembly_b", "time": 1922.0, "type": "materials_consumed", "job_id": 1033, "output_sku": "sku_b", "quantity": 90, "inputs": {"powerpackage_b": 90, "saucepackage_b": 90, "vegpackage_b": 90, "outerpackage_b": 90}}
+{"node": "assembly_b", "time": 1922.0, "type": "production_started", "job_id": 1033, "output_sku": "sku_b", "quantity": 90}
+{"node": "pkg_wh", "time": 1924.0, "type": "received", "sku": "powerpackage_d", "quantity": 50, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 1924.0, "type": "received", "sku": "saucepackage_d", "quantity": 50, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 1924.0, "type": "received", "sku": "vegpackage_d", "quantity": 50, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 1924.0, "type": "received", "sku": "outerpackage_d", "quantity": 50, "source": "外包车间"}
+{"node": "factory_power", "time": 1924.0, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 50, "destination": "料包库"}
+{"node": "factory_power", "time": 1924.0, "type": "production_completed", "job_id": 1034, "output_sku": "powerpackage_d", "quantity": 50}
+{"node": "factory_power", "time": 1924.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 1924.0, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 50, "destination": "料包库"}
+{"node": "factory_sauce", "time": 1924.0, "type": "production_completed", "job_id": 1035, "output_sku": "saucepackage_d", "quantity": 50}
+{"node": "factory_sauce", "time": 1924.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 1924.0, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 50, "destination": "料包库"}
+{"node": "factory_veg", "time": 1924.0, "type": "production_completed", "job_id": 1036, "output_sku": "vegpackage_d", "quantity": 50}
+{"node": "factory_veg", "time": 1924.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 1924.0, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 50, "destination": "料包库"}
+{"node": "factory_outer", "time": 1924.0, "type": "production_completed", "job_id": 1037, "output_sku": "outerpackage_d", "quantity": 50}
+{"node": "factory_outer", "time": 1924.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 1924.0, "type": "materials_consumed", "job_id": 1038, "output_sku": "sku_d", "quantity": 50, "inputs": {"powerpackage_d": 50, "saucepackage_d": 50, "vegpackage_d": 50, "outerpackage_d": 50}}
+{"node": "assembly_d", "time": 1924.0, "type": "production_started", "job_id": 1038, "output_sku": "sku_d", "quantity": 50}
+{"node": "fg_wh", "time": 1926.0, "type": "received", "sku": "sku_a", "quantity": 60, "source": "装配线A"}
+{"node": "assembly_a", "time": 1926.0, "type": "production_output", "output_sku": "sku_a", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_a", "time": 1926.0, "type": "production_completed", "job_id": 1028, "output_sku": "sku_a", "quantity": 60}
+{"node": "assembly_a", "time": 1926.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 1929.0, "type": "received", "sku": "sku_d", "quantity": 50, "source": "装配线D"}
+{"node": "assembly_d", "time": 1929.0, "type": "production_output", "output_sku": "sku_d", "quantity": 50, "destination": "成品库"}
+{"node": "assembly_d", "time": 1929.0, "type": "production_completed", "job_id": 1038, "output_sku": "sku_d", "quantity": 50}
+{"node": "assembly_d", "time": 1929.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 1930.0, "type": "order_added", "sku": "raw", "quantity": 120, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 1930.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 120]]}
+{"node": "line_side", "time": 1930.0, "type": "received", "sku": "raw", "quantity": 120, "source": "原料库"}
+{"node": "fg_wh", "time": 1930.0, "type": "order_added", "sku": "sku_a", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 1930.0, "type": "order_added", "sku": "sku_d", "quantity": 50, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 1930.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 60], ["sku_d", 50]]}
+{"node": "sink", "time": 1930.0, "type": "received", "sku": "sku_a", "quantity": 60, "source": "成品库"}
+{"node": "sink", "time": 1930.0, "type": "received", "sku": "sku_d", "quantity": 50, "source": "成品库"}
+{"node": "factory_power", "time": 1930.0, "type": "production_ordered", "job_id": 1039, "output_sku": "powerpackage_b", "quantity": 90}
+{"node": "factory_sauce", "time": 1930.0, "type": "production_ordered", "job_id": 1040, "output_sku": "saucepackage_b", "quantity": 90}
+{"node": "factory_veg", "time": 1930.0, "type": "production_ordered", "job_id": 1041, "output_sku": "vegpackage_b", "quantity": 90}
+{"node": "factory_outer", "time": 1930.0, "type": "production_ordered", "job_id": 1042, "output_sku": "outerpackage_b", "quantity": 90}
+{"node": "fg_wh", "time": 1931.0, "type": "received", "sku": "sku_b", "quantity": 90, "source": "装配线B"}
+{"node": "assembly_b", "time": 1931.0, "type": "production_output", "output_sku": "sku_b", "quantity": 90, "destination": "成品库"}
+{"node": "assembly_b", "time": 1931.0, "type": "production_completed", "job_id": 1033, "output_sku": "sku_b", "quantity": 90}
+{"node": "assembly_b", "time": 1931.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 1940.0, "type": "order_added", "sku": "sku_b", "quantity": 90, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 1940.0, "type": "dispatched", "destination": "sink", "items": [["sku_b", 90]]}
+{"node": "sink", "time": 1940.0, "type": "received", "sku": "sku_b", "quantity": 90, "source": "成品库"}
+{"node": "factory_power", "time": 2640.0, "type": "materials_consumed", "job_id": 1039, "output_sku": "powerpackage_b", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_power", "time": 2640.0, "type": "production_started", "job_id": 1039, "output_sku": "powerpackage_b", "quantity": 90}
+{"node": "factory_sauce", "time": 2640.0, "type": "materials_consumed", "job_id": 1040, "output_sku": "saucepackage_b", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_sauce", "time": 2640.0, "type": "production_started", "job_id": 1040, "output_sku": "saucepackage_b", "quantity": 90}
+{"node": "factory_veg", "time": 2640.0, "type": "materials_consumed", "job_id": 1041, "output_sku": "vegpackage_b", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_veg", "time": 2640.0, "type": "production_started", "job_id": 1041, "output_sku": "vegpackage_b", "quantity": 90}
+{"node": "factory_outer", "time": 2640.0, "type": "materials_consumed", "job_id": 1042, "output_sku": "outerpackage_b", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_outer", "time": 2640.0, "type": "production_started", "job_id": 1042, "output_sku": "outerpackage_b", "quantity": 90}
+{"node": "pkg_wh", "time": 2644.5, "type": "received", "sku": "powerpackage_b", "quantity": 90, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 2644.5, "type": "received", "sku": "saucepackage_b", "quantity": 90, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 2644.5, "type": "received", "sku": "vegpackage_b", "quantity": 90, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 2644.5, "type": "received", "sku": "outerpackage_b", "quantity": 90, "source": "外包车间"}
+{"node": "factory_power", "time": 2644.5, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 90, "destination": "料包库"}
+{"node": "factory_power", "time": 2644.5, "type": "production_completed", "job_id": 1039, "output_sku": "powerpackage_b", "quantity": 90}
+{"node": "factory_power", "time": 2644.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 2644.5, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 90, "destination": "料包库"}
+{"node": "factory_sauce", "time": 2644.5, "type": "production_completed", "job_id": 1040, "output_sku": "saucepackage_b", "quantity": 90}
+{"node": "factory_sauce", "time": 2644.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 2644.5, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 90, "destination": "料包库"}
+{"node": "factory_veg", "time": 2644.5, "type": "production_completed", "job_id": 1041, "output_sku": "vegpackage_b", "quantity": 90}
+{"node": "factory_veg", "time": 2644.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 2644.5, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 90, "destination": "料包库"}
+{"node": "factory_outer", "time": 2644.5, "type": "production_completed", "job_id": 1042, "output_sku": "outerpackage_b", "quantity": 90}
+{"node": "factory_outer", "time": 2644.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 280, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 320, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "order_added", "sku": "raw", "quantity": 240, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 2880.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 1240]]}
+{"node": "line_side", "time": 2880.0, "type": "received", "sku": "raw", "quantity": 1240, "source": "原料库"}
+{"node": "assembly_b", "time": 2880.0, "type": "production_ordered", "job_id": 1043, "output_sku": "sku_b", "quantity": 70}
+{"node": "factory_power", "time": 2880.0, "type": "production_ordered", "job_id": 1044, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 2880.0, "type": "production_ordered", "job_id": 1045, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 2880.0, "type": "production_ordered", "job_id": 1046, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 2880.0, "type": "production_ordered", "job_id": 1047, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "assembly_c", "time": 2880.0, "type": "production_ordered", "job_id": 1048, "output_sku": "sku_c", "quantity": 80}
+{"node": "factory_power", "time": 2880.0, "type": "production_ordered", "job_id": 1049, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 2880.0, "type": "production_ordered", "job_id": 1050, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 2880.0, "type": "production_ordered", "job_id": 1051, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 2880.0, "type": "production_ordered", "job_id": 1052, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "assembly_d", "time": 2880.0, "type": "production_ordered", "job_id": 1053, "output_sku": "sku_d", "quantity": 60}
+{"node": "assembly_b", "time": 3360.0, "type": "materials_consumed", "job_id": 1043, "output_sku": "sku_b", "quantity": 70, "inputs": {"powerpackage_b": 70, "saucepackage_b": 70, "vegpackage_b": 70, "outerpackage_b": 70}}
+{"node": "assembly_b", "time": 3360.0, "type": "production_started", "job_id": 1043, "output_sku": "sku_b", "quantity": 70}
+{"node": "assembly_c", "time": 3360.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_c", "job_id": 1048}
+{"node": "assembly_d", "time": 3360.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_d", "job_id": 1053}
+{"node": "factory_power", "time": 3360.5, "type": "materials_consumed", "job_id": 1044, "output_sku": "powerpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_power", "time": 3360.5, "type": "production_started", "job_id": 1044, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 3360.5, "type": "materials_consumed", "job_id": 1045, "output_sku": "saucepackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_sauce", "time": 3360.5, "type": "production_started", "job_id": 1045, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 3360.5, "type": "materials_consumed", "job_id": 1046, "output_sku": "vegpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_veg", "time": 3360.5, "type": "production_started", "job_id": 1046, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 3360.5, "type": "materials_consumed", "job_id": 1047, "output_sku": "outerpackage_c", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_outer", "time": 3360.5, "type": "production_started", "job_id": 1047, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "pkg_wh", "time": 3362.5, "type": "received", "sku": "powerpackage_c", "quantity": 40, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 3362.5, "type": "received", "sku": "saucepackage_c", "quantity": 40, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 3362.5, "type": "received", "sku": "vegpackage_c", "quantity": 40, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 3362.5, "type": "received", "sku": "outerpackage_c", "quantity": 40, "source": "外包车间"}
+{"node": "factory_power", "time": 3362.5, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_power", "time": 3362.5, "type": "production_completed", "job_id": 1044, "output_sku": "powerpackage_c", "quantity": 40}
+{"node": "factory_power", "time": 3362.5, "type": "materials_consumed", "job_id": 1049, "output_sku": "powerpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_power", "time": 3362.5, "type": "production_started", "job_id": 1049, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 3362.5, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_sauce", "time": 3362.5, "type": "production_completed", "job_id": 1045, "output_sku": "saucepackage_c", "quantity": 40}
+{"node": "factory_sauce", "time": 3362.5, "type": "materials_consumed", "job_id": 1050, "output_sku": "saucepackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_sauce", "time": 3362.5, "type": "production_started", "job_id": 1050, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 3362.5, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_veg", "time": 3362.5, "type": "production_completed", "job_id": 1046, "output_sku": "vegpackage_c", "quantity": 40}
+{"node": "factory_veg", "time": 3362.5, "type": "materials_consumed", "job_id": 1051, "output_sku": "vegpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_veg", "time": 3362.5, "type": "production_started", "job_id": 1051, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 3362.5, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 40, "destination": "料包库"}
+{"node": "factory_outer", "time": 3362.5, "type": "production_completed", "job_id": 1047, "output_sku": "outerpackage_c", "quantity": 40}
+{"node": "factory_outer", "time": 3362.5, "type": "materials_consumed", "job_id": 1052, "output_sku": "outerpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_outer", "time": 3362.5, "type": "production_started", "job_id": 1052, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "assembly_c", "time": 3363.0, "type": "materials_consumed", "job_id": 1048, "output_sku": "sku_c", "quantity": 80, "inputs": {"powerpackage_c": 80, "saucepackage_c": 80, "vegpackage_c": 80, "outerpackage_c": 80}}
+{"node": "assembly_c", "time": 3363.0, "type": "production_started", "job_id": 1048, "output_sku": "sku_c", "quantity": 80}
+{"node": "pkg_wh", "time": 3365.5, "type": "received", "sku": "powerpackage_d", "quantity": 60, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 3365.5, "type": "received", "sku": "saucepackage_d", "quantity": 60, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 3365.5, "type": "received", "sku": "vegpackage_d", "quantity": 60, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 3365.5, "type": "received", "sku": "outerpackage_d", "quantity": 60, "source": "外包车间"}
+{"node": "factory_power", "time": 3365.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_power", "time": 3365.5, "type": "production_completed", "job_id": 1049, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_power", "time": 3365.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 3365.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_sauce", "time": 3365.5, "type": "production_completed", "job_id": 1050, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 3365.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 3365.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_veg", "time": 3365.5, "type": "production_completed", "job_id": 1051, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 3365.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 3365.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_outer", "time": 3365.5, "type": "production_completed", "job_id": 1052, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 3365.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 3366.0, "type": "materials_consumed", "job_id": 1053, "output_sku": "sku_d", "quantity": 60, "inputs": {"powerpackage_d": 60, "saucepackage_d": 60, "vegpackage_d": 60, "outerpackage_d": 60}}
+{"node": "assembly_d", "time": 3366.0, "type": "production_started", "job_id": 1053, "output_sku": "sku_d", "quantity": 60}
+{"node": "fg_wh", "time": 3367.0, "type": "received", "sku": "sku_b", "quantity": 70, "source": "装配线B"}
+{"node": "assembly_b", "time": 3367.0, "type": "production_output", "output_sku": "sku_b", "quantity": 70, "destination": "成品库"}
+{"node": "assembly_b", "time": 3367.0, "type": "production_completed", "job_id": 1043, "output_sku": "sku_b", "quantity": 70}
+{"node": "assembly_b", "time": 3367.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 3370.0, "type": "order_added", "sku": "sku_b", "quantity": 70, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 3370.0, "type": "dispatched", "destination": "sink", "items": [["sku_b", 70]]}
+{"node": "sink", "time": 3370.0, "type": "received", "sku": "sku_b", "quantity": 70, "source": "成品库"}
+{"node": "factory_power", "time": 3370.0, "type": "production_ordered", "job_id": 1054, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 3370.0, "type": "production_ordered", "job_id": 1055, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 3370.0, "type": "production_ordered", "job_id": 1056, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 3370.0, "type": "production_ordered", "job_id": 1057, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "factory_power", "time": 3370.0, "type": "production_ordered", "job_id": 1058, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 3370.0, "type": "production_ordered", "job_id": 1059, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 3370.0, "type": "production_ordered", "job_id": 1060, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 3370.0, "type": "production_ordered", "job_id": 1061, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "fg_wh", "time": 3371.0, "type": "received", "sku": "sku_c", "quantity": 80, "source": "装配线C"}
+{"node": "assembly_c", "time": 3371.0, "type": "production_output", "output_sku": "sku_c", "quantity": 80, "destination": "成品库"}
+{"node": "assembly_c", "time": 3371.0, "type": "production_completed", "job_id": 1048, "output_sku": "sku_c", "quantity": 80}
+{"node": "assembly_c", "time": 3371.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 3372.0, "type": "received", "sku": "sku_d", "quantity": 60, "source": "装配线D"}
+{"node": "assembly_d", "time": 3372.0, "type": "production_output", "output_sku": "sku_d", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_d", "time": 3372.0, "type": "production_completed", "job_id": 1053, "output_sku": "sku_d", "quantity": 60}
+{"node": "assembly_d", "time": 3372.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 3380.0, "type": "order_added", "sku": "sku_c", "quantity": 80, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 3380.0, "type": "order_added", "sku": "sku_d", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 3380.0, "type": "dispatched", "destination": "sink", "items": [["sku_c", 80], ["sku_d", 60]]}
+{"node": "sink", "time": 3380.0, "type": "received", "sku": "sku_c", "quantity": 80, "source": "成品库"}
+{"node": "sink", "time": 3380.0, "type": "received", "sku": "sku_d", "quantity": 60, "source": "成品库"}
+{"node": "factory_power", "time": 4080.5, "type": "materials_consumed", "job_id": 1054, "output_sku": "powerpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 4080.5, "type": "production_started", "job_id": 1054, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 4080.5, "type": "materials_consumed", "job_id": 1055, "output_sku": "saucepackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 4080.5, "type": "production_started", "job_id": 1055, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 4080.5, "type": "materials_consumed", "job_id": 1056, "output_sku": "vegpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 4080.5, "type": "production_started", "job_id": 1056, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 4080.5, "type": "materials_consumed", "job_id": 1057, "output_sku": "outerpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 4080.5, "type": "production_started", "job_id": 1057, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "pkg_wh", "time": 4084.5, "type": "received", "sku": "powerpackage_c", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 4084.5, "type": "received", "sku": "saucepackage_c", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 4084.5, "type": "received", "sku": "vegpackage_c", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 4084.5, "type": "received", "sku": "outerpackage_c", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 4084.5, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 4084.5, "type": "production_completed", "job_id": 1054, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_power", "time": 4084.5, "type": "materials_consumed", "job_id": 1058, "output_sku": "powerpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_power", "time": 4084.5, "type": "production_started", "job_id": 1058, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 4084.5, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 4084.5, "type": "production_completed", "job_id": 1055, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 4084.5, "type": "materials_consumed", "job_id": 1059, "output_sku": "saucepackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_sauce", "time": 4084.5, "type": "production_started", "job_id": 1059, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 4084.5, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 4084.5, "type": "production_completed", "job_id": 1056, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 4084.5, "type": "materials_consumed", "job_id": 1060, "output_sku": "vegpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_veg", "time": 4084.5, "type": "production_started", "job_id": 1060, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 4084.5, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 4084.5, "type": "production_completed", "job_id": 1057, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 4084.5, "type": "materials_consumed", "job_id": 1061, "output_sku": "outerpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_outer", "time": 4084.5, "type": "production_started", "job_id": 1061, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "pkg_wh", "time": 4087.5, "type": "received", "sku": "powerpackage_d", "quantity": 60, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 4087.5, "type": "received", "sku": "saucepackage_d", "quantity": 60, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 4087.5, "type": "received", "sku": "vegpackage_d", "quantity": 60, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 4087.5, "type": "received", "sku": "outerpackage_d", "quantity": 60, "source": "外包车间"}
+{"node": "factory_power", "time": 4087.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_power", "time": 4087.5, "type": "production_completed", "job_id": 1058, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_power", "time": 4087.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 4087.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_sauce", "time": 4087.5, "type": "production_completed", "job_id": 1059, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 4087.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 4087.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_veg", "time": 4087.5, "type": "production_completed", "job_id": 1060, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 4087.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 4087.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_outer", "time": 4087.5, "type": "production_completed", "job_id": 1061, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 4087.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 4320.0, "type": "order_added", "sku": "raw", "quantity": 120, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4320.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 120]]}
+{"node": "line_side", "time": 4320.0, "type": "received", "sku": "raw", "quantity": 120, "source": "原料库"}
+{"node": "factory_power", "time": 4320.0, "type": "production_ordered", "job_id": 1062, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 4320.0, "type": "production_ordered", "job_id": 1063, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 4320.0, "type": "production_ordered", "job_id": 1064, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 4320.0, "type": "production_ordered", "job_id": 1065, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "assembly_a", "time": 4320.0, "type": "production_ordered", "job_id": 1066, "output_sku": "sku_a", "quantity": 100}
+{"node": "factory_power", "time": 4320.0, "type": "production_ordered", "job_id": 1067, "output_sku": "powerpackage_b", "quantity": 30}
+{"node": "factory_sauce", "time": 4320.0, "type": "production_ordered", "job_id": 1068, "output_sku": "saucepackage_b", "quantity": 30}
+{"node": "factory_veg", "time": 4320.0, "type": "production_ordered", "job_id": 1069, "output_sku": "vegpackage_b", "quantity": 30}
+{"node": "factory_outer", "time": 4320.0, "type": "production_ordered", "job_id": 1070, "output_sku": "outerpackage_b", "quantity": 30}
+{"node": "assembly_b", "time": 4320.0, "type": "production_ordered", "job_id": 1071, "output_sku": "sku_b", "quantity": 50}
+{"node": "assembly_c", "time": 4320.0, "type": "production_ordered", "job_id": 1072, "output_sku": "sku_c", "quantity": 60}
+{"node": "factory_power", "time": 4320.0, "type": "production_ordered", "job_id": 1073, "output_sku": "powerpackage_d", "quantity": 10}
+{"node": "factory_sauce", "time": 4320.0, "type": "production_ordered", "job_id": 1074, "output_sku": "saucepackage_d", "quantity": 10}
+{"node": "factory_veg", "time": 4320.0, "type": "production_ordered", "job_id": 1075, "output_sku": "vegpackage_d", "quantity": 10}
+{"node": "factory_outer", "time": 4320.0, "type": "production_ordered", "job_id": 1076, "output_sku": "outerpackage_d", "quantity": 10}
+{"node": "assembly_d", "time": 4320.0, "type": "production_ordered", "job_id": 1077, "output_sku": "sku_d", "quantity": 70}
+{"node": "assembly_a", "time": 4800.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_a", "job_id": 1066}
+{"node": "assembly_b", "time": 4800.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_b", "job_id": 1071}
+{"node": "assembly_c", "time": 4800.0, "type": "materials_consumed", "job_id": 1072, "output_sku": "sku_c", "quantity": 60, "inputs": {"powerpackage_c": 60, "saucepackage_c": 60, "vegpackage_c": 60, "outerpackage_c": 60}}
+{"node": "assembly_c", "time": 4800.0, "type": "production_started", "job_id": 1072, "output_sku": "sku_c", "quantity": 60}
+{"node": "assembly_d", "time": 4800.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_d", "job_id": 1077}
+{"node": "factory_power", "time": 4800.5, "type": "materials_consumed", "job_id": 1062, "output_sku": "powerpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 4800.5, "type": "production_started", "job_id": 1062, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 4800.5, "type": "materials_consumed", "job_id": 1063, "output_sku": "saucepackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 4800.5, "type": "production_started", "job_id": 1063, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 4800.5, "type": "materials_consumed", "job_id": 1064, "output_sku": "vegpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 4800.5, "type": "production_started", "job_id": 1064, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 4800.5, "type": "materials_consumed", "job_id": 1065, "output_sku": "outerpackage_a", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 4800.5, "type": "production_started", "job_id": 1065, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "pkg_wh", "time": 4804.5, "type": "received", "sku": "powerpackage_a", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 4804.5, "type": "received", "sku": "saucepackage_a", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 4804.5, "type": "received", "sku": "vegpackage_a", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 4804.5, "type": "received", "sku": "outerpackage_a", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 4804.5, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 4804.5, "type": "production_completed", "job_id": 1062, "output_sku": "powerpackage_a", "quantity": 80}
+{"node": "factory_power", "time": 4804.5, "type": "materials_consumed", "job_id": 1067, "output_sku": "powerpackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_power", "time": 4804.5, "type": "production_started", "job_id": 1067, "output_sku": "powerpackage_b", "quantity": 30}
+{"node": "factory_sauce", "time": 4804.5, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 4804.5, "type": "production_completed", "job_id": 1063, "output_sku": "saucepackage_a", "quantity": 80}
+{"node": "factory_sauce", "time": 4804.5, "type": "materials_consumed", "job_id": 1068, "output_sku": "saucepackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_sauce", "time": 4804.5, "type": "production_started", "job_id": 1068, "output_sku": "saucepackage_b", "quantity": 30}
+{"node": "factory_veg", "time": 4804.5, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 4804.5, "type": "production_completed", "job_id": 1064, "output_sku": "vegpackage_a", "quantity": 80}
+{"node": "factory_veg", "time": 4804.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "vegpackage_b", "job_id": 1069}
+{"node": "factory_outer", "time": 4804.5, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 4804.5, "type": "production_completed", "job_id": 1065, "output_sku": "outerpackage_a", "quantity": 80}
+{"node": "factory_outer", "time": 4804.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "outerpackage_b", "job_id": 1070}
+{"node": "assembly_a", "time": 4805.0, "type": "materials_consumed", "job_id": 1066, "output_sku": "sku_a", "quantity": 100, "inputs": {"powerpackage_a": 100, "saucepackage_a": 100, "vegpackage_a": 100, "outerpackage_a": 100}}
+{"node": "assembly_a", "time": 4805.0, "type": "production_started", "job_id": 1066, "output_sku": "sku_a", "quantity": 100}
+{"node": "pkg_wh", "time": 4806.0, "type": "received", "sku": "powerpackage_b", "quantity": 30, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 4806.0, "type": "received", "sku": "saucepackage_b", "quantity": 30, "source": "酱包车间"}
+{"node": "fg_wh", "time": 4806.0, "type": "received", "sku": "sku_c", "quantity": 60, "source": "装配线C"}
+{"node": "factory_power", "time": 4806.0, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_power", "time": 4806.0, "type": "production_completed", "job_id": 1067, "output_sku": "powerpackage_b", "quantity": 30}
+{"node": "factory_power", "time": 4806.0, "type": "materials_consumed", "job_id": 1073, "output_sku": "powerpackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_power", "time": 4806.0, "type": "production_started", "job_id": 1073, "output_sku": "powerpackage_d", "quantity": 10}
+{"node": "factory_sauce", "time": 4806.0, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_sauce", "time": 4806.0, "type": "production_completed", "job_id": 1068, "output_sku": "saucepackage_b", "quantity": 30}
+{"node": "factory_sauce", "time": 4806.0, "type": "materials_consumed", "job_id": 1074, "output_sku": "saucepackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_sauce", "time": 4806.0, "type": "production_started", "job_id": 1074, "output_sku": "saucepackage_d", "quantity": 10}
+{"node": "assembly_c", "time": 4806.0, "type": "production_output", "output_sku": "sku_c", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_c", "time": 4806.0, "type": "production_completed", "job_id": 1072, "output_sku": "sku_c", "quantity": 60}
+{"node": "assembly_c", "time": 4806.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "pkg_wh", "time": 4806.5, "type": "received", "sku": "powerpackage_d", "quantity": 10, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 4806.5, "type": "received", "sku": "saucepackage_d", "quantity": 10, "source": "酱包车间"}
+{"node": "factory_power", "time": 4806.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_power", "time": 4806.5, "type": "production_completed", "job_id": 1073, "output_sku": "powerpackage_d", "quantity": 10}
+{"node": "factory_power", "time": 4806.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 4806.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_sauce", "time": 4806.5, "type": "production_completed", "job_id": 1074, "output_sku": "saucepackage_d", "quantity": 10}
+{"node": "factory_sauce", "time": 4806.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 100, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 100, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 100, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 100, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 400, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 200, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "order_added", "sku": "raw", "quantity": 280, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 4810.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 1280]]}
+{"node": "line_side", "time": 4810.0, "type": "received", "sku": "raw", "quantity": 1280, "source": "原料库"}
+{"node": "fg_wh", "time": 4810.0, "type": "order_added", "sku": "sku_c", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 4810.0, "type": "dispatched", "destination": "sink", "items": [["sku_c", 60]]}
+{"node": "sink", "time": 4810.0, "type": "received", "sku": "sku_c", "quantity": 60, "source": "成品库"}
+{"node": "factory_power", "time": 4810.0, "type": "production_ordered", "job_id": 1078, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 4810.0, "type": "production_ordered", "job_id": 1079, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 4810.0, "type": "production_ordered", "job_id": 1080, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 4810.0, "type": "production_ordered", "job_id": 1081, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 4810.5, "type": "materials_consumed", "job_id": 1069, "output_sku": "vegpackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_veg", "time": 4810.5, "type": "production_started", "job_id": 1069, "output_sku": "vegpackage_b", "quantity": 30}
+{"node": "factory_outer", "time": 4810.5, "type": "materials_consumed", "job_id": 1070, "output_sku": "outerpackage_b", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_outer", "time": 4810.5, "type": "production_started", "job_id": 1070, "output_sku": "outerpackage_b", "quantity": 30}
+{"node": "pkg_wh", "time": 4812.0, "type": "received", "sku": "vegpackage_b", "quantity": 30, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 4812.0, "type": "received", "sku": "outerpackage_b", "quantity": 30, "source": "外包车间"}
+{"node": "factory_veg", "time": 4812.0, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_veg", "time": 4812.0, "type": "production_completed", "job_id": 1069, "output_sku": "vegpackage_b", "quantity": 30}
+{"node": "factory_veg", "time": 4812.0, "type": "materials_consumed", "job_id": 1075, "output_sku": "vegpackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_veg", "time": 4812.0, "type": "production_started", "job_id": 1075, "output_sku": "vegpackage_d", "quantity": 10}
+{"node": "factory_outer", "time": 4812.0, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 30, "destination": "料包库"}
+{"node": "factory_outer", "time": 4812.0, "type": "production_completed", "job_id": 1070, "output_sku": "outerpackage_b", "quantity": 30}
+{"node": "factory_outer", "time": 4812.0, "type": "materials_consumed", "job_id": 1076, "output_sku": "outerpackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_outer", "time": 4812.0, "type": "production_started", "job_id": 1076, "output_sku": "outerpackage_d", "quantity": 10}
+{"node": "assembly_b", "time": 4812.0, "type": "materials_consumed", "job_id": 1071, "output_sku": "sku_b", "quantity": 50, "inputs": {"powerpackage_b": 50, "saucepackage_b": 50, "vegpackage_b": 50, "outerpackage_b": 50}}
+{"node": "assembly_b", "time": 4812.0, "type": "production_started", "job_id": 1071, "output_sku": "sku_b", "quantity": 50}
+{"node": "pkg_wh", "time": 4812.5, "type": "received", "sku": "vegpackage_d", "quantity": 10, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 4812.5, "type": "received", "sku": "outerpackage_d", "quantity": 10, "source": "外包车间"}
+{"node": "factory_veg", "time": 4812.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_veg", "time": 4812.5, "type": "production_completed", "job_id": 1075, "output_sku": "vegpackage_d", "quantity": 10}
+{"node": "factory_veg", "time": 4812.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 4812.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_outer", "time": 4812.5, "type": "production_completed", "job_id": 1076, "output_sku": "outerpackage_d", "quantity": 10}
+{"node": "factory_outer", "time": 4812.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 4813.0, "type": "materials_consumed", "job_id": 1077, "output_sku": "sku_d", "quantity": 70, "inputs": {"powerpackage_d": 70, "saucepackage_d": 70, "vegpackage_d": 70, "outerpackage_d": 70}}
+{"node": "assembly_d", "time": 4813.0, "type": "production_started", "job_id": 1077, "output_sku": "sku_d", "quantity": 70}
+{"node": "fg_wh", "time": 4815.0, "type": "received", "sku": "sku_a", "quantity": 100, "source": "装配线A"}
+{"node": "assembly_a", "time": 4815.0, "type": "production_output", "output_sku": "sku_a", "quantity": 100, "destination": "成品库"}
+{"node": "assembly_a", "time": 4815.0, "type": "production_completed", "job_id": 1066, "output_sku": "sku_a", "quantity": 100}
+{"node": "assembly_a", "time": 4815.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 4817.0, "type": "received", "sku": "sku_b", "quantity": 50, "source": "装配线B"}
+{"node": "assembly_b", "time": 4817.0, "type": "production_output", "output_sku": "sku_b", "quantity": 50, "destination": "成品库"}
+{"node": "assembly_b", "time": 4817.0, "type": "production_completed", "job_id": 1071, "output_sku": "sku_b", "quantity": 50}
+{"node": "assembly_b", "time": 4817.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 4820.0, "type": "order_added", "sku": "sku_a", "quantity": 100, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 4820.0, "type": "order_added", "sku": "sku_b", "quantity": 50, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 4820.0, "type": "received", "sku": "sku_d", "quantity": 70, "source": "装配线D"}
+{"node": "fg_wh", "time": 4820.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 100], ["sku_b", 50]]}
+{"node": "sink", "time": 4820.0, "type": "received", "sku": "sku_a", "quantity": 100, "source": "成品库"}
+{"node": "sink", "time": 4820.0, "type": "received", "sku": "sku_b", "quantity": 50, "source": "成品库"}
+{"node": "assembly_d", "time": 4820.0, "type": "production_output", "output_sku": "sku_d", "quantity": 70, "destination": "成品库"}
+{"node": "assembly_d", "time": 4820.0, "type": "production_completed", "job_id": 1077, "output_sku": "sku_d", "quantity": 70}
+{"node": "assembly_d", "time": 4820.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_power", "time": 4820.0, "type": "production_ordered", "job_id": 1082, "output_sku": "powerpackage_d", "quantity": 70}
+{"node": "factory_sauce", "time": 4820.0, "type": "production_ordered", "job_id": 1083, "output_sku": "saucepackage_d", "quantity": 70}
+{"node": "factory_veg", "time": 4820.0, "type": "production_ordered", "job_id": 1084, "output_sku": "vegpackage_d", "quantity": 70}
+{"node": "factory_outer", "time": 4820.0, "type": "production_ordered", "job_id": 1085, "output_sku": "outerpackage_d", "quantity": 70}
+{"node": "fg_wh", "time": 4830.0, "type": "order_added", "sku": "sku_d", "quantity": 70, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 4830.0, "type": "dispatched", "destination": "sink", "items": [["sku_d", 70]]}
+{"node": "sink", "time": 4830.0, "type": "received", "sku": "sku_d", "quantity": 70, "source": "成品库"}
+{"node": "factory_power", "time": 5520.5, "type": "materials_consumed", "job_id": 1078, "output_sku": "powerpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_power", "time": 5520.5, "type": "production_started", "job_id": 1078, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 5520.5, "type": "materials_consumed", "job_id": 1079, "output_sku": "saucepackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_sauce", "time": 5520.5, "type": "production_started", "job_id": 1079, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 5520.5, "type": "materials_consumed", "job_id": 1080, "output_sku": "vegpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_veg", "time": 5520.5, "type": "production_started", "job_id": 1080, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 5520.5, "type": "materials_consumed", "job_id": 1081, "output_sku": "outerpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_outer", "time": 5520.5, "type": "production_started", "job_id": 1081, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "pkg_wh", "time": 5525.5, "type": "received", "sku": "powerpackage_a", "quantity": 100, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 5525.5, "type": "received", "sku": "saucepackage_a", "quantity": 100, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 5525.5, "type": "received", "sku": "vegpackage_a", "quantity": 100, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 5525.5, "type": "received", "sku": "outerpackage_a", "quantity": 100, "source": "外包车间"}
+{"node": "factory_power", "time": 5525.5, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_power", "time": 5525.5, "type": "production_completed", "job_id": 1078, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_power", "time": 5525.5, "type": "materials_consumed", "job_id": 1082, "output_sku": "powerpackage_d", "quantity": 70, "inputs": {"raw": 70}}
+{"node": "factory_power", "time": 5525.5, "type": "production_started", "job_id": 1082, "output_sku": "powerpackage_d", "quantity": 70}
+{"node": "factory_sauce", "time": 5525.5, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_sauce", "time": 5525.5, "type": "production_completed", "job_id": 1079, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 5525.5, "type": "materials_consumed", "job_id": 1083, "output_sku": "saucepackage_d", "quantity": 70, "inputs": {"raw": 70}}
+{"node": "factory_sauce", "time": 5525.5, "type": "production_started", "job_id": 1083, "output_sku": "saucepackage_d", "quantity": 70}
+{"node": "factory_veg", "time": 5525.5, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_veg", "time": 5525.5, "type": "production_completed", "job_id": 1080, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 5525.5, "type": "materials_consumed", "job_id": 1084, "output_sku": "vegpackage_d", "quantity": 70, "inputs": {"raw": 70}}
+{"node": "factory_veg", "time": 5525.5, "type": "production_started", "job_id": 1084, "output_sku": "vegpackage_d", "quantity": 70}
+{"node": "factory_outer", "time": 5525.5, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_outer", "time": 5525.5, "type": "production_completed", "job_id": 1081, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 5525.5, "type": "materials_consumed", "job_id": 1085, "output_sku": "outerpackage_d", "quantity": 70, "inputs": {"raw": 70}}
+{"node": "factory_outer", "time": 5525.5, "type": "production_started", "job_id": 1085, "output_sku": "outerpackage_d", "quantity": 70}
+{"node": "pkg_wh", "time": 5529.0, "type": "received", "sku": "powerpackage_d", "quantity": 70, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 5529.0, "type": "received", "sku": "saucepackage_d", "quantity": 70, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 5529.0, "type": "received", "sku": "vegpackage_d", "quantity": 70, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 5529.0, "type": "received", "sku": "outerpackage_d", "quantity": 70, "source": "外包车间"}
+{"node": "factory_power", "time": 5529.0, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 70, "destination": "料包库"}
+{"node": "factory_power", "time": 5529.0, "type": "production_completed", "job_id": 1082, "output_sku": "powerpackage_d", "quantity": 70}
+{"node": "factory_power", "time": 5529.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 5529.0, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 70, "destination": "料包库"}
+{"node": "factory_sauce", "time": 5529.0, "type": "production_completed", "job_id": 1083, "output_sku": "saucepackage_d", "quantity": 70}
+{"node": "factory_sauce", "time": 5529.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 5529.0, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 70, "destination": "料包库"}
+{"node": "factory_veg", "time": 5529.0, "type": "production_completed", "job_id": 1084, "output_sku": "vegpackage_d", "quantity": 70}
+{"node": "factory_veg", "time": 5529.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 5529.0, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 70, "destination": "料包库"}
+{"node": "factory_outer", "time": 5529.0, "type": "production_completed", "job_id": 1085, "output_sku": "outerpackage_d", "quantity": 70}
+{"node": "factory_outer", "time": 5529.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_a", "time": 5760.0, "type": "production_ordered", "job_id": 1086, "output_sku": "sku_a", "quantity": 70}
+{"node": "factory_power", "time": 5760.0, "type": "production_ordered", "job_id": 1087, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 5760.0, "type": "production_ordered", "job_id": 1088, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 5760.0, "type": "production_ordered", "job_id": 1089, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 5760.0, "type": "production_ordered", "job_id": 1090, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "assembly_c", "time": 5760.0, "type": "production_ordered", "job_id": 1091, "output_sku": "sku_c", "quantity": 100}
+{"node": "assembly_d", "time": 5760.0, "type": "production_ordered", "job_id": 1092, "output_sku": "sku_d", "quantity": 50}
+{"node": "factory_power", "time": 6240.0, "type": "materials_consumed", "job_id": 1087, "output_sku": "powerpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 6240.0, "type": "production_started", "job_id": 1087, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 6240.0, "type": "materials_consumed", "job_id": 1088, "output_sku": "saucepackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 6240.0, "type": "production_started", "job_id": 1088, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 6240.0, "type": "materials_consumed", "job_id": 1089, "output_sku": "vegpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 6240.0, "type": "production_started", "job_id": 1089, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 6240.0, "type": "materials_consumed", "job_id": 1090, "output_sku": "outerpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 6240.0, "type": "production_started", "job_id": 1090, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "assembly_a", "time": 6240.0, "type": "materials_consumed", "job_id": 1086, "output_sku": "sku_a", "quantity": 70, "inputs": {"powerpackage_a": 70, "saucepackage_a": 70, "vegpackage_a": 70, "outerpackage_a": 70}}
+{"node": "assembly_a", "time": 6240.0, "type": "production_started", "job_id": 1086, "output_sku": "sku_a", "quantity": 70}
+{"node": "assembly_c", "time": 6240.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_c", "job_id": 1091}
+{"node": "assembly_d", "time": 6240.0, "type": "materials_consumed", "job_id": 1092, "output_sku": "sku_d", "quantity": 50, "inputs": {"powerpackage_d": 50, "saucepackage_d": 50, "vegpackage_d": 50, "outerpackage_d": 50}}
+{"node": "assembly_d", "time": 6240.0, "type": "production_started", "job_id": 1092, "output_sku": "sku_d", "quantity": 50}
+{"node": "pkg_wh", "time": 6244.0, "type": "received", "sku": "powerpackage_c", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 6244.0, "type": "received", "sku": "saucepackage_c", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 6244.0, "type": "received", "sku": "vegpackage_c", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 6244.0, "type": "received", "sku": "outerpackage_c", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 6244.0, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 6244.0, "type": "production_completed", "job_id": 1087, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_power", "time": 6244.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 6244.0, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 6244.0, "type": "production_completed", "job_id": 1088, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 6244.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 6244.0, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 6244.0, "type": "production_completed", "job_id": 1089, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 6244.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 6244.0, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 6244.0, "type": "production_completed", "job_id": 1090, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 6244.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_c", "time": 6244.0, "type": "materials_consumed", "job_id": 1091, "output_sku": "sku_c", "quantity": 100, "inputs": {"powerpackage_c": 100, "saucepackage_c": 100, "vegpackage_c": 100, "outerpackage_c": 100}}
+{"node": "assembly_c", "time": 6244.0, "type": "production_started", "job_id": 1091, "output_sku": "sku_c", "quantity": 100}
+{"node": "fg_wh", "time": 6245.0, "type": "received", "sku": "sku_d", "quantity": 50, "source": "装配线D"}
+{"node": "assembly_d", "time": 6245.0, "type": "production_output", "output_sku": "sku_d", "quantity": 50, "destination": "成品库"}
+{"node": "assembly_d", "time": 6245.0, "type": "production_completed", "job_id": 1092, "output_sku": "sku_d", "quantity": 50}
+{"node": "assembly_d", "time": 6245.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 6247.0, "type": "received", "sku": "sku_a", "quantity": 70, "source": "装配线A"}
+{"node": "assembly_a", "time": 6247.0, "type": "production_output", "output_sku": "sku_a", "quantity": 70, "destination": "成品库"}
+{"node": "assembly_a", "time": 6247.0, "type": "production_completed", "job_id": 1086, "output_sku": "sku_a", "quantity": 70}
+{"node": "assembly_a", "time": 6247.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 6250.0, "type": "order_added", "sku": "raw", "quantity": 200, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 6250.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 200]]}
+{"node": "line_side", "time": 6250.0, "type": "received", "sku": "raw", "quantity": 200, "source": "原料库"}
+{"node": "fg_wh", "time": 6250.0, "type": "order_added", "sku": "sku_a", "quantity": 70, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 6250.0, "type": "order_added", "sku": "sku_d", "quantity": 50, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 6250.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 70], ["sku_d", 50]]}
+{"node": "sink", "time": 6250.0, "type": "received", "sku": "sku_a", "quantity": 70, "source": "成品库"}
+{"node": "sink", "time": 6250.0, "type": "received", "sku": "sku_d", "quantity": 50, "source": "成品库"}
+{"node": "factory_power", "time": 6250.0, "type": "production_ordered", "job_id": 1093, "output_sku": "powerpackage_c", "quantity": 100}
+{"node": "factory_sauce", "time": 6250.0, "type": "production_ordered", "job_id": 1094, "output_sku": "saucepackage_c", "quantity": 100}
+{"node": "factory_veg", "time": 6250.0, "type": "production_ordered", "job_id": 1095, "output_sku": "vegpackage_c", "quantity": 100}
+{"node": "factory_outer", "time": 6250.0, "type": "production_ordered", "job_id": 1096, "output_sku": "outerpackage_c", "quantity": 100}
+{"node": "fg_wh", "time": 6254.0, "type": "received", "sku": "sku_c", "quantity": 100, "source": "装配线C"}
+{"node": "assembly_c", "time": 6254.0, "type": "production_output", "output_sku": "sku_c", "quantity": 100, "destination": "成品库"}
+{"node": "assembly_c", "time": 6254.0, "type": "production_completed", "job_id": 1091, "output_sku": "sku_c", "quantity": 100}
+{"node": "assembly_c", "time": 6254.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 6260.0, "type": "order_added", "sku": "sku_c", "quantity": 100, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 6260.0, "type": "dispatched", "destination": "sink", "items": [["sku_c", 100]]}
+{"node": "sink", "time": 6260.0, "type": "received", "sku": "sku_c", "quantity": 100, "source": "成品库"}
+{"node": "factory_power", "time": 6960.0, "type": "materials_consumed", "job_id": 1093, "output_sku": "powerpackage_c", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_power", "time": 6960.0, "type": "production_started", "job_id": 1093, "output_sku": "powerpackage_c", "quantity": 100}
+{"node": "factory_sauce", "time": 6960.0, "type": "materials_consumed", "job_id": 1094, "output_sku": "saucepackage_c", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_sauce", "time": 6960.0, "type": "production_started", "job_id": 1094, "output_sku": "saucepackage_c", "quantity": 100}
+{"node": "factory_veg", "time": 6960.0, "type": "materials_consumed", "job_id": 1095, "output_sku": "vegpackage_c", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_veg", "time": 6960.0, "type": "production_started", "job_id": 1095, "output_sku": "vegpackage_c", "quantity": 100}
+{"node": "factory_outer", "time": 6960.0, "type": "materials_consumed", "job_id": 1096, "output_sku": "outerpackage_c", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_outer", "time": 6960.0, "type": "production_started", "job_id": 1096, "output_sku": "outerpackage_c", "quantity": 100}
+{"node": "pkg_wh", "time": 6965.0, "type": "received", "sku": "powerpackage_c", "quantity": 100, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 6965.0, "type": "received", "sku": "saucepackage_c", "quantity": 100, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 6965.0, "type": "received", "sku": "vegpackage_c", "quantity": 100, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 6965.0, "type": "received", "sku": "outerpackage_c", "quantity": 100, "source": "外包车间"}
+{"node": "factory_power", "time": 6965.0, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 100, "destination": "料包库"}
+{"node": "factory_power", "time": 6965.0, "type": "production_completed", "job_id": 1093, "output_sku": "powerpackage_c", "quantity": 100}
+{"node": "factory_power", "time": 6965.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 6965.0, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 100, "destination": "料包库"}
+{"node": "factory_sauce", "time": 6965.0, "type": "production_completed", "job_id": 1094, "output_sku": "saucepackage_c", "quantity": 100}
+{"node": "factory_sauce", "time": 6965.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 6965.0, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 100, "destination": "料包库"}
+{"node": "factory_veg", "time": 6965.0, "type": "production_completed", "job_id": 1095, "output_sku": "vegpackage_c", "quantity": 100}
+{"node": "factory_veg", "time": 6965.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 6965.0, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 100, "destination": "料包库"}
+{"node": "factory_outer", "time": 6965.0, "type": "production_completed", "job_id": 1096, "output_sku": "outerpackage_c", "quantity": 100}
+{"node": "factory_outer", "time": 6965.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 320, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 280, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 200, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 7200.0, "type": "dispatched", "destination": "raw_wh", "items": [["raw", 1040]]}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 60, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 360, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 80, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 80, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 80, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 80, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 320, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 40, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "order_added", "sku": "raw", "quantity": 240, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 7200.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 600]]}
+{"node": "raw_wh", "time": 7200.0, "type": "received", "sku": "raw", "quantity": 1040, "source": "供应商"}
+{"node": "line_side", "time": 7200.0, "type": "received", "sku": "raw", "quantity": 600, "source": "原料库"}
+{"node": "factory_power", "time": 7200.0, "type": "production_ordered", "job_id": 1097, "output_sku": "powerpackage_a", "quantity": 60}
+{"node": "factory_sauce", "time": 7200.0, "type": "production_ordered", "job_id": 1098, "output_sku": "saucepackage_a", "quantity": 60}
+{"node": "factory_veg", "time": 7200.0, "type": "production_ordered", "job_id": 1099, "output_sku": "vegpackage_a", "quantity": 60}
+{"node": "factory_outer", "time": 7200.0, "type": "production_ordered", "job_id": 1100, "output_sku": "outerpackage_a", "quantity": 60}
+{"node": "assembly_a", "time": 7200.0, "type": "production_ordered", "job_id": 1101, "output_sku": "sku_a", "quantity": 90}
+{"node": "factory_power", "time": 7200.0, "type": "production_ordered", "job_id": 1102, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 7200.0, "type": "production_ordered", "job_id": 1103, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 7200.0, "type": "production_ordered", "job_id": 1104, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 7200.0, "type": "production_ordered", "job_id": 1105, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "assembly_b", "time": 7200.0, "type": "production_ordered", "job_id": 1106, "output_sku": "sku_b", "quantity": 80}
+{"node": "factory_power", "time": 7200.0, "type": "production_ordered", "job_id": 1107, "output_sku": "powerpackage_d", "quantity": 40}
+{"node": "factory_sauce", "time": 7200.0, "type": "production_ordered", "job_id": 1108, "output_sku": "saucepackage_d", "quantity": 40}
+{"node": "factory_veg", "time": 7200.0, "type": "production_ordered", "job_id": 1109, "output_sku": "vegpackage_d", "quantity": 40}
+{"node": "factory_outer", "time": 7200.0, "type": "production_ordered", "job_id": 1110, "output_sku": "outerpackage_d", "quantity": 40}
+{"node": "assembly_d", "time": 7200.0, "type": "production_ordered", "job_id": 1111, "output_sku": "sku_d", "quantity": 60}
+{"node": "raw_wh", "time": 7202.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 1040]]}
+{"node": "line_side", "time": 7202.0, "type": "received", "sku": "raw", "quantity": 1040, "source": "原料库"}
+{"node": "factory_power", "time": 7680.0, "type": "materials_consumed", "job_id": 1097, "output_sku": "powerpackage_a", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_power", "time": 7680.0, "type": "production_started", "job_id": 1097, "output_sku": "powerpackage_a", "quantity": 60}
+{"node": "factory_sauce", "time": 7680.0, "type": "materials_consumed", "job_id": 1098, "output_sku": "saucepackage_a", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_sauce", "time": 7680.0, "type": "production_started", "job_id": 1098, "output_sku": "saucepackage_a", "quantity": 60}
+{"node": "factory_veg", "time": 7680.0, "type": "materials_consumed", "job_id": 1099, "output_sku": "vegpackage_a", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_veg", "time": 7680.0, "type": "production_started", "job_id": 1099, "output_sku": "vegpackage_a", "quantity": 60}
+{"node": "factory_outer", "time": 7680.0, "type": "materials_consumed", "job_id": 1100, "output_sku": "outerpackage_a", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_outer", "time": 7680.0, "type": "production_started", "job_id": 1100, "output_sku": "outerpackage_a", "quantity": 60}
+{"node": "assembly_a", "time": 7680.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_a", "job_id": 1101}
+{"node": "assembly_b", "time": 7680.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_b", "job_id": 1106}
+{"node": "assembly_d", "time": 7680.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_d", "job_id": 1111}
+{"node": "pkg_wh", "time": 7683.0, "type": "received", "sku": "powerpackage_a", "quantity": 60, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 7683.0, "type": "received", "sku": "saucepackage_a", "quantity": 60, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 7683.0, "type": "received", "sku": "vegpackage_a", "quantity": 60, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 7683.0, "type": "received", "sku": "outerpackage_a", "quantity": 60, "source": "外包车间"}
+{"node": "factory_power", "time": 7683.0, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 60, "destination": "料包库"}
+{"node": "factory_power", "time": 7683.0, "type": "production_completed", "job_id": 1097, "output_sku": "powerpackage_a", "quantity": 60}
+{"node": "factory_power", "time": 7683.0, "type": "materials_consumed", "job_id": 1102, "output_sku": "powerpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 7683.0, "type": "production_started", "job_id": 1102, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 7683.0, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 60, "destination": "料包库"}
+{"node": "factory_sauce", "time": 7683.0, "type": "production_completed", "job_id": 1098, "output_sku": "saucepackage_a", "quantity": 60}
+{"node": "factory_sauce", "time": 7683.0, "type": "materials_consumed", "job_id": 1103, "output_sku": "saucepackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 7683.0, "type": "production_started", "job_id": 1103, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 7683.0, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 60, "destination": "料包库"}
+{"node": "factory_veg", "time": 7683.0, "type": "production_completed", "job_id": 1099, "output_sku": "vegpackage_a", "quantity": 60}
+{"node": "factory_veg", "time": 7683.0, "type": "materials_consumed", "job_id": 1104, "output_sku": "vegpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 7683.0, "type": "production_started", "job_id": 1104, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 7683.0, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 60, "destination": "料包库"}
+{"node": "factory_outer", "time": 7683.0, "type": "production_completed", "job_id": 1100, "output_sku": "outerpackage_a", "quantity": 60}
+{"node": "factory_outer", "time": 7683.0, "type": "materials_consumed", "job_id": 1105, "output_sku": "outerpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 7683.0, "type": "production_started", "job_id": 1105, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "assembly_a", "time": 7683.0, "type": "materials_consumed", "job_id": 1101, "output_sku": "sku_a", "quantity": 90, "inputs": {"powerpackage_a": 90, "saucepackage_a": 90, "vegpackage_a": 90, "outerpackage_a": 90}}
+{"node": "assembly_a", "time": 7683.0, "type": "production_started", "job_id": 1101, "output_sku": "sku_a", "quantity": 90}
+{"node": "pkg_wh", "time": 7687.0, "type": "received", "sku": "powerpackage_b", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 7687.0, "type": "received", "sku": "saucepackage_b", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 7687.0, "type": "received", "sku": "vegpackage_b", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 7687.0, "type": "received", "sku": "outerpackage_b", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 7687.0, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 7687.0, "type": "production_completed", "job_id": 1102, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_power", "time": 7687.0, "type": "materials_consumed", "job_id": 1107, "output_sku": "powerpackage_d", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_power", "time": 7687.0, "type": "production_started", "job_id": 1107, "output_sku": "powerpackage_d", "quantity": 40}
+{"node": "factory_sauce", "time": 7687.0, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 7687.0, "type": "production_completed", "job_id": 1103, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 7687.0, "type": "materials_consumed", "job_id": 1108, "output_sku": "saucepackage_d", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_sauce", "time": 7687.0, "type": "production_started", "job_id": 1108, "output_sku": "saucepackage_d", "quantity": 40}
+{"node": "factory_veg", "time": 7687.0, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 7687.0, "type": "production_completed", "job_id": 1104, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 7687.0, "type": "materials_consumed", "job_id": 1109, "output_sku": "vegpackage_d", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_veg", "time": 7687.0, "type": "production_started", "job_id": 1109, "output_sku": "vegpackage_d", "quantity": 40}
+{"node": "factory_outer", "time": 7687.0, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 7687.0, "type": "production_completed", "job_id": 1105, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 7687.0, "type": "materials_consumed", "job_id": 1110, "output_sku": "outerpackage_d", "quantity": 40, "inputs": {"raw": 40}}
+{"node": "factory_outer", "time": 7687.0, "type": "production_started", "job_id": 1110, "output_sku": "outerpackage_d", "quantity": 40}
+{"node": "assembly_b", "time": 7687.0, "type": "materials_consumed", "job_id": 1106, "output_sku": "sku_b", "quantity": 80, "inputs": {"powerpackage_b": 80, "saucepackage_b": 80, "vegpackage_b": 80, "outerpackage_b": 80}}
+{"node": "assembly_b", "time": 7687.0, "type": "production_started", "job_id": 1106, "output_sku": "sku_b", "quantity": 80}
+{"node": "pkg_wh", "time": 7689.0, "type": "received", "sku": "powerpackage_d", "quantity": 40, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 7689.0, "type": "received", "sku": "saucepackage_d", "quantity": 40, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 7689.0, "type": "received", "sku": "vegpackage_d", "quantity": 40, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 7689.0, "type": "received", "sku": "outerpackage_d", "quantity": 40, "source": "外包车间"}
+{"node": "factory_power", "time": 7689.0, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 40, "destination": "料包库"}
+{"node": "factory_power", "time": 7689.0, "type": "production_completed", "job_id": 1107, "output_sku": "powerpackage_d", "quantity": 40}
+{"node": "factory_power", "time": 7689.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 7689.0, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 40, "destination": "料包库"}
+{"node": "factory_sauce", "time": 7689.0, "type": "production_completed", "job_id": 1108, "output_sku": "saucepackage_d", "quantity": 40}
+{"node": "factory_sauce", "time": 7689.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 7689.0, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 40, "destination": "料包库"}
+{"node": "factory_veg", "time": 7689.0, "type": "production_completed", "job_id": 1109, "output_sku": "vegpackage_d", "quantity": 40}
+{"node": "factory_veg", "time": 7689.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 7689.0, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 40, "destination": "料包库"}
+{"node": "factory_outer", "time": 7689.0, "type": "production_completed", "job_id": 1110, "output_sku": "outerpackage_d", "quantity": 40}
+{"node": "factory_outer", "time": 7689.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 7689.0, "type": "materials_consumed", "job_id": 1111, "output_sku": "sku_d", "quantity": 60, "inputs": {"powerpackage_d": 60, "saucepackage_d": 60, "vegpackage_d": 60, "outerpackage_d": 60}}
+{"node": "assembly_d", "time": 7689.0, "type": "production_started", "job_id": 1111, "output_sku": "sku_d", "quantity": 60}
+{"node": "factory_power", "time": 7690.0, "type": "production_ordered", "job_id": 1112, "output_sku": "powerpackage_a", "quantity": 90}
+{"node": "factory_sauce", "time": 7690.0, "type": "production_ordered", "job_id": 1113, "output_sku": "saucepackage_a", "quantity": 90}
+{"node": "factory_veg", "time": 7690.0, "type": "production_ordered", "job_id": 1114, "output_sku": "vegpackage_a", "quantity": 90}
+{"node": "factory_outer", "time": 7690.0, "type": "production_ordered", "job_id": 1115, "output_sku": "outerpackage_a", "quantity": 90}
+{"node": "factory_power", "time": 7690.0, "type": "production_ordered", "job_id": 1116, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 7690.0, "type": "production_ordered", "job_id": 1117, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 7690.0, "type": "production_ordered", "job_id": 1118, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 7690.0, "type": "production_ordered", "job_id": 1119, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "factory_power", "time": 7690.0, "type": "production_ordered", "job_id": 1120, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 7690.0, "type": "production_ordered", "job_id": 1121, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 7690.0, "type": "production_ordered", "job_id": 1122, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 7690.0, "type": "production_ordered", "job_id": 1123, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "fg_wh", "time": 7692.0, "type": "received", "sku": "sku_a", "quantity": 90, "source": "装配线A"}
+{"node": "assembly_a", "time": 7692.0, "type": "production_output", "output_sku": "sku_a", "quantity": 90, "destination": "成品库"}
+{"node": "assembly_a", "time": 7692.0, "type": "production_completed", "job_id": 1101, "output_sku": "sku_a", "quantity": 90}
+{"node": "assembly_a", "time": 7692.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 7695.0, "type": "received", "sku": "sku_b", "quantity": 80, "source": "装配线B"}
+{"node": "fg_wh", "time": 7695.0, "type": "received", "sku": "sku_d", "quantity": 60, "source": "装配线D"}
+{"node": "assembly_b", "time": 7695.0, "type": "production_output", "output_sku": "sku_b", "quantity": 80, "destination": "成品库"}
+{"node": "assembly_b", "time": 7695.0, "type": "production_completed", "job_id": 1106, "output_sku": "sku_b", "quantity": 80}
+{"node": "assembly_b", "time": 7695.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 7695.0, "type": "production_output", "output_sku": "sku_d", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_d", "time": 7695.0, "type": "production_completed", "job_id": 1111, "output_sku": "sku_d", "quantity": 60}
+{"node": "assembly_d", "time": 7695.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 7700.0, "type": "order_added", "sku": "sku_a", "quantity": 90, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 7700.0, "type": "order_added", "sku": "sku_b", "quantity": 80, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 7700.0, "type": "order_added", "sku": "sku_d", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 7700.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 90], ["sku_b", 80], ["sku_d", 60]]}
+{"node": "sink", "time": 7700.0, "type": "received", "sku": "sku_a", "quantity": 90, "source": "成品库"}
+{"node": "sink", "time": 7700.0, "type": "received", "sku": "sku_b", "quantity": 80, "source": "成品库"}
+{"node": "sink", "time": 7700.0, "type": "received", "sku": "sku_d", "quantity": 60, "source": "成品库"}
+{"node": "factory_power", "time": 8400.0, "type": "materials_consumed", "job_id": 1112, "output_sku": "powerpackage_a", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_power", "time": 8400.0, "type": "production_started", "job_id": 1112, "output_sku": "powerpackage_a", "quantity": 90}
+{"node": "factory_sauce", "time": 8400.0, "type": "materials_consumed", "job_id": 1113, "output_sku": "saucepackage_a", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_sauce", "time": 8400.0, "type": "production_started", "job_id": 1113, "output_sku": "saucepackage_a", "quantity": 90}
+{"node": "factory_veg", "time": 8400.0, "type": "materials_consumed", "job_id": 1114, "output_sku": "vegpackage_a", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_veg", "time": 8400.0, "type": "production_started", "job_id": 1114, "output_sku": "vegpackage_a", "quantity": 90}
+{"node": "factory_outer", "time": 8400.0, "type": "materials_consumed", "job_id": 1115, "output_sku": "outerpackage_a", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_outer", "time": 8400.0, "type": "production_started", "job_id": 1115, "output_sku": "outerpackage_a", "quantity": 90}
+{"node": "pkg_wh", "time": 8404.5, "type": "received", "sku": "powerpackage_a", "quantity": 90, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 8404.5, "type": "received", "sku": "saucepackage_a", "quantity": 90, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 8404.5, "type": "received", "sku": "vegpackage_a", "quantity": 90, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 8404.5, "type": "received", "sku": "outerpackage_a", "quantity": 90, "source": "外包车间"}
+{"node": "factory_power", "time": 8404.5, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 90, "destination": "料包库"}
+{"node": "factory_power", "time": 8404.5, "type": "production_completed", "job_id": 1112, "output_sku": "powerpackage_a", "quantity": 90}
+{"node": "factory_power", "time": 8404.5, "type": "materials_consumed", "job_id": 1116, "output_sku": "powerpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 8404.5, "type": "production_started", "job_id": 1116, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 8404.5, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 90, "destination": "料包库"}
+{"node": "factory_sauce", "time": 8404.5, "type": "production_completed", "job_id": 1113, "output_sku": "saucepackage_a", "quantity": 90}
+{"node": "factory_sauce", "time": 8404.5, "type": "materials_consumed", "job_id": 1117, "output_sku": "saucepackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 8404.5, "type": "production_started", "job_id": 1117, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 8404.5, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 90, "destination": "料包库"}
+{"node": "factory_veg", "time": 8404.5, "type": "production_completed", "job_id": 1114, "output_sku": "vegpackage_a", "quantity": 90}
+{"node": "factory_veg", "time": 8404.5, "type": "materials_consumed", "job_id": 1118, "output_sku": "vegpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 8404.5, "type": "production_started", "job_id": 1118, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 8404.5, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 90, "destination": "料包库"}
+{"node": "factory_outer", "time": 8404.5, "type": "production_completed", "job_id": 1115, "output_sku": "outerpackage_a", "quantity": 90}
+{"node": "factory_outer", "time": 8404.5, "type": "materials_consumed", "job_id": 1119, "output_sku": "outerpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 8404.5, "type": "production_started", "job_id": 1119, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "pkg_wh", "time": 8408.5, "type": "received", "sku": "powerpackage_b", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 8408.5, "type": "received", "sku": "saucepackage_b", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 8408.5, "type": "received", "sku": "vegpackage_b", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 8408.5, "type": "received", "sku": "outerpackage_b", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 8408.5, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 8408.5, "type": "production_completed", "job_id": 1116, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_power", "time": 8408.5, "type": "materials_consumed", "job_id": 1120, "output_sku": "powerpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_power", "time": 8408.5, "type": "production_started", "job_id": 1120, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 8408.5, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 8408.5, "type": "production_completed", "job_id": 1117, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 8408.5, "type": "materials_consumed", "job_id": 1121, "output_sku": "saucepackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_sauce", "time": 8408.5, "type": "production_started", "job_id": 1121, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 8408.5, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 8408.5, "type": "production_completed", "job_id": 1118, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 8408.5, "type": "materials_consumed", "job_id": 1122, "output_sku": "vegpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_veg", "time": 8408.5, "type": "production_started", "job_id": 1122, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 8408.5, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 8408.5, "type": "production_completed", "job_id": 1119, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 8408.5, "type": "materials_consumed", "job_id": 1123, "output_sku": "outerpackage_d", "quantity": 60, "inputs": {"raw": 60}}
+{"node": "factory_outer", "time": 8408.5, "type": "production_started", "job_id": 1123, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "pkg_wh", "time": 8411.5, "type": "received", "sku": "powerpackage_d", "quantity": 60, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 8411.5, "type": "received", "sku": "saucepackage_d", "quantity": 60, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 8411.5, "type": "received", "sku": "vegpackage_d", "quantity": 60, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 8411.5, "type": "received", "sku": "outerpackage_d", "quantity": 60, "source": "外包车间"}
+{"node": "factory_power", "time": 8411.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_power", "time": 8411.5, "type": "production_completed", "job_id": 1120, "output_sku": "powerpackage_d", "quantity": 60}
+{"node": "factory_power", "time": 8411.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 8411.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_sauce", "time": 8411.5, "type": "production_completed", "job_id": 1121, "output_sku": "saucepackage_d", "quantity": 60}
+{"node": "factory_sauce", "time": 8411.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 8411.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_veg", "time": 8411.5, "type": "production_completed", "job_id": 1122, "output_sku": "vegpackage_d", "quantity": 60}
+{"node": "factory_veg", "time": 8411.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 8411.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 60, "destination": "料包库"}
+{"node": "factory_outer", "time": 8411.5, "type": "production_completed", "job_id": 1123, "output_sku": "outerpackage_d", "quantity": 60}
+{"node": "factory_outer", "time": 8411.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 800, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 840, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 590, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 590, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 590, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 590, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 920, "priority": 1, "destination": "raw_wh"}
+{"node": "source", "time": 8640.0, "type": "dispatched", "destination": "raw_wh", "items": [["raw", 4920]]}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 240, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 280, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 30, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 30, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 30, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 30, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "order_added", "sku": "raw", "quantity": 360, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 8640.0, "type": "received", "sku": "raw", "quantity": 4920, "source": "供应商"}
+{"node": "assembly_b", "time": 8640.0, "type": "production_ordered", "job_id": 1124, "output_sku": "sku_b", "quantity": 60}
+{"node": "assembly_c", "time": 8640.0, "type": "production_ordered", "job_id": 1125, "output_sku": "sku_c", "quantity": 70}
+{"node": "factory_power", "time": 8640.0, "type": "production_ordered", "job_id": 1126, "output_sku": "powerpackage_d", "quantity": 30}
+{"node": "factory_sauce", "time": 8640.0, "type": "production_ordered", "job_id": 1127, "output_sku": "saucepackage_d", "quantity": 30}
+{"node": "factory_veg", "time": 8640.0, "type": "production_ordered", "job_id": 1128, "output_sku": "vegpackage_d", "quantity": 30}
+{"node": "factory_outer", "time": 8640.0, "type": "production_ordered", "job_id": 1129, "output_sku": "outerpackage_d", "quantity": 30}
+{"node": "assembly_d", "time": 8640.0, "type": "production_ordered", "job_id": 1130, "output_sku": "sku_d", "quantity": 90}
+{"node": "raw_wh", "time": 8642.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 1000]]}
+{"node": "line_side", "time": 8642.0, "type": "received", "sku": "raw", "quantity": 1000, "source": "原料库"}
+{"node": "assembly_b", "time": 9120.0, "type": "materials_consumed", "job_id": 1124, "output_sku": "sku_b", "quantity": 60, "inputs": {"powerpackage_b": 60, "saucepackage_b": 60, "vegpackage_b": 60, "outerpackage_b": 60}}
+{"node": "assembly_b", "time": 9120.0, "type": "production_started", "job_id": 1124, "output_sku": "sku_b", "quantity": 60}
+{"node": "assembly_c", "time": 9120.0, "type": "materials_consumed", "job_id": 1125, "output_sku": "sku_c", "quantity": 70, "inputs": {"powerpackage_c": 70, "saucepackage_c": 70, "vegpackage_c": 70, "outerpackage_c": 70}}
+{"node": "assembly_c", "time": 9120.0, "type": "production_started", "job_id": 1125, "output_sku": "sku_c", "quantity": 70}
+{"node": "assembly_d", "time": 9120.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_d", "job_id": 1130}
+{"node": "factory_power", "time": 9120.5, "type": "materials_consumed", "job_id": 1126, "output_sku": "powerpackage_d", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_power", "time": 9120.5, "type": "production_started", "job_id": 1126, "output_sku": "powerpackage_d", "quantity": 30}
+{"node": "factory_sauce", "time": 9120.5, "type": "materials_consumed", "job_id": 1127, "output_sku": "saucepackage_d", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_sauce", "time": 9120.5, "type": "production_started", "job_id": 1127, "output_sku": "saucepackage_d", "quantity": 30}
+{"node": "factory_veg", "time": 9120.5, "type": "materials_consumed", "job_id": 1128, "output_sku": "vegpackage_d", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_veg", "time": 9120.5, "type": "production_started", "job_id": 1128, "output_sku": "vegpackage_d", "quantity": 30}
+{"node": "factory_outer", "time": 9120.5, "type": "materials_consumed", "job_id": 1129, "output_sku": "outerpackage_d", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_outer", "time": 9120.5, "type": "production_started", "job_id": 1129, "output_sku": "outerpackage_d", "quantity": 30}
+{"node": "pkg_wh", "time": 9122.0, "type": "received", "sku": "powerpackage_d", "quantity": 30, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 9122.0, "type": "received", "sku": "saucepackage_d", "quantity": 30, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 9122.0, "type": "received", "sku": "vegpackage_d", "quantity": 30, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 9122.0, "type": "received", "sku": "outerpackage_d", "quantity": 30, "source": "外包车间"}
+{"node": "factory_power", "time": 9122.0, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 30, "destination": "料包库"}
+{"node": "factory_power", "time": 9122.0, "type": "production_completed", "job_id": 1126, "output_sku": "powerpackage_d", "quantity": 30}
+{"node": "factory_power", "time": 9122.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 9122.0, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 30, "destination": "料包库"}
+{"node": "factory_sauce", "time": 9122.0, "type": "production_completed", "job_id": 1127, "output_sku": "saucepackage_d", "quantity": 30}
+{"node": "factory_sauce", "time": 9122.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 9122.0, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 30, "destination": "料包库"}
+{"node": "factory_veg", "time": 9122.0, "type": "production_completed", "job_id": 1128, "output_sku": "vegpackage_d", "quantity": 30}
+{"node": "factory_veg", "time": 9122.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 9122.0, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 30, "destination": "料包库"}
+{"node": "factory_outer", "time": 9122.0, "type": "production_completed", "job_id": 1129, "output_sku": "outerpackage_d", "quantity": 30}
+{"node": "factory_outer", "time": 9122.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 9122.0, "type": "materials_consumed", "job_id": 1130, "output_sku": "sku_d", "quantity": 90, "inputs": {"powerpackage_d": 90, "saucepackage_d": 90, "vegpackage_d": 90, "outerpackage_d": 90}}
+{"node": "assembly_d", "time": 9122.0, "type": "production_started", "job_id": 1130, "output_sku": "sku_d", "quantity": 90}
+{"node": "fg_wh", "time": 9126.0, "type": "received", "sku": "sku_b", "quantity": 60, "source": "装配线B"}
+{"node": "assembly_b", "time": 9126.0, "type": "production_output", "output_sku": "sku_b", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_b", "time": 9126.0, "type": "production_completed", "job_id": 1124, "output_sku": "sku_b", "quantity": 60}
+{"node": "assembly_b", "time": 9126.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 9127.0, "type": "received", "sku": "sku_c", "quantity": 70, "source": "装配线C"}
+{"node": "assembly_c", "time": 9127.0, "type": "production_output", "output_sku": "sku_c", "quantity": 70, "destination": "成品库"}
+{"node": "assembly_c", "time": 9127.0, "type": "production_completed", "job_id": 1125, "output_sku": "sku_c", "quantity": 70}
+{"node": "assembly_c", "time": 9127.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 9130.0, "type": "order_added", "sku": "sku_b", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 9130.0, "type": "order_added", "sku": "sku_c", "quantity": 70, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 9130.0, "type": "dispatched", "destination": "sink", "items": [["sku_b", 60], ["sku_c", 70]]}
+{"node": "sink", "time": 9130.0, "type": "received", "sku": "sku_b", "quantity": 60, "source": "成品库"}
+{"node": "sink", "time": 9130.0, "type": "received", "sku": "sku_c", "quantity": 70, "source": "成品库"}
+{"node": "factory_power", "time": 9130.0, "type": "production_ordered", "job_id": 1131, "output_sku": "powerpackage_d", "quantity": 90}
+{"node": "factory_sauce", "time": 9130.0, "type": "production_ordered", "job_id": 1132, "output_sku": "saucepackage_d", "quantity": 90}
+{"node": "factory_veg", "time": 9130.0, "type": "production_ordered", "job_id": 1133, "output_sku": "vegpackage_d", "quantity": 90}
+{"node": "factory_outer", "time": 9130.0, "type": "production_ordered", "job_id": 1134, "output_sku": "outerpackage_d", "quantity": 90}
+{"node": "fg_wh", "time": 9131.0, "type": "received", "sku": "sku_d", "quantity": 90, "source": "装配线D"}
+{"node": "assembly_d", "time": 9131.0, "type": "production_output", "output_sku": "sku_d", "quantity": 90, "destination": "成品库"}
+{"node": "assembly_d", "time": 9131.0, "type": "production_completed", "job_id": 1130, "output_sku": "sku_d", "quantity": 90}
+{"node": "assembly_d", "time": 9131.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 9140.0, "type": "order_added", "sku": "sku_d", "quantity": 90, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 9140.0, "type": "dispatched", "destination": "sink", "items": [["sku_d", 90]]}
+{"node": "sink", "time": 9140.0, "type": "received", "sku": "sku_d", "quantity": 90, "source": "成品库"}
+{"node": "factory_power", "time": 9840.0, "type": "materials_consumed", "job_id": 1131, "output_sku": "powerpackage_d", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_power", "time": 9840.0, "type": "production_started", "job_id": 1131, "output_sku": "powerpackage_d", "quantity": 90}
+{"node": "factory_sauce", "time": 9840.0, "type": "materials_consumed", "job_id": 1132, "output_sku": "saucepackage_d", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_sauce", "time": 9840.0, "type": "production_started", "job_id": 1132, "output_sku": "saucepackage_d", "quantity": 90}
+{"node": "factory_veg", "time": 9840.0, "type": "materials_consumed", "job_id": 1133, "output_sku": "vegpackage_d", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_veg", "time": 9840.0, "type": "production_started", "job_id": 1133, "output_sku": "vegpackage_d", "quantity": 90}
+{"node": "factory_outer", "time": 9840.0, "type": "materials_consumed", "job_id": 1134, "output_sku": "outerpackage_d", "quantity": 90, "inputs": {"raw": 90}}
+{"node": "factory_outer", "time": 9840.0, "type": "production_started", "job_id": 1134, "output_sku": "outerpackage_d", "quantity": 90}
+{"node": "pkg_wh", "time": 9844.5, "type": "received", "sku": "powerpackage_d", "quantity": 90, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 9844.5, "type": "received", "sku": "saucepackage_d", "quantity": 90, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 9844.5, "type": "received", "sku": "vegpackage_d", "quantity": 90, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 9844.5, "type": "received", "sku": "outerpackage_d", "quantity": 90, "source": "外包车间"}
+{"node": "factory_power", "time": 9844.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 90, "destination": "料包库"}
+{"node": "factory_power", "time": 9844.5, "type": "production_completed", "job_id": 1131, "output_sku": "powerpackage_d", "quantity": 90}
+{"node": "factory_power", "time": 9844.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 9844.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 90, "destination": "料包库"}
+{"node": "factory_sauce", "time": 9844.5, "type": "production_completed", "job_id": 1132, "output_sku": "saucepackage_d", "quantity": 90}
+{"node": "factory_sauce", "time": 9844.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 9844.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 90, "destination": "料包库"}
+{"node": "factory_veg", "time": 9844.5, "type": "production_completed", "job_id": 1133, "output_sku": "vegpackage_d", "quantity": 90}
+{"node": "factory_veg", "time": 9844.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 9844.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 90, "destination": "料包库"}
+{"node": "factory_outer", "time": 9844.5, "type": "production_completed", "job_id": 1134, "output_sku": "outerpackage_d", "quantity": 90}
+{"node": "factory_outer", "time": 9844.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_a", "time": 10080.0, "type": "production_ordered", "job_id": 1135, "output_sku": "sku_a", "quantity": 80}
+{"node": "factory_power", "time": 10080.0, "type": "production_ordered", "job_id": 1136, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 10080.0, "type": "production_ordered", "job_id": 1137, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 10080.0, "type": "production_ordered", "job_id": 1138, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 10080.0, "type": "production_ordered", "job_id": 1139, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "assembly_b", "time": 10080.0, "type": "production_ordered", "job_id": 1140, "output_sku": "sku_b", "quantity": 100}
+{"node": "factory_power", "time": 10080.0, "type": "production_ordered", "job_id": 1141, "output_sku": "powerpackage_c", "quantity": 20}
+{"node": "factory_sauce", "time": 10080.0, "type": "production_ordered", "job_id": 1142, "output_sku": "saucepackage_c", "quantity": 20}
+{"node": "factory_veg", "time": 10080.0, "type": "production_ordered", "job_id": 1143, "output_sku": "vegpackage_c", "quantity": 20}
+{"node": "factory_outer", "time": 10080.0, "type": "production_ordered", "job_id": 1144, "output_sku": "outerpackage_c", "quantity": 20}
+{"node": "assembly_c", "time": 10080.0, "type": "production_ordered", "job_id": 1145, "output_sku": "sku_c", "quantity": 50}
+{"node": "assembly_a", "time": 10560.0, "type": "materials_consumed", "job_id": 1135, "output_sku": "sku_a", "quantity": 80, "inputs": {"powerpackage_a": 80, "saucepackage_a": 80, "vegpackage_a": 80, "outerpackage_a": 80}}
+{"node": "assembly_a", "time": 10560.0, "type": "production_started", "job_id": 1135, "output_sku": "sku_a", "quantity": 80}
+{"node": "assembly_b", "time": 10560.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_b", "job_id": 1140}
+{"node": "assembly_c", "time": 10560.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_c", "job_id": 1145}
+{"node": "factory_power", "time": 10560.5, "type": "materials_consumed", "job_id": 1136, "output_sku": "powerpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 10560.5, "type": "production_started", "job_id": 1136, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 10560.5, "type": "materials_consumed", "job_id": 1137, "output_sku": "saucepackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 10560.5, "type": "production_started", "job_id": 1137, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 10560.5, "type": "materials_consumed", "job_id": 1138, "output_sku": "vegpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 10560.5, "type": "production_started", "job_id": 1138, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 10560.5, "type": "materials_consumed", "job_id": 1139, "output_sku": "outerpackage_b", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 10560.5, "type": "production_started", "job_id": 1139, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "pkg_wh", "time": 10564.5, "type": "received", "sku": "powerpackage_b", "quantity": 80, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 10564.5, "type": "received", "sku": "saucepackage_b", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 10564.5, "type": "received", "sku": "vegpackage_b", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 10564.5, "type": "received", "sku": "outerpackage_b", "quantity": 80, "source": "外包车间"}
+{"node": "factory_power", "time": 10564.5, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 10564.5, "type": "production_completed", "job_id": 1136, "output_sku": "powerpackage_b", "quantity": 80}
+{"node": "factory_power", "time": 10564.5, "type": "materials_consumed", "job_id": 1141, "output_sku": "powerpackage_c", "quantity": 20, "inputs": {"raw": 20}}
+{"node": "factory_power", "time": 10564.5, "type": "production_started", "job_id": 1141, "output_sku": "powerpackage_c", "quantity": 20}
+{"node": "factory_sauce", "time": 10564.5, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 10564.5, "type": "production_completed", "job_id": 1137, "output_sku": "saucepackage_b", "quantity": 80}
+{"node": "factory_sauce", "time": 10564.5, "type": "materials_consumed", "job_id": 1142, "output_sku": "saucepackage_c", "quantity": 20, "inputs": {"raw": 20}}
+{"node": "factory_sauce", "time": 10564.5, "type": "production_started", "job_id": 1142, "output_sku": "saucepackage_c", "quantity": 20}
+{"node": "factory_veg", "time": 10564.5, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 10564.5, "type": "production_completed", "job_id": 1138, "output_sku": "vegpackage_b", "quantity": 80}
+{"node": "factory_veg", "time": 10564.5, "type": "materials_consumed", "job_id": 1143, "output_sku": "vegpackage_c", "quantity": 20, "inputs": {"raw": 20}}
+{"node": "factory_veg", "time": 10564.5, "type": "production_started", "job_id": 1143, "output_sku": "vegpackage_c", "quantity": 20}
+{"node": "factory_outer", "time": 10564.5, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 10564.5, "type": "production_completed", "job_id": 1139, "output_sku": "outerpackage_b", "quantity": 80}
+{"node": "factory_outer", "time": 10564.5, "type": "materials_consumed", "job_id": 1144, "output_sku": "outerpackage_c", "quantity": 20, "inputs": {"raw": 20}}
+{"node": "factory_outer", "time": 10564.5, "type": "production_started", "job_id": 1144, "output_sku": "outerpackage_c", "quantity": 20}
+{"node": "assembly_b", "time": 10565.0, "type": "materials_consumed", "job_id": 1140, "output_sku": "sku_b", "quantity": 100, "inputs": {"powerpackage_b": 100, "saucepackage_b": 100, "vegpackage_b": 100, "outerpackage_b": 100}}
+{"node": "assembly_b", "time": 10565.0, "type": "production_started", "job_id": 1140, "output_sku": "sku_b", "quantity": 100}
+{"node": "pkg_wh", "time": 10565.5, "type": "received", "sku": "powerpackage_c", "quantity": 20, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 10565.5, "type": "received", "sku": "saucepackage_c", "quantity": 20, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 10565.5, "type": "received", "sku": "vegpackage_c", "quantity": 20, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 10565.5, "type": "received", "sku": "outerpackage_c", "quantity": 20, "source": "外包车间"}
+{"node": "factory_power", "time": 10565.5, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 20, "destination": "料包库"}
+{"node": "factory_power", "time": 10565.5, "type": "production_completed", "job_id": 1141, "output_sku": "powerpackage_c", "quantity": 20}
+{"node": "factory_power", "time": 10565.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 10565.5, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 20, "destination": "料包库"}
+{"node": "factory_sauce", "time": 10565.5, "type": "production_completed", "job_id": 1142, "output_sku": "saucepackage_c", "quantity": 20}
+{"node": "factory_sauce", "time": 10565.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 10565.5, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 20, "destination": "料包库"}
+{"node": "factory_veg", "time": 10565.5, "type": "production_completed", "job_id": 1143, "output_sku": "vegpackage_c", "quantity": 20}
+{"node": "factory_veg", "time": 10565.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 10565.5, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 20, "destination": "料包库"}
+{"node": "factory_outer", "time": 10565.5, "type": "production_completed", "job_id": 1144, "output_sku": "outerpackage_c", "quantity": 20}
+{"node": "factory_outer", "time": 10565.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_c", "time": 10566.0, "type": "materials_consumed", "job_id": 1145, "output_sku": "sku_c", "quantity": 50, "inputs": {"powerpackage_c": 50, "saucepackage_c": 50, "vegpackage_c": 50, "outerpackage_c": 50}}
+{"node": "assembly_c", "time": 10566.0, "type": "production_started", "job_id": 1145, "output_sku": "sku_c", "quantity": 50}
+{"node": "fg_wh", "time": 10568.0, "type": "received", "sku": "sku_a", "quantity": 80, "source": "装配线A"}
+{"node": "assembly_a", "time": 10568.0, "type": "production_output", "output_sku": "sku_a", "quantity": 80, "destination": "成品库"}
+{"node": "assembly_a", "time": 10568.0, "type": "production_completed", "job_id": 1135, "output_sku": "sku_a", "quantity": 80}
+{"node": "assembly_a", "time": 10568.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 10570.0, "type": "order_added", "sku": "raw", "quantity": 280, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 10570.0, "type": "order_added", "sku": "raw", "quantity": 80, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 10570.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 360]]}
+{"node": "line_side", "time": 10570.0, "type": "received", "sku": "raw", "quantity": 360, "source": "原料库"}
+{"node": "fg_wh", "time": 10570.0, "type": "order_added", "sku": "sku_a", "quantity": 80, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 10570.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 80]]}
+{"node": "sink", "time": 10570.0, "type": "received", "sku": "sku_a", "quantity": 80, "source": "成品库"}
+{"node": "factory_power", "time": 10570.0, "type": "production_ordered", "job_id": 1146, "output_sku": "powerpackage_b", "quantity": 100}
+{"node": "factory_sauce", "time": 10570.0, "type": "production_ordered", "job_id": 1147, "output_sku": "saucepackage_b", "quantity": 100}
+{"node": "factory_veg", "time": 10570.0, "type": "production_ordered", "job_id": 1148, "output_sku": "vegpackage_b", "quantity": 100}
+{"node": "factory_outer", "time": 10570.0, "type": "production_ordered", "job_id": 1149, "output_sku": "outerpackage_b", "quantity": 100}
+{"node": "factory_power", "time": 10570.0, "type": "production_ordered", "job_id": 1150, "output_sku": "powerpackage_c", "quantity": 50}
+{"node": "factory_sauce", "time": 10570.0, "type": "production_ordered", "job_id": 1151, "output_sku": "saucepackage_c", "quantity": 50}
+{"node": "factory_veg", "time": 10570.0, "type": "production_ordered", "job_id": 1152, "output_sku": "vegpackage_c", "quantity": 50}
+{"node": "factory_outer", "time": 10570.0, "type": "production_ordered", "job_id": 1153, "output_sku": "outerpackage_c", "quantity": 50}
+{"node": "fg_wh", "time": 10571.0, "type": "received", "sku": "sku_c", "quantity": 50, "source": "装配线C"}
+{"node": "assembly_c", "time": 10571.0, "type": "production_output", "output_sku": "sku_c", "quantity": 50, "destination": "成品库"}
+{"node": "assembly_c", "time": 10571.0, "type": "production_completed", "job_id": 1145, "output_sku": "sku_c", "quantity": 50}
+{"node": "assembly_c", "time": 10571.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 10575.0, "type": "received", "sku": "sku_b", "quantity": 100, "source": "装配线B"}
+{"node": "assembly_b", "time": 10575.0, "type": "production_output", "output_sku": "sku_b", "quantity": 100, "destination": "成品库"}
+{"node": "assembly_b", "time": 10575.0, "type": "production_completed", "job_id": 1140, "output_sku": "sku_b", "quantity": 100}
+{"node": "assembly_b", "time": 10575.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 10580.0, "type": "order_added", "sku": "sku_b", "quantity": 100, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 10580.0, "type": "order_added", "sku": "sku_c", "quantity": 50, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 10580.0, "type": "dispatched", "destination": "sink", "items": [["sku_b", 100], ["sku_c", 50]]}
+{"node": "sink", "time": 10580.0, "type": "received", "sku": "sku_b", "quantity": 100, "source": "成品库"}
+{"node": "sink", "time": 10580.0, "type": "received", "sku": "sku_c", "quantity": 50, "source": "成品库"}
+{"node": "factory_power", "time": 11280.5, "type": "materials_consumed", "job_id": 1146, "output_sku": "powerpackage_b", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_power", "time": 11280.5, "type": "production_started", "job_id": 1146, "output_sku": "powerpackage_b", "quantity": 100}
+{"node": "factory_sauce", "time": 11280.5, "type": "materials_consumed", "job_id": 1147, "output_sku": "saucepackage_b", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_sauce", "time": 11280.5, "type": "production_started", "job_id": 1147, "output_sku": "saucepackage_b", "quantity": 100}
+{"node": "factory_veg", "time": 11280.5, "type": "materials_consumed", "job_id": 1148, "output_sku": "vegpackage_b", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_veg", "time": 11280.5, "type": "production_started", "job_id": 1148, "output_sku": "vegpackage_b", "quantity": 100}
+{"node": "factory_outer", "time": 11280.5, "type": "materials_consumed", "job_id": 1149, "output_sku": "outerpackage_b", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_outer", "time": 11280.5, "type": "production_started", "job_id": 1149, "output_sku": "outerpackage_b", "quantity": 100}
+{"node": "pkg_wh", "time": 11285.5, "type": "received", "sku": "powerpackage_b", "quantity": 100, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 11285.5, "type": "received", "sku": "saucepackage_b", "quantity": 100, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 11285.5, "type": "received", "sku": "vegpackage_b", "quantity": 100, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 11285.5, "type": "received", "sku": "outerpackage_b", "quantity": 100, "source": "外包车间"}
+{"node": "factory_power", "time": 11285.5, "type": "production_output", "output_sku": "powerpackage_b", "quantity": 100, "destination": "料包库"}
+{"node": "factory_power", "time": 11285.5, "type": "production_completed", "job_id": 1146, "output_sku": "powerpackage_b", "quantity": 100}
+{"node": "factory_power", "time": 11285.5, "type": "materials_consumed", "job_id": 1150, "output_sku": "powerpackage_c", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_power", "time": 11285.5, "type": "production_started", "job_id": 1150, "output_sku": "powerpackage_c", "quantity": 50}
+{"node": "factory_sauce", "time": 11285.5, "type": "production_output", "output_sku": "saucepackage_b", "quantity": 100, "destination": "料包库"}
+{"node": "factory_sauce", "time": 11285.5, "type": "production_completed", "job_id": 1147, "output_sku": "saucepackage_b", "quantity": 100}
+{"node": "factory_sauce", "time": 11285.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "saucepackage_c", "job_id": 1151}
+{"node": "factory_veg", "time": 11285.5, "type": "production_output", "output_sku": "vegpackage_b", "quantity": 100, "destination": "料包库"}
+{"node": "factory_veg", "time": 11285.5, "type": "production_completed", "job_id": 1148, "output_sku": "vegpackage_b", "quantity": 100}
+{"node": "factory_veg", "time": 11285.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "vegpackage_c", "job_id": 1152}
+{"node": "factory_outer", "time": 11285.5, "type": "production_output", "output_sku": "outerpackage_b", "quantity": 100, "destination": "料包库"}
+{"node": "factory_outer", "time": 11285.5, "type": "production_completed", "job_id": 1149, "output_sku": "outerpackage_b", "quantity": 100}
+{"node": "factory_outer", "time": 11285.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "outerpackage_c", "job_id": 1153}
+{"node": "pkg_wh", "time": 11288.0, "type": "received", "sku": "powerpackage_c", "quantity": 50, "source": "粉包车间"}
+{"node": "factory_power", "time": 11288.0, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 50, "destination": "料包库"}
+{"node": "factory_power", "time": 11288.0, "type": "production_completed", "job_id": 1150, "output_sku": "powerpackage_c", "quantity": 50}
+{"node": "factory_power", "time": 11288.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 20, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 210, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 290, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "order_added", "sku": "raw", "quantity": 370, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 11520.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 950]]}
+{"node": "line_side", "time": 11520.0, "type": "received", "sku": "raw", "quantity": 950, "source": "原料库"}
+{"node": "factory_power", "time": 11520.0, "type": "production_ordered", "job_id": 1154, "output_sku": "powerpackage_a", "quantity": 50}
+{"node": "factory_sauce", "time": 11520.0, "type": "production_ordered", "job_id": 1155, "output_sku": "saucepackage_a", "quantity": 50}
+{"node": "factory_veg", "time": 11520.0, "type": "production_ordered", "job_id": 1156, "output_sku": "vegpackage_a", "quantity": 50}
+{"node": "factory_outer", "time": 11520.0, "type": "production_ordered", "job_id": 1157, "output_sku": "outerpackage_a", "quantity": 50}
+{"node": "assembly_a", "time": 11520.0, "type": "production_ordered", "job_id": 1158, "output_sku": "sku_a", "quantity": 60}
+{"node": "factory_power", "time": 11520.0, "type": "production_ordered", "job_id": 1159, "output_sku": "powerpackage_c", "quantity": 30}
+{"node": "factory_sauce", "time": 11520.0, "type": "production_ordered", "job_id": 1160, "output_sku": "saucepackage_c", "quantity": 30}
+{"node": "factory_veg", "time": 11520.0, "type": "production_ordered", "job_id": 1161, "output_sku": "vegpackage_c", "quantity": 30}
+{"node": "factory_outer", "time": 11520.0, "type": "production_ordered", "job_id": 1162, "output_sku": "outerpackage_c", "quantity": 30}
+{"node": "assembly_c", "time": 11520.0, "type": "production_ordered", "job_id": 1163, "output_sku": "sku_c", "quantity": 80}
+{"node": "factory_power", "time": 11520.0, "type": "production_ordered", "job_id": 1164, "output_sku": "powerpackage_d", "quantity": 10}
+{"node": "factory_sauce", "time": 11520.0, "type": "production_ordered", "job_id": 1165, "output_sku": "saucepackage_d", "quantity": 10}
+{"node": "factory_veg", "time": 11520.0, "type": "production_ordered", "job_id": 1166, "output_sku": "vegpackage_d", "quantity": 10}
+{"node": "factory_outer", "time": 11520.0, "type": "production_ordered", "job_id": 1167, "output_sku": "outerpackage_d", "quantity": 10}
+{"node": "assembly_d", "time": 11520.0, "type": "production_ordered", "job_id": 1168, "output_sku": "sku_d", "quantity": 100}
+{"node": "factory_sauce", "time": 11520.5, "type": "materials_consumed", "job_id": 1151, "output_sku": "saucepackage_c", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_sauce", "time": 11520.5, "type": "production_started", "job_id": 1151, "output_sku": "saucepackage_c", "quantity": 50}
+{"node": "factory_veg", "time": 11520.5, "type": "materials_consumed", "job_id": 1152, "output_sku": "vegpackage_c", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_veg", "time": 11520.5, "type": "production_started", "job_id": 1152, "output_sku": "vegpackage_c", "quantity": 50}
+{"node": "factory_outer", "time": 11520.5, "type": "materials_consumed", "job_id": 1153, "output_sku": "outerpackage_c", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_outer", "time": 11520.5, "type": "production_started", "job_id": 1153, "output_sku": "outerpackage_c", "quantity": 50}
+{"node": "pkg_wh", "time": 11523.0, "type": "received", "sku": "saucepackage_c", "quantity": 50, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 11523.0, "type": "received", "sku": "vegpackage_c", "quantity": 50, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 11523.0, "type": "received", "sku": "outerpackage_c", "quantity": 50, "source": "外包车间"}
+{"node": "factory_sauce", "time": 11523.0, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 50, "destination": "料包库"}
+{"node": "factory_sauce", "time": 11523.0, "type": "production_completed", "job_id": 1151, "output_sku": "saucepackage_c", "quantity": 50}
+{"node": "factory_sauce", "time": 11523.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 11523.0, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 50, "destination": "料包库"}
+{"node": "factory_veg", "time": 11523.0, "type": "production_completed", "job_id": 1152, "output_sku": "vegpackage_c", "quantity": 50}
+{"node": "factory_veg", "time": 11523.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 11523.0, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 50, "destination": "料包库"}
+{"node": "factory_outer", "time": 11523.0, "type": "production_completed", "job_id": 1153, "output_sku": "outerpackage_c", "quantity": 50}
+{"node": "factory_outer", "time": 11523.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_power", "time": 12000.0, "type": "materials_consumed", "job_id": 1154, "output_sku": "powerpackage_a", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_power", "time": 12000.0, "type": "production_started", "job_id": 1154, "output_sku": "powerpackage_a", "quantity": 50}
+{"node": "factory_sauce", "time": 12000.0, "type": "materials_consumed", "job_id": 1155, "output_sku": "saucepackage_a", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_sauce", "time": 12000.0, "type": "production_started", "job_id": 1155, "output_sku": "saucepackage_a", "quantity": 50}
+{"node": "factory_veg", "time": 12000.0, "type": "materials_consumed", "job_id": 1156, "output_sku": "vegpackage_a", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_veg", "time": 12000.0, "type": "production_started", "job_id": 1156, "output_sku": "vegpackage_a", "quantity": 50}
+{"node": "factory_outer", "time": 12000.0, "type": "materials_consumed", "job_id": 1157, "output_sku": "outerpackage_a", "quantity": 50, "inputs": {"raw": 50}}
+{"node": "factory_outer", "time": 12000.0, "type": "production_started", "job_id": 1157, "output_sku": "outerpackage_a", "quantity": 50}
+{"node": "assembly_a", "time": 12000.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_a", "job_id": 1158}
+{"node": "assembly_c", "time": 12000.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_c", "job_id": 1163}
+{"node": "assembly_d", "time": 12000.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_d", "job_id": 1168}
+{"node": "pkg_wh", "time": 12002.5, "type": "received", "sku": "saucepackage_a", "quantity": 50, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 12002.5, "type": "received", "sku": "vegpackage_a", "quantity": 50, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 12002.5, "type": "received", "sku": "outerpackage_a", "quantity": 50, "source": "外包车间"}
+{"node": "pkg_wh", "time": 12002.5, "type": "received", "sku": "powerpackage_a", "quantity": 50, "source": "粉包车间"}
+{"node": "factory_power", "time": 12002.5, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 50, "destination": "料包库"}
+{"node": "factory_power", "time": 12002.5, "type": "production_completed", "job_id": 1154, "output_sku": "powerpackage_a", "quantity": 50}
+{"node": "factory_power", "time": 12002.5, "type": "materials_consumed", "job_id": 1159, "output_sku": "powerpackage_c", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_power", "time": 12002.5, "type": "production_started", "job_id": 1159, "output_sku": "powerpackage_c", "quantity": 30}
+{"node": "factory_sauce", "time": 12002.5, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 50, "destination": "料包库"}
+{"node": "factory_sauce", "time": 12002.5, "type": "production_completed", "job_id": 1155, "output_sku": "saucepackage_a", "quantity": 50}
+{"node": "factory_sauce", "time": 12002.5, "type": "materials_consumed", "job_id": 1160, "output_sku": "saucepackage_c", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_sauce", "time": 12002.5, "type": "production_started", "job_id": 1160, "output_sku": "saucepackage_c", "quantity": 30}
+{"node": "factory_veg", "time": 12002.5, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 50, "destination": "料包库"}
+{"node": "factory_veg", "time": 12002.5, "type": "production_completed", "job_id": 1156, "output_sku": "vegpackage_a", "quantity": 50}
+{"node": "factory_veg", "time": 12002.5, "type": "materials_consumed", "job_id": 1161, "output_sku": "vegpackage_c", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_veg", "time": 12002.5, "type": "production_started", "job_id": 1161, "output_sku": "vegpackage_c", "quantity": 30}
+{"node": "factory_outer", "time": 12002.5, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 50, "destination": "料包库"}
+{"node": "factory_outer", "time": 12002.5, "type": "production_completed", "job_id": 1157, "output_sku": "outerpackage_a", "quantity": 50}
+{"node": "factory_outer", "time": 12002.5, "type": "materials_consumed", "job_id": 1162, "output_sku": "outerpackage_c", "quantity": 30, "inputs": {"raw": 30}}
+{"node": "factory_outer", "time": 12002.5, "type": "production_started", "job_id": 1162, "output_sku": "outerpackage_c", "quantity": 30}
+{"node": "assembly_a", "time": 12003.0, "type": "materials_consumed", "job_id": 1158, "output_sku": "sku_a", "quantity": 60, "inputs": {"powerpackage_a": 60, "saucepackage_a": 60, "vegpackage_a": 60, "outerpackage_a": 60}}
+{"node": "assembly_a", "time": 12003.0, "type": "production_started", "job_id": 1158, "output_sku": "sku_a", "quantity": 60}
+{"node": "pkg_wh", "time": 12004.0, "type": "received", "sku": "saucepackage_c", "quantity": 30, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 12004.0, "type": "received", "sku": "vegpackage_c", "quantity": 30, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 12004.0, "type": "received", "sku": "outerpackage_c", "quantity": 30, "source": "外包车间"}
+{"node": "pkg_wh", "time": 12004.0, "type": "received", "sku": "powerpackage_c", "quantity": 30, "source": "粉包车间"}
+{"node": "factory_power", "time": 12004.0, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 30, "destination": "料包库"}
+{"node": "factory_power", "time": 12004.0, "type": "production_completed", "job_id": 1159, "output_sku": "powerpackage_c", "quantity": 30}
+{"node": "factory_power", "time": 12004.0, "type": "materials_consumed", "job_id": 1164, "output_sku": "powerpackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_power", "time": 12004.0, "type": "production_started", "job_id": 1164, "output_sku": "powerpackage_d", "quantity": 10}
+{"node": "factory_sauce", "time": 12004.0, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 30, "destination": "料包库"}
+{"node": "factory_sauce", "time": 12004.0, "type": "production_completed", "job_id": 1160, "output_sku": "saucepackage_c", "quantity": 30}
+{"node": "factory_sauce", "time": 12004.0, "type": "materials_consumed", "job_id": 1165, "output_sku": "saucepackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_sauce", "time": 12004.0, "type": "production_started", "job_id": 1165, "output_sku": "saucepackage_d", "quantity": 10}
+{"node": "factory_veg", "time": 12004.0, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 30, "destination": "料包库"}
+{"node": "factory_veg", "time": 12004.0, "type": "production_completed", "job_id": 1161, "output_sku": "vegpackage_c", "quantity": 30}
+{"node": "factory_veg", "time": 12004.0, "type": "materials_consumed", "job_id": 1166, "output_sku": "vegpackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_veg", "time": 12004.0, "type": "production_started", "job_id": 1166, "output_sku": "vegpackage_d", "quantity": 10}
+{"node": "factory_outer", "time": 12004.0, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 30, "destination": "料包库"}
+{"node": "factory_outer", "time": 12004.0, "type": "production_completed", "job_id": 1162, "output_sku": "outerpackage_c", "quantity": 30}
+{"node": "factory_outer", "time": 12004.0, "type": "materials_consumed", "job_id": 1167, "output_sku": "outerpackage_d", "quantity": 10, "inputs": {"raw": 10}}
+{"node": "factory_outer", "time": 12004.0, "type": "production_started", "job_id": 1167, "output_sku": "outerpackage_d", "quantity": 10}
+{"node": "assembly_c", "time": 12004.0, "type": "materials_consumed", "job_id": 1163, "output_sku": "sku_c", "quantity": 80, "inputs": {"powerpackage_c": 80, "saucepackage_c": 80, "vegpackage_c": 80, "outerpackage_c": 80}}
+{"node": "assembly_c", "time": 12004.0, "type": "production_started", "job_id": 1163, "output_sku": "sku_c", "quantity": 80}
+{"node": "pkg_wh", "time": 12004.5, "type": "received", "sku": "saucepackage_d", "quantity": 10, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 12004.5, "type": "received", "sku": "vegpackage_d", "quantity": 10, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 12004.5, "type": "received", "sku": "outerpackage_d", "quantity": 10, "source": "外包车间"}
+{"node": "pkg_wh", "time": 12004.5, "type": "received", "sku": "powerpackage_d", "quantity": 10, "source": "粉包车间"}
+{"node": "factory_power", "time": 12004.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_power", "time": 12004.5, "type": "production_completed", "job_id": 1164, "output_sku": "powerpackage_d", "quantity": 10}
+{"node": "factory_power", "time": 12004.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 12004.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_sauce", "time": 12004.5, "type": "production_completed", "job_id": 1165, "output_sku": "saucepackage_d", "quantity": 10}
+{"node": "factory_sauce", "time": 12004.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 12004.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_veg", "time": 12004.5, "type": "production_completed", "job_id": 1166, "output_sku": "vegpackage_d", "quantity": 10}
+{"node": "factory_veg", "time": 12004.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 12004.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 10, "destination": "料包库"}
+{"node": "factory_outer", "time": 12004.5, "type": "production_completed", "job_id": 1167, "output_sku": "outerpackage_d", "quantity": 10}
+{"node": "factory_outer", "time": 12004.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_d", "time": 12005.0, "type": "materials_consumed", "job_id": 1168, "output_sku": "sku_d", "quantity": 100, "inputs": {"powerpackage_d": 100, "saucepackage_d": 100, "vegpackage_d": 100, "outerpackage_d": 100}}
+{"node": "assembly_d", "time": 12005.0, "type": "production_started", "job_id": 1168, "output_sku": "sku_d", "quantity": 100}
+{"node": "fg_wh", "time": 12009.0, "type": "received", "sku": "sku_a", "quantity": 60, "source": "装配线A"}
+{"node": "assembly_a", "time": 12009.0, "type": "production_output", "output_sku": "sku_a", "quantity": 60, "destination": "成品库"}
+{"node": "assembly_a", "time": 12009.0, "type": "production_completed", "job_id": 1158, "output_sku": "sku_a", "quantity": 60}
+{"node": "assembly_a", "time": 12009.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 12010.0, "type": "order_added", "sku": "sku_a", "quantity": 60, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 12010.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 60]]}
+{"node": "sink", "time": 12010.0, "type": "received", "sku": "sku_a", "quantity": 60, "source": "成品库"}
+{"node": "factory_power", "time": 12010.0, "type": "production_ordered", "job_id": 1169, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 12010.0, "type": "production_ordered", "job_id": 1170, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 12010.0, "type": "production_ordered", "job_id": 1171, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 12010.0, "type": "production_ordered", "job_id": 1172, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "factory_power", "time": 12010.0, "type": "production_ordered", "job_id": 1173, "output_sku": "powerpackage_d", "quantity": 100}
+{"node": "factory_sauce", "time": 12010.0, "type": "production_ordered", "job_id": 1174, "output_sku": "saucepackage_d", "quantity": 100}
+{"node": "factory_veg", "time": 12010.0, "type": "production_ordered", "job_id": 1175, "output_sku": "vegpackage_d", "quantity": 100}
+{"node": "factory_outer", "time": 12010.0, "type": "production_ordered", "job_id": 1176, "output_sku": "outerpackage_d", "quantity": 100}
+{"node": "fg_wh", "time": 12012.0, "type": "received", "sku": "sku_c", "quantity": 80, "source": "装配线C"}
+{"node": "assembly_c", "time": 12012.0, "type": "production_output", "output_sku": "sku_c", "quantity": 80, "destination": "成品库"}
+{"node": "assembly_c", "time": 12012.0, "type": "production_completed", "job_id": 1163, "output_sku": "sku_c", "quantity": 80}
+{"node": "assembly_c", "time": 12012.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 12015.0, "type": "received", "sku": "sku_d", "quantity": 100, "source": "装配线D"}
+{"node": "assembly_d", "time": 12015.0, "type": "production_output", "output_sku": "sku_d", "quantity": 100, "destination": "成品库"}
+{"node": "assembly_d", "time": 12015.0, "type": "production_completed", "job_id": 1168, "output_sku": "sku_d", "quantity": 100}
+{"node": "assembly_d", "time": 12015.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 12020.0, "type": "order_added", "sku": "sku_c", "quantity": 80, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 12020.0, "type": "order_added", "sku": "sku_d", "quantity": 100, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 12020.0, "type": "dispatched", "destination": "sink", "items": [["sku_c", 80], ["sku_d", 100]]}
+{"node": "sink", "time": 12020.0, "type": "received", "sku": "sku_c", "quantity": 80, "source": "成品库"}
+{"node": "sink", "time": 12020.0, "type": "received", "sku": "sku_d", "quantity": 100, "source": "成品库"}
+{"node": "factory_power", "time": 12720.5, "type": "materials_consumed", "job_id": 1169, "output_sku": "powerpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_power", "time": 12720.5, "type": "production_started", "job_id": 1169, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 12720.5, "type": "materials_consumed", "job_id": 1170, "output_sku": "saucepackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_sauce", "time": 12720.5, "type": "production_started", "job_id": 1170, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 12720.5, "type": "materials_consumed", "job_id": 1171, "output_sku": "vegpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_veg", "time": 12720.5, "type": "production_started", "job_id": 1171, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 12720.5, "type": "materials_consumed", "job_id": 1172, "output_sku": "outerpackage_c", "quantity": 80, "inputs": {"raw": 80}}
+{"node": "factory_outer", "time": 12720.5, "type": "production_started", "job_id": 1172, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "pkg_wh", "time": 12724.5, "type": "received", "sku": "saucepackage_c", "quantity": 80, "source": "酱包车间"}
+{"node": "pkg_wh", "time": 12724.5, "type": "received", "sku": "vegpackage_c", "quantity": 80, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 12724.5, "type": "received", "sku": "outerpackage_c", "quantity": 80, "source": "外包车间"}
+{"node": "pkg_wh", "time": 12724.5, "type": "received", "sku": "powerpackage_c", "quantity": 80, "source": "粉包车间"}
+{"node": "factory_power", "time": 12724.5, "type": "production_output", "output_sku": "powerpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_power", "time": 12724.5, "type": "production_completed", "job_id": 1169, "output_sku": "powerpackage_c", "quantity": 80}
+{"node": "factory_power", "time": 12724.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "powerpackage_d", "job_id": 1173}
+{"node": "factory_sauce", "time": 12724.5, "type": "production_output", "output_sku": "saucepackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_sauce", "time": 12724.5, "type": "production_completed", "job_id": 1170, "output_sku": "saucepackage_c", "quantity": 80}
+{"node": "factory_sauce", "time": 12724.5, "type": "materials_consumed", "job_id": 1174, "output_sku": "saucepackage_d", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_sauce", "time": 12724.5, "type": "production_started", "job_id": 1174, "output_sku": "saucepackage_d", "quantity": 100}
+{"node": "factory_veg", "time": 12724.5, "type": "production_output", "output_sku": "vegpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_veg", "time": 12724.5, "type": "production_completed", "job_id": 1171, "output_sku": "vegpackage_c", "quantity": 80}
+{"node": "factory_veg", "time": 12724.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "vegpackage_d", "job_id": 1175}
+{"node": "factory_outer", "time": 12724.5, "type": "production_output", "output_sku": "outerpackage_c", "quantity": 80, "destination": "料包库"}
+{"node": "factory_outer", "time": 12724.5, "type": "production_completed", "job_id": 1172, "output_sku": "outerpackage_c", "quantity": 80}
+{"node": "factory_outer", "time": 12724.5, "type": "production_idle", "reason": "waiting_material", "output_sku": "outerpackage_d", "job_id": 1176}
+{"node": "pkg_wh", "time": 12729.5, "type": "received", "sku": "saucepackage_d", "quantity": 100, "source": "酱包车间"}
+{"node": "factory_sauce", "time": 12729.5, "type": "production_output", "output_sku": "saucepackage_d", "quantity": 100, "destination": "料包库"}
+{"node": "factory_sauce", "time": 12729.5, "type": "production_completed", "job_id": 1174, "output_sku": "saucepackage_d", "quantity": 100}
+{"node": "factory_sauce", "time": 12729.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 50, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 50, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 50, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 50, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 350, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 310, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 230, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "order_added", "sku": "raw", "quantity": 270, "priority": 1, "destination": "line_side"}
+{"node": "raw_wh", "time": 12960.0, "type": "dispatched", "destination": "line_side", "items": [["raw", 1360]]}
+{"node": "line_side", "time": 12960.0, "type": "received", "sku": "raw", "quantity": 1360, "source": "原料库"}
+{"node": "factory_power", "time": 12960.0, "type": "production_ordered", "job_id": 1177, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 12960.0, "type": "production_ordered", "job_id": 1178, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 12960.0, "type": "production_ordered", "job_id": 1179, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 12960.0, "type": "production_ordered", "job_id": 1180, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "assembly_a", "time": 12960.0, "type": "production_ordered", "job_id": 1181, "output_sku": "sku_a", "quantity": 100}
+{"node": "assembly_b", "time": 12960.0, "type": "production_ordered", "job_id": 1182, "output_sku": "sku_b", "quantity": 90}
+{"node": "assembly_c", "time": 12960.0, "type": "production_ordered", "job_id": 1183, "output_sku": "sku_c", "quantity": 70}
+{"node": "assembly_d", "time": 12960.0, "type": "production_ordered", "job_id": 1184, "output_sku": "sku_d", "quantity": 80}
+{"node": "factory_power", "time": 12960.5, "type": "materials_consumed", "job_id": 1173, "output_sku": "powerpackage_d", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_power", "time": 12960.5, "type": "production_started", "job_id": 1173, "output_sku": "powerpackage_d", "quantity": 100}
+{"node": "factory_veg", "time": 12960.5, "type": "materials_consumed", "job_id": 1175, "output_sku": "vegpackage_d", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_veg", "time": 12960.5, "type": "production_started", "job_id": 1175, "output_sku": "vegpackage_d", "quantity": 100}
+{"node": "factory_outer", "time": 12960.5, "type": "materials_consumed", "job_id": 1176, "output_sku": "outerpackage_d", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_outer", "time": 12960.5, "type": "production_started", "job_id": 1176, "output_sku": "outerpackage_d", "quantity": 100}
+{"node": "pkg_wh", "time": 12965.5, "type": "received", "sku": "vegpackage_d", "quantity": 100, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 12965.5, "type": "received", "sku": "outerpackage_d", "quantity": 100, "source": "外包车间"}
+{"node": "pkg_wh", "time": 12965.5, "type": "received", "sku": "powerpackage_d", "quantity": 100, "source": "粉包车间"}
+{"node": "factory_power", "time": 12965.5, "type": "production_output", "output_sku": "powerpackage_d", "quantity": 100, "destination": "料包库"}
+{"node": "factory_power", "time": 12965.5, "type": "production_completed", "job_id": 1173, "output_sku": "powerpackage_d", "quantity": 100}
+{"node": "factory_power", "time": 12965.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 12965.5, "type": "production_output", "output_sku": "vegpackage_d", "quantity": 100, "destination": "料包库"}
+{"node": "factory_veg", "time": 12965.5, "type": "production_completed", "job_id": 1175, "output_sku": "vegpackage_d", "quantity": 100}
+{"node": "factory_veg", "time": 12965.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 12965.5, "type": "production_output", "output_sku": "outerpackage_d", "quantity": 100, "destination": "料包库"}
+{"node": "factory_outer", "time": 12965.5, "type": "production_completed", "job_id": 1176, "output_sku": "outerpackage_d", "quantity": 100}
+{"node": "factory_outer", "time": 12965.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_a", "time": 13440.0, "type": "production_idle", "reason": "waiting_material", "output_sku": "sku_a", "job_id": 1181}
+{"node": "assembly_b", "time": 13440.0, "type": "materials_consumed", "job_id": 1182, "output_sku": "sku_b", "quantity": 90, "inputs": {"powerpackage_b": 90, "saucepackage_b": 90, "vegpackage_b": 90, "outerpackage_b": 90}}
+{"node": "assembly_b", "time": 13440.0, "type": "production_started", "job_id": 1182, "output_sku": "sku_b", "quantity": 90}
+{"node": "assembly_c", "time": 13440.0, "type": "materials_consumed", "job_id": 1183, "output_sku": "sku_c", "quantity": 70, "inputs": {"powerpackage_c": 70, "saucepackage_c": 70, "vegpackage_c": 70, "outerpackage_c": 70}}
+{"node": "assembly_c", "time": 13440.0, "type": "production_started", "job_id": 1183, "output_sku": "sku_c", "quantity": 70}
+{"node": "assembly_d", "time": 13440.0, "type": "materials_consumed", "job_id": 1184, "output_sku": "sku_d", "quantity": 80, "inputs": {"powerpackage_d": 80, "saucepackage_d": 80, "vegpackage_d": 80, "outerpackage_d": 80}}
+{"node": "assembly_d", "time": 13440.0, "type": "production_started", "job_id": 1184, "output_sku": "sku_d", "quantity": 80}
+{"node": "factory_power", "time": 13440.5, "type": "materials_consumed", "job_id": 1177, "output_sku": "powerpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_power", "time": 13440.5, "type": "production_started", "job_id": 1177, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 13440.5, "type": "materials_consumed", "job_id": 1178, "output_sku": "saucepackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_sauce", "time": 13440.5, "type": "production_started", "job_id": 1178, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 13440.5, "type": "materials_consumed", "job_id": 1179, "output_sku": "vegpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_veg", "time": 13440.5, "type": "production_started", "job_id": 1179, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 13440.5, "type": "materials_consumed", "job_id": 1180, "output_sku": "outerpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_outer", "time": 13440.5, "type": "production_started", "job_id": 1180, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "pkg_wh", "time": 13445.5, "type": "received", "sku": "vegpackage_a", "quantity": 100, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 13445.5, "type": "received", "sku": "outerpackage_a", "quantity": 100, "source": "外包车间"}
+{"node": "pkg_wh", "time": 13445.5, "type": "received", "sku": "powerpackage_a", "quantity": 100, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 13445.5, "type": "received", "sku": "saucepackage_a", "quantity": 100, "source": "酱包车间"}
+{"node": "factory_power", "time": 13445.5, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_power", "time": 13445.5, "type": "production_completed", "job_id": 1177, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_power", "time": 13445.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 13445.5, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_sauce", "time": 13445.5, "type": "production_completed", "job_id": 1178, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 13445.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 13445.5, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_veg", "time": 13445.5, "type": "production_completed", "job_id": 1179, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 13445.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 13445.5, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_outer", "time": 13445.5, "type": "production_completed", "job_id": 1180, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 13445.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "assembly_a", "time": 13446.0, "type": "materials_consumed", "job_id": 1181, "output_sku": "sku_a", "quantity": 100, "inputs": {"powerpackage_a": 100, "saucepackage_a": 100, "vegpackage_a": 100, "outerpackage_a": 100}}
+{"node": "assembly_a", "time": 13446.0, "type": "production_started", "job_id": 1181, "output_sku": "sku_a", "quantity": 100}
+{"node": "fg_wh", "time": 13447.0, "type": "received", "sku": "sku_c", "quantity": 70, "source": "装配线C"}
+{"node": "assembly_c", "time": 13447.0, "type": "production_output", "output_sku": "sku_c", "quantity": 70, "destination": "成品库"}
+{"node": "assembly_c", "time": 13447.0, "type": "production_completed", "job_id": 1183, "output_sku": "sku_c", "quantity": 70}
+{"node": "assembly_c", "time": 13447.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 13448.0, "type": "received", "sku": "sku_d", "quantity": 80, "source": "装配线D"}
+{"node": "assembly_d", "time": 13448.0, "type": "production_output", "output_sku": "sku_d", "quantity": 80, "destination": "成品库"}
+{"node": "assembly_d", "time": 13448.0, "type": "production_completed", "job_id": 1184, "output_sku": "sku_d", "quantity": 80}
+{"node": "assembly_d", "time": 13448.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 13449.0, "type": "received", "sku": "sku_b", "quantity": 90, "source": "装配线B"}
+{"node": "assembly_b", "time": 13449.0, "type": "production_output", "output_sku": "sku_b", "quantity": 90, "destination": "成品库"}
+{"node": "assembly_b", "time": 13449.0, "type": "production_completed", "job_id": 1182, "output_sku": "sku_b", "quantity": 90}
+{"node": "assembly_b", "time": 13449.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 13450.0, "type": "order_added", "sku": "sku_b", "quantity": 90, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 13450.0, "type": "order_added", "sku": "sku_c", "quantity": 70, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 13450.0, "type": "order_added", "sku": "sku_d", "quantity": 80, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 13450.0, "type": "dispatched", "destination": "sink", "items": [["sku_b", 90], ["sku_c", 70], ["sku_d", 80]]}
+{"node": "sink", "time": 13450.0, "type": "received", "sku": "sku_b", "quantity": 90, "source": "成品库"}
+{"node": "sink", "time": 13450.0, "type": "received", "sku": "sku_c", "quantity": 70, "source": "成品库"}
+{"node": "sink", "time": 13450.0, "type": "received", "sku": "sku_d", "quantity": 80, "source": "成品库"}
+{"node": "factory_power", "time": 13450.0, "type": "production_ordered", "job_id": 1185, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 13450.0, "type": "production_ordered", "job_id": 1186, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 13450.0, "type": "production_ordered", "job_id": 1187, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 13450.0, "type": "production_ordered", "job_id": 1188, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "fg_wh", "time": 13456.0, "type": "received", "sku": "sku_a", "quantity": 100, "source": "装配线A"}
+{"node": "assembly_a", "time": 13456.0, "type": "production_output", "output_sku": "sku_a", "quantity": 100, "destination": "成品库"}
+{"node": "assembly_a", "time": 13456.0, "type": "production_completed", "job_id": 1181, "output_sku": "sku_a", "quantity": 100}
+{"node": "assembly_a", "time": 13456.0, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "fg_wh", "time": 13460.0, "type": "order_added", "sku": "sku_a", "quantity": 100, "priority": 1, "destination": "sink"}
+{"node": "fg_wh", "time": 13460.0, "type": "dispatched", "destination": "sink", "items": [["sku_a", 100]]}
+{"node": "sink", "time": 13460.0, "type": "received", "sku": "sku_a", "quantity": 100, "source": "成品库"}
+{"node": "factory_power", "time": 14160.5, "type": "materials_consumed", "job_id": 1185, "output_sku": "powerpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_power", "time": 14160.5, "type": "production_started", "job_id": 1185, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 14160.5, "type": "materials_consumed", "job_id": 1186, "output_sku": "saucepackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_sauce", "time": 14160.5, "type": "production_started", "job_id": 1186, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 14160.5, "type": "materials_consumed", "job_id": 1187, "output_sku": "vegpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_veg", "time": 14160.5, "type": "production_started", "job_id": 1187, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 14160.5, "type": "materials_consumed", "job_id": 1188, "output_sku": "outerpackage_a", "quantity": 100, "inputs": {"raw": 100}}
+{"node": "factory_outer", "time": 14160.5, "type": "production_started", "job_id": 1188, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "pkg_wh", "time": 14165.5, "type": "received", "sku": "vegpackage_a", "quantity": 100, "source": "菜包车间"}
+{"node": "pkg_wh", "time": 14165.5, "type": "received", "sku": "outerpackage_a", "quantity": 100, "source": "外包车间"}
+{"node": "pkg_wh", "time": 14165.5, "type": "received", "sku": "powerpackage_a", "quantity": 100, "source": "粉包车间"}
+{"node": "pkg_wh", "time": 14165.5, "type": "received", "sku": "saucepackage_a", "quantity": 100, "source": "酱包车间"}
+{"node": "factory_power", "time": 14165.5, "type": "production_output", "output_sku": "powerpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_power", "time": 14165.5, "type": "production_completed", "job_id": 1185, "output_sku": "powerpackage_a", "quantity": 100}
+{"node": "factory_power", "time": 14165.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_sauce", "time": 14165.5, "type": "production_output", "output_sku": "saucepackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_sauce", "time": 14165.5, "type": "production_completed", "job_id": 1186, "output_sku": "saucepackage_a", "quantity": 100}
+{"node": "factory_sauce", "time": 14165.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_veg", "time": 14165.5, "type": "production_output", "output_sku": "vegpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_veg", "time": 14165.5, "type": "production_completed", "job_id": 1187, "output_sku": "vegpackage_a", "quantity": 100}
+{"node": "factory_veg", "time": 14165.5, "type": "production_idle", "reason": "no_eligible_job"}
+{"node": "factory_outer", "time": 14165.5, "type": "production_output", "output_sku": "outerpackage_a", "quantity": 100, "destination": "料包库"}
+{"node": "factory_outer", "time": 14165.5, "type": "production_completed", "job_id": 1188, "output_sku": "outerpackage_a", "quantity": 100}
+{"node": "factory_outer", "time": 14165.5, "type": "production_idle", "reason": "no_eligible_job"}

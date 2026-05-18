@@ -7,6 +7,7 @@ Usage:
 """
 
 import importlib
+import json
 from dataclasses import dataclass, field
 from typing import Any
 import sys
@@ -444,12 +445,106 @@ def run_scenario(scenario_name: str) -> SimulationResult:
 
     logger.close()
 
+    # -- export events to JSONL for visualizer ----------------------------
+    export_events_jsonl(SimulationResult(scenario_name, nodes, config),
+                        job_manager, sku_map)
+
     # -- build & return result for programmatic consumption ----------------
     return SimulationResult(
         scenario_name=scenario_name,
         nodes=nodes,
         config=config,
     )
+
+
+
+
+
+def export_events_jsonl(
+    result: SimulationResult,
+    job_manager: JobManager | None = None,
+    sku_map: dict[str, str] | None = None,
+    filepath: str = "events.jsonl",
+) -> None:
+    """Export all simulation events as a JSON Lines file.
+
+    Line 1 is a ``meta`` record carrying static config so the visualizer
+    is self-contained.  Subsequent lines are individual events in
+    chronological order.
+    """
+    config = result.config
+
+    node_meta: dict[str, dict] = {}
+    for name, cfg in config.NODES.items():
+        entry: dict[str, Any] = {
+            "display_name": cfg.get("display_name", name),
+            "type": cfg["type"],
+        }
+        if cfg["type"] in ("warehouse",):
+            entry["max_pallets"] = cfg.get("max_pallets")
+            entry["dispatch_interval"] = cfg.get("dispatch_interval", 1.0)
+            entry["dispatch_max_pallets"] = cfg.get("dispatch_max_pallets", 1)
+        elif cfg["type"] == "source":
+            entry["dispatch_interval"] = cfg.get("dispatch_interval", 1.0)
+            entry["dispatch_max_pallets"] = cfg.get("dispatch_max_pallets", 1)
+        elif cfg["type"] == "production":
+            entry["upstream"] = cfg.get("upstream", "")
+            entry["downstream"] = cfg.get("downstream", "")
+            entry["global_time_step"] = cfg.get("global_time_step", 10.0)
+            entry["output_skus"] = list(cfg.get("bom", {}).keys())
+        node_meta[name] = entry
+
+    edge_meta: list[dict] = []
+    for ecfg in config.EDGES:
+        edge_meta.append({
+            "from": ecfg["from_node"],
+            "to": ecfg["to_node"],
+            "mode": ecfg["transfer_mode"].value,
+            "time": ecfg["transfer_time"],
+            "batch_size": ecfg.get("batch_size", 1),
+        })
+
+    skus: dict[str, str] = {}
+    if sku_map:
+        skus = sku_map
+    elif isinstance(config.SKUS, dict):
+        skus = dict(config.SKUS)
+    else:
+        skus = {s: s for s in config.SKUS}
+
+    meta = {
+        "type": "meta",
+        "time": 0,
+        "scenario": result.scenario_name,
+        "sim_duration": config.SIM_DURATION,
+        "day_length": getattr(config, "DAY", 1440),
+        "shift_starts": getattr(config, "SHIFT_STARTS", [480, 1200]),
+        "shift_duration": getattr(config, "SHIFT_DURATION", 690),
+        "skus": skus,
+        "pallet_sizes": dict(config.PALLET_SIZE),
+        "nodes": node_meta,
+        "edges": edge_meta,
+        "layout": {},
+    }
+
+    events: list[dict] = [meta]
+
+    for name, node in result.nodes.items():
+        if hasattr(node, "log"):
+            for entry in node.log:
+                events.append({"node": name, **entry})
+
+    if job_manager is not None and hasattr(job_manager, "log"):
+        for entry in job_manager.log:
+            events.append({"node": "__management__", **entry})
+
+    events.sort(key=lambda e: e["time"])
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        for ev in events:
+            f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+
+    print(f"\n  Events exported → {filepath}  ({len(events) - 1} events)")
 
 
 # ---------------------------------------------------------------------------

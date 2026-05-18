@@ -88,6 +88,8 @@ class ProductionNode(sim.Component):
 
         self.production_queue: list[ProductionOrder] = []
         self._in_process: dict[str, int] = {}
+        self._was_idle: bool = True
+        self._was_blocked: bool = False
         self.edges_out: list = []
         self.edges_in: list = []
         self.log: list[dict] = []
@@ -271,6 +273,13 @@ class ProductionNode(sim.Component):
             if not eligible:
                 if self._logger is not None:
                     self._logger.log_production_activation(self, None)
+                if not self._was_idle:
+                    self._was_idle = True
+                    self.log.append({
+                        "time": self.env.now(),
+                        "type": "production_idle",
+                        "reason": "no_eligible_job",
+                    })
                 yield self.hold(1.0)
                 continue
 
@@ -284,6 +293,16 @@ class ProductionNode(sim.Component):
             if not self._check_materials(required):
                 if self._logger is not None:
                     self._logger.log_production_activation(self, None)
+                if not self._was_blocked:
+                    self._was_blocked = True
+                    self._was_idle = False
+                    self.log.append({
+                        "time": self.env.now(),
+                        "type": "production_idle",
+                        "reason": "waiting_material",
+                        "output_sku": job.output_sku,
+                        "job_id": job.job_id,
+                    })
                 yield self.hold(1.0)
                 continue
 
@@ -294,6 +313,8 @@ class ProductionNode(sim.Component):
             self._in_process[job.output_sku] = (
                 self._in_process.get(job.output_sku, 0) + job.quantity
             )
+            self._was_idle = False
+            self._was_blocked = False
             yield from self._execute_job(job)
             self._in_process[job.output_sku] -= job.quantity
             if self._in_process[job.output_sku] <= 0:
