@@ -1,19 +1,19 @@
 """Day-by-day FG demand for scenario_hangzhou1.
 
-10 days × 3–5 FG SKUs demanded each day.
+4 SKUs: sku_a, sku_b, sku_c, sku_d.
+Each unit requires 4 packages (power/sauce/veg/outer), each taking 1 raw.
 Day = 1440 simulation minutes.
 """
 
-# {day_index (1-based): {fg_sku: quantity_needed_at_sink}}
 DEMAND = {
-    1:  {"fg_a1": 120, "fg_a2": 80,  "fg_b1": 60},
-    2:  {"fg_a3": 90,  "fg_b2": 130, "fg_b3": 80,  "fg_b4": 70},
-    3:  {"fg_a1": 80,  "fg_b1": 100, "fg_a2": 70},
-    4:  {"fg_a3": 60,  "fg_b2": 90,  "fg_b3": 110, "fg_a1": 50, "fg_b4": 80},
-    5:  {"fg_a2": 110, "fg_b1": 120, "fg_a3": 90},
-    6:  {"fg_a1": 130, "fg_b2": 80,  "fg_b3": 100, "fg_b4": 60},
-    7:  {"fg_a2": 90,  "fg_b1": 70,  "fg_b3": 140},
-    8:  {"fg_a1": 60,  "fg_a3": 100, "fg_b2": 110, "fg_b4": 90},
-    9:  {"fg_a3": 80,  "fg_b1": 90,  "fg_b3": 70,  "fg_a2": 60, "fg_b4": 110},
-    10: {"fg_a1": 100, "fg_a2": 90,  "fg_b2": 100, "fg_b3": 80},
+    1:  {"sku_a": 80,  "sku_b": 60,  "sku_c": 40},
+    2:  {"sku_a": 60,  "sku_b": 90,  "sku_d": 50},
+    3:  {"sku_b": 70,  "sku_c": 80,  "sku_d": 60},
+    4:  {"sku_a": 100, "sku_b": 50,  "sku_c": 60, "sku_d": 70},
+    5:  {"sku_a": 70,  "sku_c": 100, "sku_d": 50},
+    6:  {"sku_a": 90,  "sku_b": 80,  "sku_d": 60},
+    7:  {"sku_b": 60,  "sku_c": 70,  "sku_d": 90},
+    8:  {"sku_a": 80,  "sku_b": 100, "sku_c": 50},
+    9:  {"sku_a": 60,  "sku_c": 80,  "sku_d": 100},
+    10: {"sku_a": 100, "sku_b": 90,  "sku_c": 70, "sku_d": 80},
 }
