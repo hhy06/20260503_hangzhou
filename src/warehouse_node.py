@@ -1,29 +1,35 @@
-"""Warehouse node component for SALABIM simulation."""
+"""Warehouse node component for SALABIM simulation.
+
+A ``WarehouseNode`` is a storage point in the logistics network.
+
+Roles
+-----
+``SOURCE``
+    Infinite supply — never holds inventory, never rejects.
+``WAREHOUSE``
+    Finite capacity (in pallets) — holds an ``inventory`` dict mapping
+    SKU → item count.  Capacity is a **soft cap**: a warning is printed
+    when pallet usage exceeds ``max_pallets``, but no goods are rejected.
+``SINK``
+    Endless consumption — accumulates received quantities in ``received``.
+
+Inbound
+-------
+``receive(sku, quantity, source)`` — unconditionally adds stock with a
+capacity warning if applicable.
+
+Outbound
+--------
+Outbound is handled **by edges**, not by the warehouse itself.  An Edge's
+``_execute_order`` debits the source node's inventory and delivers to the
+destination node over time.  The warehouse no longer has a ``process``
+dispatch loop.
+"""
 
 import math
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 import salabim as sim
-
-
-@dataclass
-class OutboundOrder:
-    sku: str
-    quantity: int
-    priority: int
-    destination: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class InboundShipment:
-    sku: str
-    quantity: int
-    source: Any = None
-    destination: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class NodeRole(Enum):
@@ -32,14 +38,25 @@ class NodeRole(Enum):
     SINK = "sink"
 
 
-def _find_edge_for_destination(edges_out: list, destination: str) -> list:
-    immediate_dests = [e.to_node.node_name for e in edges_out]
-    if destination in immediate_dests:
-        return [e for e in edges_out if e.to_node.node_name == destination]
-    return edges_out
-
-
 class WarehouseNode(sim.Component):
+    """A storage node in the logistics network.
+
+    Parameters
+    ----------
+    name : str
+        Internal node name (also used as SALABIM component name).
+    role : NodeRole
+    conversion_factors : dict[str, int]
+        {sku: items_per_pallet} for pallet math.
+    env : sim.Environment | None
+    max_pallets : int | None
+        Maximum pallet capacity (required for WAREHOUSE role, ignored for
+        SOURCE/SINK).  This is a **soft cap** — exceeding it prints a
+        warning instead of rejecting goods.
+    display_name : str | None
+        Human-readable label (falls back to *name*).
+    """
+
     def __init__(
         self,
         name: str,
@@ -47,18 +64,15 @@ class WarehouseNode(sim.Component):
         conversion_factors: dict[str, int],
         env: sim.Environment | None = None,
         max_pallets: int | None = None,
-        dispatch_interval: float = 1.0,
-        dispatch_max_pallets: int = 1,
         display_name: str | None = None,
         **kwargs,
     ):
         self._node_name = name
         self.display_name = display_name or name
         super().__init__(name=name, env=env, **kwargs)
+
         self.role = role
         self.conversion_factors: dict[str, int] = dict(conversion_factors)
-        self.dispatch_interval = dispatch_interval
-        self.dispatch_max_pallets = dispatch_max_pallets
 
         if role == NodeRole.WAREHOUSE:
             self.node_max_pallets = max_pallets
@@ -69,10 +83,13 @@ class WarehouseNode(sim.Component):
         if role == NodeRole.SINK:
             self.received: dict[str, int] = {}
 
-        self.output_queue: list[OutboundOrder] = []
         self.edges_out: list = []
         self.edges_in: list = []
         self.log: list[dict] = []
+
+    # ------------------------------------------------------------------
+    # properties
+    # ------------------------------------------------------------------
 
     @property
     def node_name(self) -> str:
@@ -81,7 +98,9 @@ class WarehouseNode(sim.Component):
     def __repr__(self) -> str:
         return self.display_name
 
-    # --- conversion helpers ---
+    # ------------------------------------------------------------------
+    # conversion helpers
+    # ------------------------------------------------------------------
 
     def items_per_pallet(self, sku: str) -> int:
         return self.conversion_factors[sku]
@@ -94,9 +113,12 @@ class WarehouseNode(sim.Component):
     def quantity_for_pallets(self, sku: str, pallets: int) -> int:
         return pallets * self.conversion_factors[sku]
 
-    # --- capacity ---
+    # ------------------------------------------------------------------
+    # capacity (soft cap)
+    # ------------------------------------------------------------------
 
     def current_pallets(self) -> int:
+        """Total pallet slots currently occupied (WAREHOUSE only)."""
         if self.role != NodeRole.WAREHOUSE:
             return 0
         total = 0
@@ -105,181 +127,80 @@ class WarehouseNode(sim.Component):
                 total += self.pallets_for_quantity(sku, qty)
         return total
 
-    def available_pallets(self) -> int:
+    def available_pallets(self) -> int | float:
+        """Remaining pallet capacity (``inf`` for non-WAREHOUSE)."""
         if self.role != NodeRole.WAREHOUSE:
             return float("inf")
-        return self.node_max_pallets - self.current_pallets()
+        return self.node_max_pallets - self.current_pallets()  # type: ignore[operator]
 
-    def can_accept(self, sku: str, quantity: int) -> bool:
-        if self.role != NodeRole.WAREHOUSE:
-            return True
-        needed = self.pallets_for_quantity(sku, quantity)
-        return self.current_pallets() + needed <= self.node_max_pallets
+    def check_capacity(self) -> None:
+        """Print a warning if pallets exceed the soft cap."""
+        if self.role == NodeRole.WAREHOUSE and self.node_max_pallets is not None:
+            pal = self.current_pallets()
+            if pal > self.node_max_pallets:
+                print(
+                    f"  [WARN] {self.display_name}: {pal} pallets"
+                    f" > capacity {self.node_max_pallets}"
+                )
 
     def add_sku(self, sku: str, items_per_pallet: int):
+        """Register a new SKU with its pallet conversion factor."""
         if sku in self.conversion_factors:
             raise ValueError(f"SKU {sku} already exists")
         self.conversion_factors[sku] = items_per_pallet
 
-    # --- inbound ---
+    # ------------------------------------------------------------------
+    # inbound
+    # ------------------------------------------------------------------
 
-    def receive(self, shipment: InboundShipment) -> bool:
+    def receive(self, sku: str, quantity: int, source=None) -> None:
+        """Accept inbound goods unconditionally.
+
+        Parameters
+        ----------
+        sku : str
+        quantity : int
+        source : optional
+            Source node (used for logging display name).
+        """
         if self.role == NodeRole.SOURCE:
-            return True
+            return
 
         if self.role == NodeRole.SINK:
-            current = self.received.get(shipment.sku, 0)
-            self.received[shipment.sku] = current + shipment.quantity
+            self.received[sku] = self.received.get(sku, 0) + quantity
             self.log.append({
                 "time": self.env.now(),
                 "type": "received",
-                "sku": shipment.sku,
-                "quantity": shipment.quantity,
-                "source": shipment.source.display_name
-                if hasattr(shipment.source, "display_name")
-                else str(shipment.source),
+                "sku": sku,
+                "quantity": quantity,
+                "source": self._source_name(source),
             })
-            return True
+            return
 
         # WAREHOUSE
-        if not self.can_accept(shipment.sku, shipment.quantity):
-            return False
-
-        current = self.inventory.get(shipment.sku, 0)
-        self.inventory[shipment.sku] = current + shipment.quantity
+        self.inventory[sku] = self.inventory.get(sku, 0) + quantity
         self.log.append({
             "time": self.env.now(),
             "type": "received",
-            "sku": shipment.sku,
-            "quantity": shipment.quantity,
-            "source": shipment.source.display_name
-            if hasattr(shipment.source, "display_name")
-            else str(shipment.source),
+            "sku": sku,
+            "quantity": quantity,
+            "source": self._source_name(source),
         })
-        if self.edges_out and shipment.destination and shipment.destination != self.node_name:
-            self.add_outbound_order(OutboundOrder(
-                sku=shipment.sku,
-                quantity=shipment.quantity,
-                priority=shipment.metadata.get("priority", 10),
-                destination=shipment.destination,
-            ))
-        return True
+        self.check_capacity()
 
-    # --- outbound ---
+    @staticmethod
+    def _source_name(source) -> str:
+        if source is None:
+            return "?"
+        return (
+            getattr(source, "display_name", None)
+            or getattr(source, "node_name", None)
+            or str(source)
+        )
 
-    def add_outbound_order(self, order: OutboundOrder):
-        if self.role == NodeRole.SINK:
-            return
-
-        self.output_queue.append(order)
-        self.output_queue.sort(key=lambda o: o.priority)
-        self.log.append({
-            "time": self.env.now(),
-            "type": "order_added",
-            "sku": order.sku,
-            "quantity": order.quantity,
-            "priority": order.priority,
-            "destination": order.destination,
-        })
-
-    def _dispatch_for_destination(self, destination: str) -> list[tuple[str, int]]:
-        orders = [o for o in self.output_queue if o.destination == destination]
-        if not orders:
-            return []
-
-        plan = []
-        remaining_pallets = self.dispatch_max_pallets
-        sorted_orders = sorted(orders, key=lambda o: o.priority)
-
-        for order in sorted_orders:
-            if remaining_pallets <= 0:
-                break
-            sku = order.sku
-
-            if self.role == NodeRole.WAREHOUSE:
-                avail = self.inventory.get(sku, 0)
-                if avail <= 0:
-                    continue
-                # Use floor division: only count fully-fillable pallets.
-                # ceil(avail/pallet_size) would overstate how many units we can ship,
-                # e.g. 20 units with pallet_size=50 → ceil(20/50)=1 → 50 units, but we only have 20.
-                avail_pallets = avail // self.conversion_factors[sku]
-            else:  # SOURCE: infinite supply
-                avail_pallets = float("inf")
-
-            order_pallets = self.pallets_for_quantity(sku, order.quantity)
-            usable = min(order_pallets, avail_pallets, remaining_pallets)
-            if usable <= 0:
-                continue
-            dq = self.quantity_for_pallets(sku, usable)
-            if dq > 0:
-                plan.append((sku, dq))
-                remaining_pallets -= usable
-
-        if not plan:
-            return []
-
-        dispatched = []
-        for sku, target_qty in plan:
-            rem = target_qty
-            for order in orders:
-                taken = min(rem, order.quantity)
-                order.quantity -= taken
-                rem -= taken
-                if rem <= 0:
-                    break
-            actual = target_qty - rem
-
-            if self.role == NodeRole.WAREHOUSE:
-                self.inventory[sku] -= actual
-                if self.inventory[sku] == 0:
-                    del self.inventory[sku]
-
-            if actual > 0:
-                dispatched.append((sku, actual))
-
-        self.output_queue = [o for o in self.output_queue if o.quantity > 0]
-        self.output_queue.sort(key=lambda o: o.priority)
-
-        if dispatched:
-            self.log.append({
-                "time": self.env.now(),
-                "type": "dispatched",
-                "destination": destination,
-                "items": dispatched,
-            })
-            target_edges = _find_edge_for_destination(self.edges_out, destination)
-            for sku, qty in dispatched:
-                for edge in target_edges:
-                    shipment = InboundShipment(
-                        sku=sku,
-                        quantity=qty,
-                        source=self,
-                        destination=destination,
-                        metadata={"priority": 10},
-                    )
-                    if edge.to_node.can_accept(sku, qty):
-                        edge.to_node.receive(shipment)
-
-        return dispatched
-
-    def dispatch_step(self) -> list[tuple[str, int]]:
-        if self.role == NodeRole.SINK:
-            return []
-        if not self.output_queue or not self.edges_out:
-            return []
-
-        all_dispatched = []
-        destinations = set()
-        for order in self.output_queue:
-            if order.destination is not None:
-                destinations.add(order.destination)
-
-        for dest in sorted(destinations):
-            d = self._dispatch_for_destination(dest)
-            all_dispatched.extend(d)
-
-        return all_dispatched
+    # ------------------------------------------------------------------
+    # edge registration
+    # ------------------------------------------------------------------
 
     def add_edge_out(self, edge):
         self.edges_out.append(edge)
@@ -287,12 +208,12 @@ class WarehouseNode(sim.Component):
     def add_edge_in(self, edge):
         self.edges_in.append(edge)
 
-    def process(self):
-        if self.role == NodeRole.SINK:
-            yield self.hold(999999)
-            return
+    # ------------------------------------------------------------------
+    # SALABIM process — periodic capacity check only
+    # ------------------------------------------------------------------
 
+    def process(self):
+        """Periodically check capacity and print warnings."""
         while True:
-            if self.output_queue:
-                self.dispatch_step()
-            yield self.hold(self.dispatch_interval)
+            self.check_capacity()
+            yield self.hold(10.0)

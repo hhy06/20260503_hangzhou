@@ -31,8 +31,6 @@ def _make_production_scene(**prod_overrides):
         conversion_factors={"wip_X": 100, "wip_Y": 100},
         env=env,
         max_pallets=1000,
-        dispatch_interval=1,
-        dispatch_max_pallets=999,
     )
     downstream = WarehouseNode(
         name="Downstream",
@@ -40,8 +38,6 @@ def _make_production_scene(**prod_overrides):
         conversion_factors={"SKU_A": 50},
         env=env,
         max_pallets=500,
-        dispatch_interval=1,
-        dispatch_max_pallets=999,
     )
 
     bom = {
@@ -159,27 +155,24 @@ class TestProductionQueueOrder:
 
 
 # ===========================================================================
-# Output to downstream
+# Output to downstream (always accepted with soft cap)
 # ===========================================================================
 
 class TestOutputToDownstream:
     def test_successful_output(self):
         _, up, prod, down = _make_production_scene()
-        # Make downstream has capacity
-        ok = prod._output_to_downstream("SKU_A", 100)
-        assert ok is True
+        prod._output_to_downstream("SKU_A", 100)
         assert down.inventory.get("SKU_A", 0) == 100
-        # Should have a production_output log entry
         assert any(e["type"] == "production_output" for e in prod.log)
 
-    def test_output_lost_when_downstream_full(self):
+    def test_output_accepted_even_when_full(self):
         _, up, prod, down = _make_production_scene()
-        # Fill downstream to capacity
+        # Fill downstream beyond capacity
         down.inventory["SKU_A"] = 500 * 50  # max_pallets=500, items=500*50
-        ok = prod._output_to_downstream("SKU_A", 1)
-        assert ok is False
-        # Should have a production_output_lost log entry
-        assert any(e["type"] == "production_output_lost" for e in prod.log)
+        prod._output_to_downstream("SKU_A", 50)
+        # Should still be accepted (soft cap)
+        assert down.inventory["SKU_A"] == 500 * 50 + 50
+        assert any(e["type"] == "production_output" for e in prod.log)
 
 
 # ===========================================================================

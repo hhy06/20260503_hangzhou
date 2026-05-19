@@ -14,8 +14,6 @@ def _make_wh(**overrides) -> WarehouseNode:
         conversion_factors={"SKU_A": 10, "SKU_B": 25},
         env=env,
         max_pallets=100,
-        dispatch_interval=1.0,
-        dispatch_max_pallets=5,
     )
     params.update(overrides)
     return WarehouseNode(**params)
@@ -112,37 +110,36 @@ class TestCurrentPallets:
         assert wh.current_pallets() == 6
 
 
-class TestCanAccept:
-    def test_warehouse_within_capacity(self):
-        wh = _make_wh(max_pallets=100)
-        wh.inventory = {"SKU_A": 30}  # 3 pallets used
-        # 50 items = 5 pallets → total 8 ≤ 100 ✓
-        assert wh.can_accept("SKU_A", 50) is True
-
-    def test_warehouse_exceeds_capacity(self):
-        wh = _make_wh(max_pallets=100)
-        wh.inventory = {"SKU_A": 950}  # 95 pallets used
-        # 100 items = 10 pallets → total 105 > 100 ✗
-        assert wh.can_accept("SKU_A", 100) is False
-
-    def test_warehouse_exact_capacity(self):
-        wh = _make_wh(max_pallets=100)
-        wh.inventory = {"SKU_A": 900}  # 90 pallets used
-        # 100 items = 10 pallets → total 100 = 100 ✓
-        assert wh.can_accept("SKU_A", 100) is True
-
-    def test_source_always_accepts(self):
-        src = _make_source()
-        assert src.can_accept("SKU_A", 999999) is True
-
-    def test_sink_always_accepts(self):
-        snk = _make_sink()
-        assert snk.can_accept("SKU_A", 999999) is True
-
-    def test_negative_quantity(self):
+class TestReceiveAndCapacity:
+    def test_receive_adds_to_inventory(self):
         wh = _make_wh()
-        # 0 items = 0 pallets
-        assert wh.can_accept("SKU_A", 0) is True
+        wh.receive("SKU_A", 50)
+        assert wh.inventory["SKU_A"] == 50
+
+    def test_receive_cumulative(self):
+        wh = _make_wh()
+        wh.receive("SKU_A", 30)
+        wh.receive("SKU_A", 20)
+        assert wh.inventory["SKU_A"] == 50
+
+    def test_receive_soft_cap_no_rejection(self):
+        wh = _make_wh(max_pallets=2)       # 2 pallets max
+        wh.receive("SKU_A", 50)            # 50 items / 10 = 5 pallets > 2
+        # Should still accept (soft cap)
+        assert wh.inventory["SKU_A"] == 50
+        assert wh.current_pallets() == 5
+
+    def test_receive_to_source_noop(self):
+        src = _make_source()
+        src.receive("SKU_A", 999)
+        # Source has no inventory
+        assert not hasattr(src, "inventory") or src.inventory.get("SKU_A", 0) == 0
+
+    def test_receive_to_sink_accumulates(self):
+        snk = _make_sink()
+        snk.receive("SKU_A", 100)
+        snk.receive("SKU_A", 50)
+        assert snk.received["SKU_A"] == 150
 
 
 # ---------------------------------------------------------------------------

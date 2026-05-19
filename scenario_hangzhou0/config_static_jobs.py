@@ -1,4 +1,4 @@
-"""Static job / production-order definitions for scenario_hangzhou0.
+"""Static transport / production-order definitions for scenario_hangzhou0.
 
 SKU IDs used in jobs / production orders:
   raw, sauce_wip, powder_wip, fg_noodle
@@ -16,73 +16,51 @@ t=50  noodle_ws_1  starts: produce 40 fg_noodle  (~8 min)
 t=50  noodle_ws_2  starts: produce 40 fg_noodle  (~8 min)
 """
 
-from src.warehouse_node import OutboundOrder
-from src.management import Job
+from src.edge import TransportOrder
 from src.production_node import ProductionOrder
 
 # ---------------------------------------------------------------------------
-# Transport / dispatch jobs  (all at t=0 — execute when inventory allows)
+# Transport orders — one per edge hop
 # ---------------------------------------------------------------------------
-JOBS = [
+TRANSPORT_ORDERS = [
     # -- raw material supply chain --
-    Job(
-        time=0,
-        from_node="source",
-        to_node="raw_material_wh",
-        orders=[
-            OutboundOrder(sku="raw", quantity=500, priority=1),
-        ],
+    TransportOrder(
+        sku="raw", quantity=500,
+        from_node="source", to_node="raw_material_wh",
+        start_time=0, expect_time=10,
     ),
-    Job(
-        time=0,
-        from_node="raw_material_wh",
-        to_node="seasoning_lineside",
-        orders=[
-            OutboundOrder(sku="raw", quantity=300, priority=1),
-        ],
+    TransportOrder(
+        sku="raw", quantity=300,
+        from_node="raw_material_wh", to_node="seasoning_lineside",
+        start_time=0, expect_time=10,
     ),
-    # -- WIP allocation: one SKU per destination to avoid dispatch cross-SKU bug --
-    Job(
-        time=0,
-        from_node="semi_finished_wh",
-        to_node="warehouse_1",
-        orders=[
-            OutboundOrder(sku="sauce_wip", quantity=50, priority=1),
-        ],
+    # -- WIP allocation: one SKU per destination --
+    TransportOrder(
+        sku="sauce_wip", quantity=50,
+        from_node="semi_finished_wh", to_node="warehouse_1",
+        start_time=0, expect_time=10,
     ),
-    Job(
-        time=0,
-        from_node="semi_finished_wh",
-        to_node="warehouse_2",
-        orders=[
-            OutboundOrder(sku="powder_wip", quantity=50, priority=1),
-        ],
+    TransportOrder(
+        sku="powder_wip", quantity=50,
+        from_node="semi_finished_wh", to_node="warehouse_2",
+        start_time=0, expect_time=10,
     ),
     # -- WIP push to noodle line-side storage --
-    Job(
-        time=0,
-        from_node="warehouse_1",
-        to_node="line_side_1",
-        orders=[
-            OutboundOrder(sku="sauce_wip", quantity=50, priority=1),
-        ],
+    TransportOrder(
+        sku="sauce_wip", quantity=50,
+        from_node="warehouse_1", to_node="line_side_1",
+        start_time=0, expect_time=10,
     ),
-    Job(
-        time=0,
-        from_node="warehouse_2",
-        to_node="line_side_2",
-        orders=[
-            OutboundOrder(sku="powder_wip", quantity=50, priority=1),
-        ],
+    TransportOrder(
+        sku="powder_wip", quantity=50,
+        from_node="warehouse_2", to_node="line_side_2",
+        start_time=0, expect_time=10,
     ),
     # -- finished-goods shipment --
-    Job(
-        time=0,
-        from_node="finished_wh",
-        to_node="sink",
-        orders=[
-            OutboundOrder(sku="fg_noodle", quantity=80, priority=1),
-        ],
+    TransportOrder(
+        sku="fg_noodle", quantity=80,
+        from_node="finished_wh", to_node="sink",
+        start_time=0, expect_time=10,
     ),
 ]
 

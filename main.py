@@ -3,7 +3,7 @@
 Usage:
     python main.py                 → runs scenario1
     python main.py scenario1       → runs scenario1
-    python main.py scenario_production → runs production scenario
+    python main.py scenario_hangzhou0 → runs the Hangzhou scenario
 """
 
 import importlib
@@ -13,9 +13,8 @@ import sys
 
 import salabim as sim
 
-from src.edge import Edge
+from src.edge import Edge, TransferMode, TransportOrder
 from src.warehouse_node import WarehouseNode, NodeRole
-from src.management import JobManager, DECISION_INTERVAL
 from src.production_node import ProductionNode
 
 
@@ -48,6 +47,7 @@ class SimulationResult:
 
     scenario_name: str
     nodes: dict[str, Any]
+    edges: list[Edge]
     config: Any
 
     @property
@@ -68,12 +68,15 @@ class SimulationResult:
 
     @property
     def all_logs(self) -> list[dict]:
-        """All log entries from all nodes, sorted by simulation time."""
+        """All log entries from all nodes and edges, sorted by simulation time."""
         logs: list[dict] = []
         for name, node in self.nodes.items():
             if hasattr(node, "log"):
                 for entry in node.log:
                     logs.append({"node": name, **entry})
+        for edge in self.edges:
+            for entry in edge.log:
+                logs.append({"node": edge.name, **entry})
         logs.sort(key=lambda x: x["time"])
         return logs
 
@@ -102,8 +105,6 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
                 conversion_factors=cf,
                 env=env,
                 max_pallets=cfg.get("max_pallets"),
-                dispatch_interval=cfg.get("dispatch_interval", 1.0),
-                dispatch_max_pallets=cfg.get("dispatch_max_pallets", 1),
                 display_name=cfg.get("display_name", node_name),
             )
             nodes[node_name] = node
@@ -126,7 +127,8 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
     return nodes
 
 
-def build_edges(config, nodes: dict[str, Any]) -> list[Edge]:
+def build_edges(config, nodes: dict[str, Any], env: sim.Environment) -> list[Edge]:
+    """Build edges and register them with their incident nodes."""
     edges = []
     for ecfg in config.EDGES:
         from_node = nodes[ecfg["from_node"]]
@@ -137,11 +139,20 @@ def build_edges(config, nodes: dict[str, Any]) -> list[Edge]:
             transfer_mode=ecfg["transfer_mode"],
             transfer_time=ecfg["transfer_time"],
             batch_size=ecfg.get("batch_size", 1),
+            env=env,
         )
         from_node.add_edge_out(edge)
         to_node.add_edge_in(edge)
         edges.append(edge)
     return edges
+
+
+def find_edge(edges: list[Edge], from_node_name: str, to_node_name: str) -> Edge | None:
+    """Return the first edge whose endpoints match the given node names."""
+    for e in edges:
+        if e.from_node.node_name == from_node_name and e.to_node.node_name == to_node_name:
+            return e
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +182,7 @@ def process_all_logs(
     nodes,
     seen,
     sku_map: dict[str, str] | None = None,
-    job_manager: JobManager | None = None,
+    edges: list[Edge] | None = None,
 ):
     all_new = []
     for name, node in nodes.items():
@@ -183,16 +194,17 @@ def process_all_logs(
                 if key not in seen:
                     seen.add(key)
                     all_new.append((node, l))
-    if job_manager is not None:
-        for i, l in enumerate(job_manager.log):
-            if since_t <= l["time"] <= up_to_t + 1e-9:
-                key = ("__job_manager__", i)
-                if key not in seen:
-                    seen.add(key)
-                    all_new.append((job_manager, l))
+    if edges:
+        for edge in edges:
+            for i, l in enumerate(edge.log):
+                if since_t <= l["time"] <= up_to_t + 1e-9:
+                    key = (edge.name, i)
+                    if key not in seen:
+                        seen.add(key)
+                        all_new.append((edge, l))
     all_new.sort(key=lambda x: x[1]["time"])
-    for node, entry in all_new:
-        ndn = _dn(node)
+    for ent, entry in all_new:
+        ndn = _dn(ent)
         t = entry["time"]
         if entry["type"] == "order_added":
             dest_raw = entry.get("destination")
@@ -241,13 +253,6 @@ def process_all_logs(
                 f"  [t={t:.1f}] {ndn}: produced {sku_name} x{entry['quantity']}"
                 f" -> {entry.get('destination', '?')}"
             )
-        elif entry["type"] == "production_output_lost":
-            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: ** OUTPUT LOST **"
-                f" {sku_name} x{entry['quantity']}"
-                f" (downstream full)"
-            )
         elif entry["type"] == "production_completed":
             sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
             print(
@@ -259,6 +264,30 @@ def process_all_logs(
             print(
                 f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** job #{entry['job_id']}"
                 f" -> {sku_name} (insufficient material)"
+            )
+        # -- transport events --
+        elif entry["type"] == "transport_order_added":
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: transport order queued"
+                f" {sku_name} x{entry['quantity']}"
+                f" {entry['from']} -> {entry['to']}"
+                f" (start={entry['start_time']}, expect={entry['expect_time']})"
+            )
+        elif entry["type"] == "transport_started":
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: transport started"
+                f" {sku_name} x{entry['quantity']}"
+                f" {entry['from']} -> {entry['to']}"
+                f" ({entry['pallets']} pallets)"
+            )
+        elif entry["type"] == "transport_completed":
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
+            print(
+                f"  [t={t:.1f}] {ndn}: transport completed"
+                f" {sku_name} x{entry['quantity']}"
+                f" {entry['from']} -> {entry['to']}"
             )
         elif entry["type"] == "job_issued":
             from_dn = _lookup_display(nodes, entry["from"])
@@ -276,27 +305,32 @@ def process_all_logs(
 
 def run_scenario(scenario_name: str) -> SimulationResult:
     config = importlib.import_module(f"{scenario_name}.config")
-    jobs_module = importlib.import_module(f"{scenario_name}.config_static_jobs")
+    orders_module = importlib.import_module(f"{scenario_name}.config_static_jobs")
 
     sim.yieldless(False)
     env = sim.Environment(trace=False)
 
     nodes = build_nodes(config, env)
-    edges = build_edges(config, nodes)
+    edges = build_edges(config, nodes, env)
 
     # -- load production orders into production nodes -----------------------
-    if hasattr(jobs_module, "PRODUCTION_JOBS"):
-        for pjob in jobs_module.PRODUCTION_JOBS:
+    if hasattr(orders_module, "PRODUCTION_JOBS"):
+        for pjob in orders_module.PRODUCTION_JOBS:
             target = nodes.get(pjob.node_name)
             if target is not None and hasattr(target, "add_production_order"):
                 target.add_production_order(pjob)
+
+    # -- load transport orders onto edges -----------------------------------
+    if hasattr(orders_module, "TRANSPORT_ORDERS"):
+        for order in orders_module.TRANSPORT_ORDERS:
+            edge = find_edge(edges, order.from_node, order.to_node)
+            if edge is not None:
+                edge.add_transport_order(order)
 
     sku_map: dict[str, str] = getattr(config, "SKUS", {})
     if isinstance(sku_map, (list, tuple)):
         # Legacy: SKUS is a list — build identity map for backward compat
         sku_map = {s: s for s in sku_map}
-
-    job_manager = JobManager(jobs_module.JOBS, nodes, env)
 
     # -- print setup -------------------------------------------------------
     print("=" * 70)
@@ -325,18 +359,18 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             f" time={e.transfer_time}, batch={e.batch_size}"
         )
     print()
-    print("Jobs:")
-    for j in jobs_module.JOBS:
-        orders_str = ", ".join(
-            f"{_sku_display(o.sku, sku_map)} x{o.quantity}" for o in j.orders
-        )
-        print(
-            f"  t={j.time}: {j.from_node} -> {j.to_node}:"
-            f" [{orders_str}]"
-        )
-    if hasattr(jobs_module, "PRODUCTION_JOBS"):
+    print("Transport orders:")
+    if hasattr(orders_module, "TRANSPORT_ORDERS"):
+        for o in orders_module.TRANSPORT_ORDERS:
+            sku_name = _sku_display(o.sku, sku_map)
+            print(
+                f"  t={o.start_time}: {o.from_node} -> {o.to_node}:"
+                f" {sku_name} x{o.quantity}"
+                f" (expect={o.expect_time})"
+            )
+    if hasattr(orders_module, "PRODUCTION_JOBS"):
         print("Production orders:")
-        for pj in jobs_module.PRODUCTION_JOBS:
+        for pj in orders_module.PRODUCTION_JOBS:
             target_node = nodes.get(pj.node_name)
             ndn = _dn(target_node) if target_node else pj.node_name
             output_name = _sku_display(pj.output_sku, sku_map)
@@ -353,7 +387,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     while last_t < config.SIM_DURATION:
         next_t = min(last_t + step, config.SIM_DURATION)
         env.run(next_t)
-        process_all_logs(last_t, env.now(), nodes, seen, sku_map, job_manager=job_manager)
+        process_all_logs(last_t, env.now(), nodes, seen, sku_map, edges=edges)
         last_t = env.now()
 
         if last_t % 20 == 0:
@@ -381,6 +415,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     return SimulationResult(
         scenario_name=scenario_name,
         nodes=nodes,
+        edges=edges,
         config=config,
     )
 

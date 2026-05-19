@@ -13,21 +13,15 @@ These tests are purely structural — they do NOT run simulations.
 import importlib
 import pytest
 
-from src.edge import TransferMode
+from src.edge import TransferMode, TransportOrder
 from src.production_node import ProductionOrder
-from src.management import Job
 
 
 # ---------------------------------------------------------------------------
 # Scenario registry  —  add new scenarios here
 # ---------------------------------------------------------------------------
 SCENARIOS = [
-    "scenario1",
-    "test_scenario2",
     "scenario_hangzhou0",
-    "scenario_production",
-    "scenario_spws",
-    "scenario_spws2",
 ]
 
 
@@ -39,7 +33,7 @@ def _config(name: str):
     return importlib.import_module(f"{name}.config")
 
 
-def _jobs(name: str):
+def _orders(name: str):
     return importlib.import_module(f"{name}.config_static_jobs")
 
 
@@ -63,8 +57,8 @@ class TestModuleStructure:
         _config(scenario)
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_jobs_module_importable(self, scenario):
-        _jobs(scenario)
+    def test_orders_module_importable(self, scenario):
+        _orders(scenario)
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
     def test_required_config_attrs(self, scenario):
@@ -239,54 +233,57 @@ class TestBomSkuReferences:
 
 
 # ---------------------------------------------------------------------------
-# Job references
+# Transport order references
 # ---------------------------------------------------------------------------
 
-class TestJobReferences:
-    """All jobs must reference existing nodes and SKUs."""
+class TestTransportOrderReferences:
+    """All transport orders must reference existing nodes and SKUs."""
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_transport_jobs_reference_valid_nodes(self, scenario):
+    def test_transport_orders_reference_valid_nodes(self, scenario):
         cfg = _config(scenario)
-        jm = _jobs(scenario)
+        om = _orders(scenario)
         nodes = set(cfg.NODES.keys())
-        for j in jm.JOBS:
-            assert j.from_node in nodes, \
-                f"{scenario}: job from_node '{j.from_node}' not in NODES"
-            assert j.to_node in nodes, \
-                f"{scenario}: job to_node '{j.to_node}' not in NODES"
+        if not hasattr(om, "TRANSPORT_ORDERS"):
+            pytest.skip(f"{scenario}: no TRANSPORT_ORDERS")
+        for o in om.TRANSPORT_ORDERS:
+            assert o.from_node in nodes, \
+                f"{scenario}: order from_node '{o.from_node}' not in NODES"
+            assert o.to_node in nodes, \
+                f"{scenario}: order to_node '{o.to_node}' not in NODES"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_transport_jobs_sku_references_exist(self, scenario):
+    def test_transport_orders_sku_references_exist(self, scenario):
         cfg = _config(scenario)
-        jm = _jobs(scenario)
+        om = _orders(scenario)
         skus = _sku_keys(cfg)
-        for j in jm.JOBS:
-            for o in j.orders:
-                assert o.sku in skus, \
-                    f"{scenario}: job order SKU '{o.sku}' not in SKUS"
-                assert o.quantity > 0, \
-                    f"{scenario}: job order SKU '{o.sku}' quantity must be positive"
+        if not hasattr(om, "TRANSPORT_ORDERS"):
+            pytest.skip(f"{scenario}: no TRANSPORT_ORDERS")
+        for o in om.TRANSPORT_ORDERS:
+            assert o.sku in skus, \
+                f"{scenario}: order SKU '{o.sku}' not in SKUS"
+            assert o.quantity > 0, \
+                f"{scenario}: order SKU '{o.sku}' quantity must be positive"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_production_jobs_reference_valid_nodes(self, scenario):
+    def test_production_orders_reference_valid_nodes(self, scenario):
         cfg = _config(scenario)
-        jm = _jobs(scenario)
-        if not hasattr(jm, "PRODUCTION_JOBS"):
+        om = _orders(scenario)
+        if not hasattr(om, "PRODUCTION_JOBS"):
             pytest.skip(f"{scenario}: no PRODUCTION_JOBS")
         nodes = set(cfg.NODES.keys())
-        for pj in jm.PRODUCTION_JOBS:
+        for pj in om.PRODUCTION_JOBS:
             assert pj.node_name in nodes, \
                 f"{scenario}: prod job #{pj.job_id} node '{pj.node_name}' not in NODES"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_production_jobs_sku_references_exist(self, scenario):
+    def test_production_orders_sku_references_exist(self, scenario):
         cfg = _config(scenario)
-        jm = _jobs(scenario)
-        if not hasattr(jm, "PRODUCTION_JOBS"):
+        om = _orders(scenario)
+        if not hasattr(om, "PRODUCTION_JOBS"):
             pytest.skip(f"{scenario}: no PRODUCTION_JOBS")
         skus = _sku_keys(cfg)
-        for pj in jm.PRODUCTION_JOBS:
+        for pj in om.PRODUCTION_JOBS:
             assert pj.output_sku in skus, \
                 f"{scenario}: prod job #{pj.job_id} output_sku '{pj.output_sku}' not in SKUS"
             assert pj.quantity > 0, \

@@ -16,8 +16,6 @@ from typing import Any
 
 import salabim as sim
 
-from src.warehouse_node import InboundShipment
-
 
 @dataclass
 class ProductionOrder:
@@ -134,34 +132,16 @@ class ProductionNode(sim.Component):
             if inv[sku] <= 0:
                 del inv[sku]
 
-    def _output_to_downstream(self, sku: str, quantity: int) -> bool:
-        """Push finished goods to downstream warehouse.
-
-        Returns True if accepted.  If ``receive()`` returns False the goods
-        are **lost** (no retry, no queue).
-        """
-        shipment = InboundShipment(sku=sku, quantity=quantity, source=self)
-        accepted = self.downstream_node.receive(shipment)
-
-        if accepted:
-            self.log.append({
-                "time": self.env.now(),
-                "type": "production_output",
-                "output_sku": sku,
-                "quantity": quantity,
-                "destination": self.downstream_node.display_name,
-            })
-        else:
-            self.log.append({
-                "time": self.env.now(),
-                "type": "production_output_lost",
-                "output_sku": sku,
-                "quantity": quantity,
-                "destination": self.downstream_node.display_name,
-                "reason": "downstream_full",
-            })
-
-        return accepted
+    def _output_to_downstream(self, sku: str, quantity: int) -> None:
+        """Push finished goods to downstream warehouse (always accepted)."""
+        self.downstream_node.receive(sku, quantity, source=self)
+        self.log.append({
+            "time": self.env.now(),
+            "type": "production_output",
+            "output_sku": sku,
+            "quantity": quantity,
+            "destination": self.downstream_node.display_name,
+        })
 
     # ------------------------------------------------------------------
     # production execution (generator — yields SALABIM holds)
