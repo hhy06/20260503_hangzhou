@@ -8,9 +8,9 @@ onto the correct edge at the right time.
 import pytest
 import salabim as sim
 
-from src.edge import Edge, TransferMode, TransportOrder
-from src.warehouse_node import WarehouseNode, NodeRole
-from src.management import Management
+from src.infrastructure.edge import Edge, TransferMode, TransportOrder
+from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.management.static_order import StaticOrderManagement
 
 
 @pytest.fixture
@@ -221,7 +221,7 @@ class TestManagement:
             from_node="source", to_node="wh",
             start_time=0, expect_time=10,
         )
-        mgmt = Management(
+        mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
             decision_interval=10.0, env=env,
         )
@@ -241,7 +241,7 @@ class TestManagement:
             from_node="source", to_node="wh",
             start_time=50, expect_time=60,
         )
-        mgmt = Management(
+        mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
             decision_interval=10.0, env=env,
         )
@@ -262,7 +262,7 @@ class TestManagement:
             from_node="source", to_node="wh",
             start_time=15, expect_time=30,
         )
-        mgmt = Management(
+        mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
             decision_interval=10.0, env=env,
         )
@@ -280,7 +280,7 @@ class TestManagement:
             transfer_mode=TransferMode.BATCH,
             transfer_time=0.01, batch_size=999, env=env,
         )
-        mgmt = Management(
+        mgmt = StaticOrderManagement(
             transport_orders=[], edges=[e],
             decision_interval=10.0, env=env,
         )

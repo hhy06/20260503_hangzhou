@@ -7,8 +7,8 @@ import pytest
 import salabim as sim
 
 from main import SimulationResult
-from src.warehouse_node import NodeRole
-from src.edge import Edge
+from src.infrastructure.warehouse_node import NodeRole
+from src.infrastructure.edge import Edge
 
 
 # ---------------------------------------------------------------------------

@@ -13,10 +13,10 @@ import sys
 
 import salabim as sim
 
-from src.edge import Edge, TransferMode, TransportOrder
-from src.warehouse_node import WarehouseNode, NodeRole
-from src.production_node import ProductionNode
-from src.management import Management
+from src.infrastructure.edge import Edge, TransferMode, TransportOrder
+from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.infrastructure.production_node import ProductionNode
+from src.management.static_order import StaticOrderManagement
 
 
 def _dn(node: object) -> str:
@@ -146,14 +146,6 @@ def build_edges(config, nodes: dict[str, Any], env: sim.Environment) -> list[Edg
         to_node.add_edge_in(edge)
         edges.append(edge)
     return edges
-
-
-def find_edge(edges: list[Edge], from_node_name: str, to_node_name: str) -> Edge | None:
-    """Return the first edge whose endpoints match the given node names."""
-    for e in edges:
-        if e.from_node.node_name == from_node_name and e.to_node.node_name == to_node_name:
-            return e
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -321,13 +313,19 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             if target is not None and hasattr(target, "add_production_order"):
                 target.add_production_order(pjob)
 
-    # -- Management: issues transport orders at the right time ---------------
-    transport_orders = getattr(orders_module, "TRANSPORT_ORDERS", [])
-    management = Management(
-        transport_orders=transport_orders,
-        edges=edges,
-        env=env,
-    )
+    # -- Management: config-based instantiation -----------------------------
+    management_cfg = getattr(config, "MANAGEMENT", {})
+    mgmt_type = management_cfg.get("type", "static_order")
+    if mgmt_type == "static_order":
+        transport_orders = getattr(orders_module, "TRANSPORT_ORDERS", [])
+        management = StaticOrderManagement(
+            transport_orders=transport_orders,
+            edges=edges,
+            decision_interval=management_cfg.get("decision_interval", 10.0),
+            env=env,
+        )
+    else:
+        raise ValueError(f"Unknown management type: {mgmt_type}")
 
     sku_map: dict[str, str] = getattr(config, "SKUS", {})
     if isinstance(sku_map, (list, tuple)):

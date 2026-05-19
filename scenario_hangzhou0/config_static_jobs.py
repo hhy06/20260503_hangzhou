@@ -19,8 +19,8 @@ Timeline (with fast transport edges, transfer_time=0.01):
   t=302     Phase 8: fg_storage -> sink
 """
 
-from src.edge import TransportOrder
-from src.production_node import ProductionOrder
+from src.infrastructure.edge import TransportOrder
+from src.infrastructure.production_node import ProductionOrder
 
 from scenario_hangzhou0.config import (
     N, NUM_POWDER_LINES, NUM_NOODLE_LINES,

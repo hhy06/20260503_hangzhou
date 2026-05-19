@@ -27,7 +27,7 @@ Each SKU_i BOM = sauce_i + powder_i + veg_i + [bow, cap](even i) + [pack](odd i)
 Each SKU_i produced by >=2 noodle lines.
 """
 
-from src.edge import TransferMode
+from src.infrastructure.edge import TransferMode
 
 # =========================================================================
 # Constants
@@ -500,6 +500,14 @@ EDGES.append({
     "transfer_time": 0.01,
     "batch_size": 999,
 })
+
+# =========================================================================
+# Management configuration
+# =========================================================================
+MANAGEMENT = {
+    "type": "static_order",
+    "decision_interval": 10.0,
+}
 
 # =========================================================================
 # Simulation duration

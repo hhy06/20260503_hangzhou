@@ -18,9 +18,9 @@ from dataclasses import dataclass
 import pytest
 import salabim as sim
 
-from src.edge import Edge, TransferMode, TransportOrder
-from src.warehouse_node import WarehouseNode, NodeRole
-from src.production_node import ProductionNode, ProductionOrder
+from src.infrastructure.edge import Edge, TransferMode, TransportOrder
+from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.infrastructure.production_node import ProductionNode, ProductionOrder
 
 
 # ---------------------------------------------------------------------------

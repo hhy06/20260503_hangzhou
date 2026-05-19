@@ -5,8 +5,8 @@ import math
 import pytest
 import salabim as sim
 
-from src.warehouse_node import WarehouseNode, NodeRole
-from src.production_node import ProductionNode, ProductionOrder
+from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.infrastructure.production_node import ProductionNode, ProductionOrder
 
 
 # ---------------------------------------------------------------------------

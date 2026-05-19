@@ -13,8 +13,8 @@ These tests are purely structural — they do NOT run simulations.
 import importlib
 import pytest
 
-from src.edge import TransferMode, TransportOrder
-from src.production_node import ProductionOrder
+from src.infrastructure.edge import TransferMode, TransportOrder
+from src.infrastructure.production_node import ProductionOrder
 
 
 # ---------------------------------------------------------------------------

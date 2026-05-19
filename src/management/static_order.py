@@ -1,20 +1,18 @@
-"""Management component — reads static orders and issues them at the right time.
+"""Static-order management — issues pre-defined transport orders on schedule.
 
-A :class:`Management` instance is a ``salabim.Component`` that holds a
-list of static transport (and eventually production) orders.  It wakes up
-every ``decision_interval`` time units and calls :meth:`make_decision`,
-which scans its un-issued orders and inserts those whose
-``start_time <= current_time`` onto the correct edge via
-``edge.add_transport_order()``.
+A :class:`StaticOrderManagement` holds a list of static ``TransportOrder``
+objects.  On each ``make_decision()`` call it scans its un-issued orders and
+inserts those whose ``start_time <= current_time`` onto the correct edge.
 """
 
 from typing import Any
 import salabim as sim
 
-from src.edge import Edge, TransportOrder
+from src.management.base import Management
+from src.infrastructure.edge import Edge, TransportOrder
 
 
-class Management(sim.Component):
+class StaticOrderManagement(Management):
     """Periodic decision-maker that issues static transport orders.
 
     Parameters
@@ -41,12 +39,12 @@ class Management(sim.Component):
     ):
         self.transport_orders = list(transport_orders)
         self.edges = edges
-        self.decision_interval = decision_interval
-        # Track which orders have been issued (by list index)
         self._issued: set[int] = set()
         self.log: list[dict] = []
 
-        super().__init__(name=name, env=env, **kwargs)
+        super().__init__(
+            name=name, decision_interval=decision_interval, env=env, **kwargs,
+        )
 
     # ------------------------------------------------------------------
     # helpers
@@ -63,7 +61,7 @@ class Management(sim.Component):
         return None
 
     # ------------------------------------------------------------------
-    # decision logic (extension point for future dynamic decisions)
+    # decision logic
     # ------------------------------------------------------------------
 
     def make_decision(self) -> None:
@@ -87,13 +85,3 @@ class Management(sim.Component):
                         "reason": "no matching edge found",
                     })
                 self._issued.add(i)
-
-    # ------------------------------------------------------------------
-    # SALABIM process
-    # ------------------------------------------------------------------
-
-    def process(self):
-        """SALABIM coroutine: call ``make_decision()`` periodically."""
-        while True:
-            self.make_decision()
-            yield self.hold(self.decision_interval)

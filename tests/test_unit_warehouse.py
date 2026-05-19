@@ -2,7 +2,7 @@
 
 import pytest
 import salabim as sim
-from src.warehouse_node import WarehouseNode, NodeRole
+from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
 
 
 def _make_wh(**overrides) -> WarehouseNode:
