@@ -1,18 +1,18 @@
 {
   "nodes": {
-    "source":        {"x":  60, "y": 320},
-    "raw_wh":        {"x": 260, "y": 320},
-    "line_side":     {"x": 460, "y": 320},
-    "factory_power": {"x": 660, "y": 170},
-    "factory_sauce": {"x": 660, "y": 270},
-    "factory_veg":   {"x": 660, "y": 370},
-    "factory_outer": {"x": 660, "y": 470},
-    "pkg_wh":        {"x": 860, "y": 320},
-    "assembly_a":    {"x": 1060, "y": 170},
-    "assembly_b":    {"x": 1060, "y": 270},
-    "assembly_c":    {"x": 1060, "y": 370},
-    "assembly_d":    {"x": 1060, "y": 470},
-    "fg_wh":         {"x": 1280, "y": 320},
-    "sink":          {"x": 1440, "y": 320}
+    "source":        {"x":  20, "y": 120},
+    "raw_wh":        {"x":  20, "y": 420},
+    "line_side":     {"x": 200, "y": 320},
+    "factory_power": {"x": 360, "y": 170},
+    "factory_sauce": {"x": 360, "y": 270},
+    "factory_veg":   {"x": 360, "y": 370},
+    "factory_outer": {"x": 360, "y": 470},
+    "pkg_wh":        {"x": 500, "y": 320},
+    "assembly_a":    {"x": 660, "y": 170},
+    "assembly_b":    {"x": 660, "y": 270},
+    "assembly_c":    {"x": 660, "y": 370},
+    "assembly_d":    {"x": 660, "y": 470},
+    "fg_wh":         {"x": 800, "y": 320},
+    "sink":          {"x": 960, "y": 620}
   }
 }

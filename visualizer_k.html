@@ -474,11 +474,13 @@ class Visualizer {
       if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
     }
     const pad = 60;
-    const lw = maxX - minX + pad * 2;
-    const lh = maxY - minY + pad * 2;
-    const scale = Math.min(w / lw, h / lh, 3.0);
-    const ox = (w - (maxX - minX) * scale) / 2 - (minX - pad) * scale;
-    const oy = (h - (maxY - minY) * scale) / 2 - (minY - pad) * scale;
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const availW = w - pad * 2;
+    const availH = h - pad * 2;
+    const scale = Math.min(availW / contentW, availH / contentH, 3.0);
+    const ox = (w - contentW * scale) / 2 - minX * scale;
+    const oy = (h - contentH * scale) / 2 - minY * scale;
     return { pos, scale, ox, oy };
   }
 
