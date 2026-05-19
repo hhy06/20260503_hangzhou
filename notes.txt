@@ -100,3 +100,22 @@ No outright failures reported, but significant shortfall in execution.
 **Summary Verdict:**
 Simulation exhibits partial success but reveals clear execution flaws including incomplete production runs, stalled workflows, and potential bugs in scheduling/resource allocation. The system failed to fulfill over half of its outbound commitments.
 ======================================================================
+
+
+
+
+ [t=4325.0] 料包库: received 粉包D x100 from 粉包车间
+  [t=4325.0] 料包库: received 酱包D x100 from 酱包车间
+  [t=4325.0] 料包库: received 菜包D x100 from 菜包车间
+  [t=4325.0] 料包库: received 外包D x100 from 外包车间
+  [t=4325.0] 粉包车间: produced 粉包D x100 -> 料包库
+  [t=4325.0] 粉包车间: production completed job #1054 -> 粉包D x100
+  [t=4325.0] 酱包车间: produced 酱包D x100 -> 料包库
+  [t=4325.0] 酱包车间: production completed job #1055 -> 酱包D x100
+  [t=4325.0] 菜包车间: produced 菜包D x100 -> 料包库
+  [t=4325.0] 菜包车间: production completed job #1056 -> 菜包D x100
+  [t=4325.0] 外包车间: produced 外包D x100 -> 料包库
+  [t=4325.0] 外包车间: production completed job #1057 -> 外包D x100
+
+
+  

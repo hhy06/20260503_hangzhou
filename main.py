@@ -8,6 +8,7 @@ Usage:
 
 import importlib
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any
 import sys
@@ -447,7 +448,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
 
     # -- export events to JSONL for visualizer ----------------------------
     export_events_jsonl(SimulationResult(scenario_name, nodes, config),
-                        job_manager, sku_map)
+                        job_manager, sku_map, demand=demand)
 
     # -- build & return result for programmatic consumption ----------------
     return SimulationResult(
@@ -465,6 +466,7 @@ def export_events_jsonl(
     job_manager: JobManager | None = None,
     sku_map: dict[str, str] | None = None,
     filepath: str = "events.jsonl",
+    demand: dict | None = None,
 ) -> None:
     """Export all simulation events as a JSON Lines file.
 
@@ -524,7 +526,8 @@ def export_events_jsonl(
         "pallet_sizes": dict(config.PALLET_SIZE),
         "nodes": node_meta,
         "edges": edge_meta,
-        "layout": {},
+        "demand": demand or {},
+        "layout": _load_layout(result.scenario_name),
     }
 
     events: list[dict] = [meta]
@@ -545,6 +548,14 @@ def export_events_jsonl(
             f.write(json.dumps(ev, ensure_ascii=False) + "\n")
 
     print(f"\n  Events exported → {filepath}  ({len(events) - 1} events)")
+
+
+def _load_layout(scenario_name: str) -> dict:
+    layout_path = os.path.join(scenario_name, "layout.json")
+    if os.path.isfile(layout_path):
+        with open(layout_path, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
 
 # ---------------------------------------------------------------------------

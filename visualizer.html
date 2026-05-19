@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulation Visualizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:'Segoe UI','SF Pro',system-ui,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+#drop-overlay{position:fixed;inset:0;background:rgba(13,17,23,.95);display:none;align-items:center;justify-content:center;z-index:999;font-size:1.5rem;border:3px dashed #30363d;margin:20px;border-radius:16px;color:#8b949e}
+#drop-overlay.drag-over{display:flex;border-color:#58a6ff;color:#58a6ff}
+/* Header */
+#header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#161b22;border-bottom:1px solid #30363d;flex-shrink:0}
+#header h1{font-size:1rem;font-weight:600;color:#e6edf3}
+#clock{font-size:.85rem;color:#8b949e;font-variant-numeric:tabular-nums}
+#clock .day{color:#58a6ff}
+#clock .shift{display:inline-block;padding:1px 8px;border-radius:4px;font-size:.75rem;margin-left:6px}
+#clock .shift.on{background:#1f6feb33;color:#58a6ff}
+#clock .shift.off{background:#30363d33;color:#8b949e}
+/* Canvas */
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:#0d1117;min-height:300px}
+#canvas-wrap canvas{position:absolute;top:0;left:0}
+#no-data{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#484f58;pointer-events:none;text-align:center;padding:40px}
+#no-data .big{font-size:3rem;margin-bottom:12px}
+#no-data .sub{font-size:.9rem}
+/* Controls */
+#controls{display:flex;align-items:center;gap:8px;padding:8px 20px;background:#161b22;border-top:1px solid #30363d;flex-shrink:0;flex-wrap:wrap}
+#controls button{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.85rem;transition:.15s;height:32px;min-width:32px;display:flex;align-items:center;justify-content:center}
+#controls button:hover{background:#30363d;border-color:#8b949e}
+#controls button.active{background:#1f6feb33;border-color:#58a6ff;color:#58a6ff}
+#controls button:disabled{opacity:.4;cursor:default}
+#controls select{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:4px 8px;border-radius:6px;font-size:.8rem;height:32px;cursor:pointer}
+#controls label{font-size:.8rem;color:#8b949e;white-space:nowrap}
+#time-slider{-webkit-appearance:none;appearance:none;flex:1;min-width:100px;height:4px;background:#30363d;border-radius:2px;outline:none}
+#time-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#58a6ff;cursor:pointer;border:2px solid #0d1117}
+#time-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#58a6ff;cursor:pointer;border:2px solid #0d1117}
+#time-label{font-size:.8rem;color:#8b949e;font-variant-numeric:tabular-nums;min-width:140px;text-align:right}
+/* Panels row */
+#panels{display:flex;gap:12px;padding:8px 20px;background:#0d1117;border-top:1px solid #21262d;flex-shrink:0;flex-wrap:wrap;font-size:.82rem}
+#panels > div{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px 14px;min-width:160px;flex:1}
+#panels h3{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:#8b949e;margin-bottom:6px}
+#legend .row{display:flex;align-items:center;gap:6px;margin:3px 0}
+#legend .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot.green{background:#3fb950}
+.dot.gray{background:#484f58}
+.dot.amber{background:#d29922}
+#node-detail .val{color:#e6edf3}
+#node-detail .empty{color:#484f58;font-style:italic}
+#node-detail table{width:100%;border-collapse:collapse}
+#node-detail td{padding:1px 4px}
+#node-detail td:last-child{text-align:right;color:#e6edf3}
+#satisfaction .row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #21262d}
+#satisfaction .row:last-child{border-bottom:none}
+#satisfaction .ok{color:#3fb950}
+#satisfaction .miss{color:#f85149}
+#satisfaction .total{color:#8b949e;margin-top:4px;text-align:right;font-size:.75rem}
+</style>
+</head>
+<body>
+
+<div id="drop-overlay">Drop <strong>events.jsonl</strong> here</div>
+
+<div id="header">
+  <h1 id="scenario-name">Simulation Visualizer</h1>
+  <div id="clock"><span class="day" id="clock-day">—</span> &middot; <span id="clock-time">--:--</span><span class="shift off" id="clock-shift">—</span></div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="canvas"></canvas>
+  <div id="no-data">
+    <div class="big">&#8682;</div>
+    <div class="sub">Drop <strong>events.jsonl</strong> here<br>or <code>?events=events.jsonl</code></div>
+  </div>
+</div>
+
+<div id="controls">
+  <button id="btn-reset" title="Reset to t=0">&#x23EE;</button>
+  <button id="btn-step-b" title="Step backward">&#x23F4;</button>
+  <button id="btn-play" title="Play / Pause">&#x25B6;</button>
+  <button id="btn-step-f" title="Step forward">&#x23F5;</button>
+  <button id="btn-end" title="Jump to end">&#x23ED;</button>
+  <label>Speed</label>
+  <select id="speed-select">
+    <option value="1">1&times;</option>
+    <option value="2">2&times;</option>
+    <option value="5" selected>5&times;</option>
+    <option value="10">10&times;</option>
+    <option value="50">50&times;</option>
+  </select>
+  <label>Step</label>
+  <select id="step-select">
+    <option value="1">1 min</option>
+    <option value="5" selected>5 min</option>
+    <option value="10">10 min</option>
+    <option value="30">30 min</option>
+    <option value="60">1 h</option>
+    <option value="360">6 h</option>
+    <option value="1440">1 d</option>
+  </select>
+  <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
+  <span id="time-label">t=0 &middot; 0%</span>
+</div>
+
+<div id="panels">
+  <div id="legend">
+    <h3>Legend</h3>
+    <div class="row"><span class="dot green"></span> Working</div>
+    <div class="row"><span class="dot amber"></span> Blocked</div>
+    <div class="row"><span class="dot gray"></span> Idle</div>
+    <div class="row"><span style="display:inline-block;width:10px;height:10px;background:#1f6feb;border-radius:2px;flex-shrink:0"></span> Capacity</div>
+  </div>
+  <div id="node-detail">
+    <h3>Node Detail</h3>
+    <div class="empty" id="detail-content">Click a node</div>
+  </div>
+  <div id="satisfaction">
+    <h3>Satisfaction</h3>
+    <div id="satisfaction-content"><div class="empty">—</div></div>
+  </div>
+</div>
+
+<script>
+// ==============================================================================
+// SimState — pure data, replayed from events
+// ==============================================================================
+class SimState {
+  constructor(meta) {
+    this.meta = meta;
+    this.inventory = {};       // {node: {sku: qty}}
+    this.palletsUsed = {};     // {node: count}
+    this.prodStatus = {};      // {node: 'idle'|'working'|'blocked'}
+    this.inProcess = {};       // {node: {sku: qty}}
+    this.sinkReceived = {};    // {sku: qty}
+    this.dayReceived = {};     // {day: {sku: qty}}
+    this.activeTransits = [];  // [{from,to,items,start,duration}]
+    this.dayLength = meta.day_length || 1440;
+    this.palletSizes = meta.pallet_sizes || {};
+    // initialise prod nodes as idle
+    for (const [name, cfg] of Object.entries(meta.nodes)) {
+      if (cfg.type === 'production') this.prodStatus[name] = 'idle';
+    }
+  }
+  reset() {
+    this.inventory = {};
+    this.palletsUsed = {};
+    for (const [name, cfg] of Object.entries(this.meta.nodes)) {
+      if (cfg.type === 'production') this.prodStatus[name] = 'idle';
+    }
+    this.inProcess = {};
+    this.sinkReceived = {};
+    this.dayReceived = {};
+    this.activeTransits = [];
+  }
+  addInventory(node, sku, qty) {
+    if (!this.inventory[node]) this.inventory[node] = {};
+    this.inventory[node][sku] = (this.inventory[node][sku] || 0) + qty;
+    this._recalcPallets(node);
+  }
+  removeInventory(node, sku, qty) {
+    if (!this.inventory[node]) return;
+    const cur = this.inventory[node][sku] || 0;
+    const rem = Math.min(cur, qty);
+    this.inventory[node][sku] = cur - rem;
+    if (this.inventory[node][sku] <= 0) delete this.inventory[node][sku];
+    this._recalcPallets(node);
+  }
+  _recalcPallets(node) {
+    const inv = this.inventory[node] || {};
+    let total = 0;
+    for (const [sku, qty] of Object.entries(inv)) {
+      const size = this.palletSizes[sku] || 1;
+      total += Math.ceil(qty / size);
+    }
+    this.palletsUsed[node] = total;
+  }
+}
+
+// ==============================================================================
+// Event application — the ONLY place that knows JSONL field names
+// ==============================================================================
+function applyEvent(state, event) {
+  switch (event.type) {
+    case 'received': {
+      state.addInventory(event.node, event.sku, event.quantity);
+      // sink tracking
+      const meta = state.meta;
+      if (meta.nodes[event.node] && meta.nodes[event.node].type === 'sink') {
+        state.sinkReceived[event.sku] = (state.sinkReceived[event.sku] || 0) + event.quantity;
+        const day = Math.floor(event.time / state.dayLength) + 1;
+        if (!state.dayReceived[day]) state.dayReceived[day] = {};
+        state.dayReceived[day][event.sku] = (state.dayReceived[day][event.sku] || 0) + event.quantity;
+      }
+      break;
+    }
+    case 'dispatched': {
+      for (const [sku, qty] of event.items) {
+        state.removeInventory(event.node, sku, qty);
+      }
+      // spawn visual transit (real-time animation, not sim time)
+      state.activeTransits.push({
+        from: event.node,
+        to: event.destination,
+        items: event.items,
+        start: performance.now(),
+        duration: 1500,
+      });
+      break;
+    }
+    case 'materials_consumed': {
+      const cfg = state.meta.nodes[event.node];
+      const upstream = cfg && cfg.upstream;
+      if (upstream && event.inputs) {
+        for (const [sku, qty] of Object.entries(event.inputs)) {
+          state.removeInventory(upstream, sku, qty);
+        }
+      }
+      break;
+    }
+    case 'production_started': {
+      state.prodStatus[event.node] = 'working';
+      if (!state.inProcess[event.node]) state.inProcess[event.node] = {};
+      state.inProcess[event.node][event.output_sku] =
+        (state.inProcess[event.node][event.output_sku] || 0) + event.quantity;
+      break;
+    }
+    case 'production_completed':
+    case 'production_failed': {
+      if (event.output_sku && state.inProcess[event.node]) {
+        const sku = event.output_sku;
+        state.inProcess[event.node][sku] =
+          (state.inProcess[event.node][sku] || 0) - event.quantity;
+        if (state.inProcess[event.node][sku] <= 0) delete state.inProcess[event.node][sku];
+      }
+      state.prodStatus[event.node] = 'idle';
+      break;
+    }
+    case 'production_idle': {
+      state.prodStatus[event.node] = event.reason === 'waiting_material' ? 'blocked' : 'idle';
+      break;
+    }
+  }
+}
+
+// ==============================================================================
+// Time formatting
+// ==============================================================================
+function formatTime(t, meta) {
+  const dayLen = meta.day_length || 1440;
+  const day = Math.floor(t / dayLen) + 1;
+  const tod = t % dayLen;
+  const hh = String(Math.floor(tod / 60)).padStart(2, '0');
+  const mm = String(Math.floor(tod % 60)).padStart(2, '0');
+  // shift detection
+  const starts = meta.shift_starts || [480, 1200];
+  const dur = meta.shift_duration || 690;
+  let shiftIdx = -1;
+  for (let i = 0; i < starts.length; i++) {
+    if (tod >= starts[i] && tod < starts[i] + dur) { shiftIdx = i; break; }
+  }
+  return { day, hh, mm, shift: shiftIdx >= 0 ? shiftIdx + 1 : 0 };
+}
+
+// ==============================================================================
+// Visualizer
+// ==============================================================================
+class Visualizer {
+  constructor() {
+    this.events = [];
+    this.cursor = 0;
+    this.state = null;
+    this.meta = null;
+    this.time = 0;
+    this.maxTime = 0;
+    this.stepSize = 5;
+    this.speed = 5;
+    this.playing = false;
+    this.animFrame = null;
+    this.lastFrameTs = 0;
+    this.selectedNode = null;
+    this.nodeRects = {};  // {name: {x,y,w,h}} for hit testing
+
+    this.canvas = document.getElementById('canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.wrap = document.getElementById('canvas-wrap');
+
+    this._bindControls();
+    this._bindDrop();
+    this._resize();
+
+    // try loading from URL param
+    const params = new URLSearchParams(window.location.search);
+    const src = params.get('events');
+    if (src) this.loadURL(src);
+
+    // auto-load events.jsonl from same directory if present
+    this._tryAutoLoad();
+  }
+
+  _tryAutoLoad() {
+    fetch('events.jsonl').then(r => {
+      if (r.ok) return r.text();
+      throw new Error('not found');
+    }).then(text => this.parseAndStart(text)).catch(() => {});
+  }
+
+  loadURL(url) {
+    fetch(url).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
+    }).then(text => this.parseAndStart(text)).catch(err => {
+      document.getElementById('no-data').querySelector('.sub').textContent =
+        'Failed to load: ' + err.message;
+    });
+  }
+
+  parseAndStart(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return;
+    this.meta = JSON.parse(lines[0]);
+    if (this.meta.type !== 'meta') return;
+    this.events = lines.slice(1).map(l => JSON.parse(l));
+    this.maxTime = this.meta.sim_duration || 0;
+    this.state = new SimState(this.meta);
+    this.cursor = 0;
+    this.time = 0;
+
+    // add production<->warehouse connections as synthetic edges
+    this._buildVisualEdges();
+
+    document.getElementById('no-data').style.display = 'none';
+    document.getElementById('scenario-name').textContent =
+      'Simulation: ' + (this.meta.scenario || '—');
+
+    this._updateSliderRange();
+    this.render();
+  }
+
+  _buildVisualEdges() {
+    if (!this.meta) return;
+    const edges = this.meta.edges || [];
+    const nodes = this.meta.nodes || {};
+    // production up/downstream
+    for (const [name, cfg] of Object.entries(nodes)) {
+      if (cfg.type === 'production' && cfg.upstream && cfg.downstream) {
+        edges.push({ from: cfg.upstream, to: name, _virtual: true });
+        edges.push({ from: name, to: cfg.downstream, _virtual: true });
+      }
+    }
+    this.visualEdges = edges;
+  }
+
+  // ---- event replay ----------------------------------------------------------
+  advanceTo(targetTime) {
+    if (!this.state) return;
+    targetTime = Math.max(0, Math.min(targetTime, this.maxTime));
+    if (targetTime < this.time) {
+      // backward: reset and replay
+      this.state.reset();
+      this.cursor = 0;
+      this.time = 0;
+    }
+    while (this.cursor < this.events.length &&
+           this.events[this.cursor].time <= targetTime + 1e-9) {
+      applyEvent(this.state, this.events[this.cursor]);
+      this.cursor++;
+    }
+    this.time = targetTime;
+  }
+
+  stepForward() { this.advanceTo(this.time + this.stepSize); this.render(); }
+  stepBackward() { this.advanceTo(this.time - this.stepSize); this.render(); }
+
+  // ---- controls --------------------------------------------------------------
+  _bindControls() {
+    const $ = id => document.getElementById(id);
+    const playBtn = $('btn-play');
+    $('btn-play').onclick = () => this.togglePlay();
+    $('btn-step-f').onclick = () => this.stepForward();
+    $('btn-step-b').onclick = () => this.stepBackward();
+    $('btn-reset').onclick = () => { this.advanceTo(0); this.render(); };
+    $('btn-end').onclick = () => { this.advanceTo(this.maxTime); this.render(); };
+    $('speed-select').onchange = e => { this.speed = Number(e.target.value); };
+    $('step-select').onchange = e => { this.stepSize = Number(e.target.value); };
+    $('time-slider').oninput = e => {
+      if (!this.meta) return;
+      const pct = Number(e.target.value) / 100;
+      this.advanceTo(pct * this.maxTime);
+      this.render();
+    };
+    document.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'k') { e.preventDefault(); this.togglePlay(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); this.stepForward(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); this.stepBackward(); }
+    });
+    // canvas click for node selection
+    this.canvas.onclick = e => {
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      const my = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+      this.selectedNode = null;
+      for (const [name, r] of Object.entries(this.nodeRects)) {
+        if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+          this.selectedNode = name;
+          break;
+        }
+      }
+      this.render();
+    };
+  }
+
+  togglePlay() {
+    this.playing = !this.playing;
+    document.getElementById('btn-play').textContent = this.playing ? '\u25A0' : '\u25B6';
+    document.getElementById('btn-play').classList.toggle('active', this.playing);
+    if (this.playing) {
+      this.lastFrameTs = 0;
+      this._playLoop();
+    } else if (this.animFrame) {
+      cancelAnimationFrame(this.animFrame);
+      this.animFrame = null;
+    }
+  }
+
+  _playLoop() {
+    if (!this.playing) return;
+    const now = performance.now();
+    if (this.lastFrameTs === 0) this.lastFrameTs = now;
+    const realElapsed = (now - this.lastFrameTs) / 1000; // seconds
+    this.lastFrameTs = now;
+    const simAdvance = realElapsed * this.speed * 60; // sim minutes
+
+    const prevTime = this.time;
+    this.advanceTo(this.time + simAdvance);
+    if (this.time >= this.maxTime) {
+      this.playing = false;
+      document.getElementById('btn-play').textContent = '\u25B6';
+      document.getElementById('btn-play').classList.toggle('active', false);
+    }
+    this.render();
+    this.animFrame = requestAnimationFrame(() => this._playLoop());
+  }
+
+  // ---- canvas sizing ---------------------------------------------------------
+  _resize() {
+    const rect = this.wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+    this.displayW = rect.width;
+    this.displayH = rect.height;
+  }
+
+  _updateSliderRange() {
+    const slider = document.getElementById('time-slider');
+    slider.max = '100';
+    slider.value = '0';
+  }
+
+  // ---- compute layout bounds & scale -----------------------------------------
+  _layout() {
+    const layout = (this.meta && this.meta.layout) || {};
+    const pos = layout.nodes || {};
+    const w = this.displayW || 800;
+    const h = this.displayH || 500;
+
+    // find extents
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const pts = Object.values(pos);
+    if (pts.length === 0) return { pos: {}, scale: 1, ox: 0, oy: 0 };
+    for (const p of pts) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    }
+    const pad = 60;
+    const lw = maxX - minX + pad * 2;
+    const lh = maxY - minY + pad * 2;
+    const scale = Math.min(w / lw, h / lh, 1.8);
+    const ox = (w - (maxX - minX) * scale) / 2 - (minX - pad) * scale;
+    const oy = (h - (maxY - minY) * scale) / 2 - (minY - pad) * scale;
+    return { pos, scale, ox, oy };
+  }
+
+  // ---- render -----------------------------------------------------------------
+  render() {
+    if (!this.meta || !this.state) return;
+    this._resize();
+    const ctx = this.ctx;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = this.displayW, H = this.displayH;
+    ctx.clearRect(0, 0, W, H);
+
+    const { pos, scale, ox, oy } = this._layout();
+    const tx = (x, y) => [x * scale + ox, y * scale + oy];
+    const nodeCfg = this.meta.nodes || {};
+    const palSizes = this.meta.pallet_sizes || {};
+
+    // ---- draw edges -----------------------------------------------------------
+    for (const edge of this.visualEdges || []) {
+      const from = pos[edge.from], to = pos[edge.to];
+      if (!from || !to) continue;
+      const [x1, y1] = tx(from.x, from.y);
+      const [x2, y2] = tx(to.x, to.y);
+      ctx.beginPath();
+      if (Math.abs(y2 - y1) < 5) {
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+      } else {
+        const cx = (x1 + x2) / 2;
+        ctx.moveTo(x1, y1);
+        ctx.bezierCurveTo(cx, y1, cx, y2, x2, y2);
+      }
+      ctx.strokeStyle = edge._virtual ? '#30363d' : '#21262d';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // ---- draw active transits -------------------------------------------------
+    const now = performance.now();
+    this.state.activeTransits = this.state.activeTransits.filter(t =>
+      now - t.start < t.duration
+    );
+    for (const t of this.state.activeTransits) {
+      const p = (now - t.start) / t.duration;
+      const fromP = pos[t.from], toP = pos[t.to];
+      if (!fromP || !toP) continue;
+      const [x1, y1] = tx(fromP.x, fromP.y);
+      const [x2, y2] = tx(toP.x, toP.y);
+      const sameRow = Math.abs(y2 - y1) < 5;
+      const cx = (x1 + x2) / 2;
+      const cy = sameRow ? y1 : (y1 + y2) / 2;
+      const t1 = 1 - p;
+      const px = t1 * t1 * x1 + 2 * t1 * p * cx + p * p * x2;
+      const py = t1 * t1 * y1 + 2 * t1 * p * cy + p * p * y2;
+
+      const alpha = 1 - p * p;
+      ctx.beginPath();
+      ctx.arc(px, py, 6 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(88,166,255,${alpha})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(201,209,217,${alpha * 0.5})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // label
+      if (p > 0.2 && p < 0.8) {
+        const label = t.items.map(([s, q]) => {
+          const sn = (this.meta.skus && this.meta.skus[s]) || s;
+          return sn + 'x' + q;
+        }).join(' ');
+        ctx.fillStyle = `rgba(201,209,217,${alpha})`;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, px, py - 8 * scale);
+      }
+    }
+
+    // ---- draw nodes -----------------------------------------------------------
+    this.nodeRects = {};
+    const ndW = 130 * scale, ndH = 64 * scale;
+
+    for (const [name, p] of Object.entries(pos)) {
+      const [bx, by] = tx(p.x, p.y);
+      const cx = bx - ndW / 2, cy = by - ndH / 2;
+      const cfg = nodeCfg[name] || {};
+      const type = cfg.type;
+      const inv = this.state.inventory[name] || {};
+      const palUsed = this.state.palletsUsed[name] || 0;
+
+      let bg = '#161b22', border = '#30363d';
+      if (type === 'source') { bg = '#0d2818'; border = '#238636'; }
+      else if (type === 'sink') { bg = '#1c1c2e'; border = '#58a6ff'; }
+
+      // Draw node background
+      const r = 8 * scale;
+      ctx.beginPath();
+      ctx.roundRect(cx, cy, ndW, ndH, r);
+      ctx.fillStyle = bg;
+      ctx.fill();
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // production status left strip
+      if (type === 'production') {
+        const st = this.state.prodStatus[name] || 'idle';
+        const colors = { working: '#3fb950', blocked: '#d29922', idle: '#484f58' };
+        ctx.fillStyle = colors[st] || colors.idle;
+        ctx.beginPath();
+        ctx.roundRect(cx, cy + 3 * scale, 4 * scale, ndH - 6 * scale, 2 * scale);
+        ctx.fill();
+      }
+
+      // warehouse capacity bar
+      if (type === 'warehouse') {
+        const maxPal = cfg.max_pallets || 1;
+        const barW = ndW - 12 * scale;
+        const barH = 6 * scale;
+        const barY = cy + ndH - barH - 6 * scale;
+        const barX = cx + 6 * scale;
+        // bg
+        ctx.fillStyle = '#21262d';
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW, barH, 2 * scale);
+        ctx.fill();
+        // fill
+        const fill = Math.min(palUsed / maxPal, 1);
+        if (fill > 0) {
+          ctx.fillStyle = '#1f6feb';
+          ctx.beginPath();
+          ctx.roundRect(barX, barY, barW * fill, barH, 2 * scale);
+          ctx.fill();
+        }
+        // capacity text
+        ctx.fillStyle = '#8b949e';
+        ctx.font = `${9 * scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`${palUsed}/${maxPal}`, cx + ndW / 2, barY - 2 * scale);
+      }
+
+      // source icon
+      if (type === 'source') {
+        ctx.fillStyle = '#238636';
+        ctx.font = `bold ${20 * scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u221E', cx + ndW / 2, cy + ndH / 2 - 4 * scale);
+      }
+
+      // sink icon
+      if (type === 'sink') {
+        ctx.fillStyle = '#58a6ff';
+        ctx.font = `bold ${16 * scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u25B6', cx + ndW / 2, cy + ndH / 2 - 4 * scale);
+      }
+
+      // in-process text for production
+      if (type === 'production' && this.state.inProcess[name]) {
+        const ip = this.state.inProcess[name];
+        const parts = Object.entries(ip).filter(([, q]) => q > 0);
+        if (parts.length > 0) {
+          const label = parts.map(([s, q]) => {
+            const sn = (this.meta.skus && this.meta.skus[s]) || s;
+            return sn + 'x' + q;
+          }).join(' ');
+          ctx.fillStyle = '#8b949e';
+          ctx.font = `${9 * scale}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(label, cx + ndW / 2, cy + ndH - 6 * scale);
+        }
+      }
+
+      // display name
+      const dn = cfg.display_name || name;
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = `${12 * scale}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const labelY = type === 'source' || type === 'sink' ? cy + ndH / 2 + 14 * scale
+        : type === 'warehouse' ? cy + ndH * 0.35
+        : type === 'production' ? cy + ndH * 0.38
+        : cy + ndH / 2;
+      ctx.fillText(dn, cx + ndW / 2, labelY);
+
+      // sink received count
+      if (type === 'sink') {
+        const total = Object.values(this.state.sinkReceived || {}).reduce((a, b) => a + b, 0);
+        ctx.fillStyle = '#8b949e';
+        ctx.font = `${10 * scale}px sans-serif`;
+        ctx.fillText(`\u2211${total}`, cx + ndW / 2, cy + ndH * 0.7);
+      }
+
+      // selection highlight
+      if (this.selectedNode === name) {
+        ctx.strokeStyle = '#58a6ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cx - 2 * scale, cy - 2 * scale, ndW + 4 * scale, ndH + 4 * scale, r + 2);
+        ctx.stroke();
+      }
+
+      this.nodeRects[name] = { x: cx, y: cy, w: ndW, h: ndH };
+    }
+
+    // ---- update UI -----------------------------------------------------------
+    this._updateUI();
+    // update detail panel
+    this._updateDetail();
+    this._updateSatisfaction();
+  }
+
+  _updateUI() {
+    if (!this.meta) return;
+    const pct = this.maxTime > 0 ? Math.round(this.time / this.maxTime * 100) : 0;
+    const slider = document.getElementById('time-slider');
+    slider.value = pct;
+    const fmt = formatTime(this.time, this.meta);
+    document.getElementById('clock-day').textContent = `Day ${fmt.day}`;
+    document.getElementById('clock-time').textContent = `${fmt.hh}:${fmt.mm}`;
+    const sh = document.getElementById('clock-shift');
+    if (fmt.shift > 0) {
+      sh.textContent = `Shift ${fmt.shift}`;
+      sh.className = 'shift on';
+    } else {
+      sh.textContent = 'Off shift';
+      sh.className = 'shift off';
+    }
+    document.getElementById('time-label').textContent =
+      `t=${Math.round(this.time)} \u00B7 ${pct}%`;
+  }
+
+  _updateDetail() {
+    const el = document.getElementById('detail-content');
+    if (!this.selectedNode || !this.meta) {
+      el.innerHTML = '<span class="empty">Click a node</span>';
+      return;
+    }
+    const cfg = this.meta.nodes[this.selectedNode] || {};
+    const dn = cfg.display_name || this.selectedNode;
+    const type = cfg.type;
+    const inv = this.state.inventory[this.selectedNode] || {};
+    let html = `<strong>${dn}</strong><br>`;
+    if (type === 'warehouse') {
+      const pal = this.state.palletsUsed[this.selectedNode] || 0;
+      const max = cfg.max_pallets || '—';
+      html += `<span class="val">Pallets: ${pal} / ${max}</span>`;
+      if (Object.keys(inv).length > 0) {
+        html += '<table>';
+        for (const [sku, qty] of Object.entries(inv)) {
+          const sn = (this.meta.skus && this.meta.skus[sku]) || sku;
+          html += `<tr><td>${sn}</td><td>${qty}</td></tr>`;
+        }
+        html += '</table>';
+      }
+      const orders = this.events.filter(e =>
+        e.node === this.selectedNode && e.type === 'order_added' &&
+        e.time >= this.time - this.stepSize && e.time <= this.time
+      );
+      if (orders.length > 0) {
+        html += `<span class="val" style="font-size:.75rem">Pending: ${orders.length}</span>`;
+      }
+    } else if (type === 'production') {
+      const st = this.state.prodStatus[this.selectedNode] || 'idle';
+      const sl = { idle: '\u25CB Idle', working: '\u25CF Working', blocked: '\u25D1 Blocked' };
+      html += `<span class="val">${sl[st] || sl.idle}</span>`;
+      const ip = this.state.inProcess[this.selectedNode] || {};
+      if (Object.keys(ip).length > 0) {
+        for (const [sku, qty] of Object.entries(ip)) {
+          if (qty > 0) {
+            const sn = (this.meta.skus && this.meta.skus[sku]) || sku;
+            html += `<br><span class="val">Making: ${sn} x${qty}</span>`;
+          }
+        }
+      }
+    } else if (type === 'source') {
+      let total = 0;
+      for (const sku of Object.values(inv)) total += sku;
+      // count dispatches
+      let dispatched = 0;
+      for (const e of this.events) {
+        if (e.node === this.selectedNode && e.type === 'dispatched' && e.time <= this.time) {
+          for (const [, qty] of e.items) dispatched += qty;
+        }
+      }
+      html += `<span class="val">Dispatched: ${dispatched}</span>`;
+    } else if (type === 'sink') {
+      const recv = this.state.sinkReceived || {};
+      let total = 0;
+      let rows = '';
+      for (const [sku, qty] of Object.entries(recv)) {
+        total += qty;
+        const sn = (this.meta.skus && this.meta.skus[sku]) || sku;
+        rows += `<tr><td>${sn}</td><td>${qty}</td></tr>`;
+      }
+      html += `<span class="val">Total: ${total}</span>`;
+      if (rows) html += '<table>' + rows + '</table>';
+    }
+    el.innerHTML = html;
+  }
+
+  _updateSatisfaction() {
+    const el = document.getElementById('satisfaction-content');
+    if (!this.meta || !this.meta.demand || Object.keys(this.meta.demand).length === 0) {
+      el.innerHTML = '<div class="empty">No demand data</div>';
+      return;
+    }
+    const demand = this.meta.demand;
+    const dayRecv = this.state.dayReceived || {};
+    const allSkus = new Set();
+    for (const d of Object.values(demand)) for (const s of Object.keys(d)) allSkus.add(s);
+
+    let totalDem = {}, totalRec = {};
+    let html = '';
+    for (const sku of [...allSkus].sort()) {
+      let dem = 0, rec = 0;
+      for (const [day, skus] of Object.entries(demand)) {
+        dem += skus[sku] || 0;
+        rec += (dayRecv[day] && dayRecv[day][sku]) || 0;
+      }
+      totalDem[sku] = dem;
+      totalRec[sku] = rec;
+      const ok = rec >= dem;
+      const sn = (this.meta.skus && this.meta.skus[sku]) || sku;
+      html += `<div class="row"><span>${sn}</span><span class="${ok ? 'ok' : 'miss'}">${rec}/${dem}</span></div>`;
+    }
+    const grandDem = Object.values(totalDem).reduce((a, b) => a + b, 0);
+    const grandRec = Object.values(totalRec).reduce((a, b) => a + b, 0);
+    const pct = grandDem > 0 ? Math.round(grandRec / grandDem * 100) : 0;
+    html += `<div class="total">${grandRec} / ${grandDem} (${pct}%)</div>`;
+    el.innerHTML = html;
+  }
+
+  // ---- drag-drop loading ------------------------------------------------------
+  _bindDrop() {
+    const overlay = document.getElementById('drop-overlay');
+    document.addEventListener('dragover', e => {
+      e.preventDefault();
+      overlay.classList.add('drag-over');
+    });
+    document.addEventListener('dragleave', e => {
+      e.preventDefault();
+      overlay.classList.remove('drag-over');
+    });
+    document.addEventListener('drop', e => {
+      e.preventDefault();
+      overlay.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => this.parseAndStart(reader.result);
+      reader.readAsText(file);
+    });
+  }
+}
+
+// Polyfill roundRect for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, radii) {
+    const r = typeof radii === 'number' ? radii : (radii || 0);
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    return this;
+  };
+}
+
+// Start
+new Visualizer();
+</script>
+</body>
+</html>
