@@ -70,6 +70,7 @@ class ProductionNode(sim.Component):
         downstream_node,
         env: sim.Environment | None = None,
         global_time_step: float = 10.0,
+        retry_delay: float = 10.0,
         display_name: str | None = None,
         **kwargs,
     ):
@@ -82,6 +83,7 @@ class ProductionNode(sim.Component):
         self.upstream_node = upstream_node
         self.downstream_node = downstream_node
         self.global_time_step: float = global_time_step
+        self.retry_delay: float = retry_delay
 
         self.production_queue: list[ProductionOrder] = []
         self.edges_out: list = []
@@ -180,6 +182,10 @@ class ProductionNode(sim.Component):
                     for sku in required
                 },
             })
+            # Requeue so production retries when materials arrive
+            job.activate_time = self.env.now() + self.retry_delay
+            self.production_queue.append(job)
+            self.production_queue.sort(key=lambda j: (j.activate_time, j.job_id))
             return
 
         # --- 2. consume ---

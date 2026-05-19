@@ -16,6 +16,7 @@ import salabim as sim
 from src.edge import Edge, TransferMode, TransportOrder
 from src.warehouse_node import WarehouseNode, NodeRole
 from src.production_node import ProductionNode
+from src.management import Management
 
 
 def _dn(node: object) -> str:
@@ -320,12 +321,13 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             if target is not None and hasattr(target, "add_production_order"):
                 target.add_production_order(pjob)
 
-    # -- load transport orders onto edges -----------------------------------
-    if hasattr(orders_module, "TRANSPORT_ORDERS"):
-        for order in orders_module.TRANSPORT_ORDERS:
-            edge = find_edge(edges, order.from_node, order.to_node)
-            if edge is not None:
-                edge.add_transport_order(order)
+    # -- Management: issues transport orders at the right time ---------------
+    transport_orders = getattr(orders_module, "TRANSPORT_ORDERS", [])
+    management = Management(
+        transport_orders=transport_orders,
+        edges=edges,
+        env=env,
+    )
 
     sku_map: dict[str, str] = getattr(config, "SKUS", {})
     if isinstance(sku_map, (list, tuple)):

@@ -1,9 +1,8 @@
-"""Unit tests for Edge-based transport order execution.
+"""Unit tests for Edge-based transport order execution and Management.
 
-The old ``JobManager`` has been removed; transport orders are placed
-directly on ``Edge`` instances.  See ``test_unit_edge.py`` for exhaustive
-Edge tests.  Here we test cross-component integration: orders spanning
-multiple edges, timing, and start-time gating.
+The old ``JobManager`` has been removed; transport orders are managed by
+:class:`Management` (a ``salabim.Component``) which issues static orders
+onto the correct edge at the right time.
 """
 
 import pytest
@@ -11,6 +10,7 @@ import salabim as sim
 
 from src.edge import Edge, TransferMode, TransportOrder
 from src.warehouse_node import WarehouseNode, NodeRole
+from src.management import Management
 
 
 @pytest.fixture
@@ -181,3 +181,109 @@ class TestMultiHop:
         )
         assert total_in_system == 30
         assert sink.received.get("SKU_X", 0) == 30
+
+
+# ===================================================================
+# Management component tests
+# ===================================================================
+
+class TestManagement:
+    """Management issues static transport orders onto edges at the right time."""
+
+    @pytest.fixture
+    def env(self):
+        sim.yieldless(False)
+        return sim.Environment(trace=False)
+
+    @pytest.fixture
+    def source(self, env):
+        return WarehouseNode(
+            name="source", role=NodeRole.SOURCE,
+            conversion_factors={"SKU_X": 10}, env=env,
+        )
+
+    @pytest.fixture
+    def wh(self, env):
+        return WarehouseNode(
+            name="wh", role=NodeRole.WAREHOUSE,
+            conversion_factors={"SKU_X": 10}, env=env, max_pallets=100,
+        )
+
+    def test_issues_immediate_orders_at_t0(self, env, source, wh):
+        """Orders with start_time=0 are issued on the first wake-up (t=0)."""
+        e = Edge(
+            from_node=source, to_node=wh,
+            transfer_mode=TransferMode.BATCH,
+            transfer_time=0.01, batch_size=999, env=env,
+        )
+        order = TransportOrder(
+            sku="SKU_X", quantity=50,
+            from_node="source", to_node="wh",
+            start_time=0, expect_time=10,
+        )
+        mgmt = Management(
+            transport_orders=[order], edges=[e],
+            decision_interval=10.0, env=env,
+        )
+        # Management issues order at t=0; edge wakes at t=1.0 to execute.
+        env.run(1.5)
+        assert wh.inventory.get("SKU_X", 0) == 50
+
+    def test_does_not_issue_future_orders(self, env, source, wh):
+        """Orders with start_time in the future are NOT issued early."""
+        e = Edge(
+            from_node=source, to_node=wh,
+            transfer_mode=TransferMode.BATCH,
+            transfer_time=0.01, batch_size=999, env=env,
+        )
+        order = TransportOrder(
+            sku="SKU_X", quantity=50,
+            from_node="source", to_node="wh",
+            start_time=50, expect_time=60,
+        )
+        mgmt = Management(
+            transport_orders=[order], edges=[e],
+            decision_interval=10.0, env=env,
+        )
+        env.run(10)
+        # At t=10, management has woken up at t=0 and t=10.
+        # start_time=50 > 10 → not issued.
+        assert wh.inventory.get("SKU_X", 0) == 0
+
+    def test_issues_delayed_orders_after_start_time(self, env, source, wh):
+        """Orders with start_time=15 are issued at the t=20 wake-up."""
+        e = Edge(
+            from_node=source, to_node=wh,
+            transfer_mode=TransferMode.BATCH,
+            transfer_time=0.01, batch_size=999, env=env,
+        )
+        order = TransportOrder(
+            sku="SKU_X", quantity=50,
+            from_node="source", to_node="wh",
+            start_time=15, expect_time=30,
+        )
+        mgmt = Management(
+            transport_orders=[order], edges=[e],
+            decision_interval=10.0, env=env,
+        )
+        # t=10 → start=15 not yet
+        env.run(10)
+        assert wh.inventory.get("SKU_X", 0) == 0
+        # t=20 → management issued order at t=20 wake-up
+        env.run(25)
+        assert wh.inventory.get("SKU_X", 0) == 50
+
+    def test_find_edge_by_node_name(self, env, source, wh):
+        """find_edge matches (from_node.node_name, to_node.node_name)."""
+        e = Edge(
+            from_node=source, to_node=wh,
+            transfer_mode=TransferMode.BATCH,
+            transfer_time=0.01, batch_size=999, env=env,
+        )
+        mgmt = Management(
+            transport_orders=[], edges=[e],
+            decision_interval=10.0, env=env,
+        )
+        found = mgmt.find_edge("source", "wh")
+        assert found is e
+        assert mgmt.find_edge("source", "nonexistent") is None
