@@ -21,13 +21,15 @@ import salabim as sim
 class ProductionOrder:
     """A production order targeting a specific ProductionNode.
 
-    The order becomes eligible when ``start_time <= env.now()``.  Among
+    The order becomes eligible when ``activate_time <= env.now()``.  Among
     eligible orders, the one with the lowest ``job_id`` is picked first.
+    ``expect_time`` is used for scheduling / priority display.
     """
     job_id: int
-    output_sku: str
+    sku: str
     quantity: int
-    start_time: float
+    activate_time: float
+    expect_time: float
     node_name: str                     # which production node to run on
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -102,9 +104,9 @@ class ProductionNode(sim.Component):
     # ------------------------------------------------------------------
 
     def add_production_order(self, order: ProductionOrder) -> None:
-        """Queue a production order (sorted by start_time, then job_id)."""
+        """Queue a production order (sorted by activate_time, then job_id)."""
         self.production_queue.append(order)
-        self.production_queue.sort(key=lambda j: (j.start_time, j.job_id))
+        self.production_queue.sort(key=lambda j: (j.activate_time, j.job_id))
 
     def add_edge_out(self, edge) -> None:
         self.edges_out.append(edge)
@@ -138,7 +140,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "production_output",
-            "output_sku": sku,
+            "sku": sku,
             "quantity": quantity,
             "destination": self.downstream_node.display_name,
         })
@@ -157,7 +159,7 @@ class ProductionNode(sim.Component):
         3. Wait ``lead_time``.
         4. Loop: produce in ``global_time_step`` batches, push downstream.
         """
-        bom_entry = self.bom[job.output_sku]
+        bom_entry = self.bom[job.sku]
 
         # --- 1. material check ---
         required: dict[str, int] = {}
@@ -169,7 +171,7 @@ class ProductionNode(sim.Component):
                 "time": self.env.now(),
                 "type": "production_failed",
                 "job_id": job.job_id,
-                "output_sku": job.output_sku,
+                "sku": job.sku,
                 "reason": "insufficient_material",
                 "required": dict(required),
                 "available": {
@@ -185,7 +187,7 @@ class ProductionNode(sim.Component):
             "time": self.env.now(),
             "type": "materials_consumed",
             "job_id": job.job_id,
-            "output_sku": job.output_sku,
+            "sku": job.sku,
             "quantity": job.quantity,
             "inputs": dict(required),
         })
@@ -193,7 +195,7 @@ class ProductionNode(sim.Component):
             "time": self.env.now(),
             "type": "production_started",
             "job_id": job.job_id,
-            "output_sku": job.output_sku,
+            "sku": job.sku,
             "quantity": job.quantity,
         })
 
@@ -217,14 +219,14 @@ class ProductionNode(sim.Component):
                 batch_duration = remaining / speed
 
             yield self.hold(batch_duration)
-            self._output_to_downstream(job.output_sku, batch)
+            self._output_to_downstream(job.sku, batch)
             remaining -= batch
 
         self.log.append({
             "time": self.env.now(),
             "type": "production_completed",
             "job_id": job.job_id,
-            "output_sku": job.output_sku,
+            "sku": job.sku,
             "quantity": job.quantity,
         })
 
@@ -237,7 +239,7 @@ class ProductionNode(sim.Component):
         while True:
             eligible = [
                 j for j in self.production_queue
-                if j.start_time <= self.env.now() + 1e-9
+                if j.activate_time <= self.env.now() + 1e-9
             ]
 
             if not eligible:

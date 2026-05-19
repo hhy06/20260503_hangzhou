@@ -138,17 +138,17 @@ class TestConsumeMaterials:
 class TestProductionQueueOrder:
     def test_sort_by_start_time_then_job_id(self):
         _, _, prod, _ = _make_production_scene()
-        prod.add_production_order(ProductionOrder(job_id=3, output_sku="A", quantity=10, start_time=10, node_name="X"))
-        prod.add_production_order(ProductionOrder(job_id=1, output_sku="A", quantity=10, start_time=5, node_name="X"))
-        prod.add_production_order(ProductionOrder(job_id=2, output_sku="A", quantity=10, start_time=10, node_name="X"))
+        prod.add_production_order(ProductionOrder(job_id=3, sku="A", quantity=10, activate_time=10, expect_time=100, node_name="X"))
+        prod.add_production_order(ProductionOrder(job_id=1, sku="A", quantity=10, activate_time=5, expect_time=100, node_name="X"))
+        prod.add_production_order(ProductionOrder(job_id=2, sku="A", quantity=10, activate_time=10, expect_time=100, node_name="X"))
         # Expected order: (5,1), (10,2), (10,3)
         assert [j.job_id for j in prod.production_queue] == [1, 2, 3]
 
     def test_same_start_time_lower_job_id_first(self):
         _, _, prod, _ = _make_production_scene()
-        prod.add_production_order(ProductionOrder(job_id=5, output_sku="A", quantity=10, start_time=5, node_name="X"))
-        prod.add_production_order(ProductionOrder(job_id=3, output_sku="A", quantity=10, start_time=5, node_name="X"))
-        prod.add_production_order(ProductionOrder(job_id=4, output_sku="A", quantity=10, start_time=5, node_name="X"))
+        prod.add_production_order(ProductionOrder(job_id=5, sku="A", quantity=10, activate_time=5, expect_time=100, node_name="X"))
+        prod.add_production_order(ProductionOrder(job_id=3, sku="A", quantity=10, activate_time=5, expect_time=100, node_name="X"))
+        prod.add_production_order(ProductionOrder(job_id=4, sku="A", quantity=10, activate_time=5, expect_time=100, node_name="X"))
         assert prod.production_queue[0].job_id == 3
         assert prod.production_queue[1].job_id == 4
         assert prod.production_queue[2].job_id == 5
@@ -183,7 +183,7 @@ class TestExecuteJob:
     def test_production_fails_on_insufficient_material(self):
         env, up, prod, _ = _make_production_scene()
         # No materials in upstream
-        job = ProductionOrder(job_id=1, output_sku="SKU_A", quantity=100, start_time=0, node_name="TestProd")
+        job = ProductionOrder(job_id=1, sku="SKU_A", quantity=100, activate_time=0, expect_time=500, node_name="TestProd")
         prod.add_production_order(job)
 
         sim.yieldless(False)
@@ -195,7 +195,7 @@ class TestExecuteJob:
         _seed_upstream(up, "wip_X", 500)
         _seed_upstream(up, "wip_Y", 500)
 
-        job = ProductionOrder(job_id=1, output_sku="SKU_A", quantity=100, start_time=50, node_name="TestProd")
+        job = ProductionOrder(job_id=1, sku="SKU_A", quantity=100, activate_time=50, expect_time=500, node_name="TestProd")
         prod.add_production_order(job)
 
         sim.yieldless(False)
@@ -208,7 +208,7 @@ class TestExecuteJob:
         _seed_upstream(up, "wip_X", 500)
         _seed_upstream(up, "wip_Y", 500)
 
-        job = ProductionOrder(job_id=1, output_sku="SKU_A", quantity=100, start_time=0, node_name="TestProd")
+        job = ProductionOrder(job_id=1, sku="SKU_A", quantity=100, activate_time=0, expect_time=500, node_name="TestProd")
         prod.add_production_order(job)
 
         sim.yieldless(False)
@@ -231,7 +231,7 @@ class TestExecuteJob:
         _seed_upstream(up, "wip_X", 500)
         _seed_upstream(up, "wip_Y", 500)
 
-        job = ProductionOrder(job_id=1, output_sku="SKU_A", quantity=250, start_time=0, node_name="TestProd")
+        job = ProductionOrder(job_id=1, sku="SKU_A", quantity=250, activate_time=0, expect_time=500, node_name="TestProd")
         prod.add_production_order(job)
 
         sim.yieldless(False)
@@ -258,7 +258,7 @@ class TestExecuteJob:
         _seed_upstream(up, "wip_X", 500)
         _seed_upstream(up, "wip_Y", 500)
 
-        job = ProductionOrder(job_id=1, output_sku="SKU_A", quantity=250, start_time=0, node_name="TestProd")
+        job = ProductionOrder(job_id=1, sku="SKU_A", quantity=250, activate_time=0, expect_time=500, node_name="TestProd")
         prod.add_production_order(job)
 
         sim.yieldless(False)
@@ -275,9 +275,9 @@ class TestExecuteJob:
         _seed_upstream(up, "wip_Y", 1000)
 
         prod.add_production_order(
-            ProductionOrder(job_id=1, output_sku="SKU_A", quantity=250, start_time=0, node_name="TestProd"))
+            ProductionOrder(job_id=1, sku="SKU_A", quantity=250, activate_time=0, expect_time=500, node_name="TestProd"))
         prod.add_production_order(
-            ProductionOrder(job_id=2, output_sku="SKU_A", quantity=100, start_time=50, node_name="TestProd"))
+            ProductionOrder(job_id=2, sku="SKU_A", quantity=100, activate_time=50, expect_time=500, node_name="TestProd"))
 
         sim.yieldless(False)
         env.run(200)

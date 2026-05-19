@@ -271,8 +271,8 @@ class TestSourceProductionSink:
 
         # Production job starts after raw arrives
         prod.add_production_order(ProductionOrder(
-            job_id=1, output_sku="fg", quantity=10,
-            start_time=2, node_name="prod",
+            job_id=1, sku="fg", quantity=10,
+            activate_time=2, expect_time=20, node_name="prod",
         ))
 
         env.run(20)
@@ -356,8 +356,8 @@ class TestSourceProductionWarehouseSink:
         # Production consumes raw → outputs fg to fin_wh
         # 30 fg @ speed 10/min → 3 min production
         prod.add_production_order(ProductionOrder(
-            job_id=1, output_sku="fg", quantity=30,
-            start_time=4, node_name="prod",
+            job_id=1, sku="fg", quantity=30,
+            activate_time=4, expect_time=30, node_name="prod",
         ))
 
         # Fin_wh ships fg to sink (after production finishes ~t=7)

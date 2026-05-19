@@ -71,31 +71,35 @@ PRODUCTION_JOBS = [
     # -- seasoning: both run in parallel from t=0 --
     ProductionOrder(
         job_id=1,
-        output_sku="sauce_wip",
+        sku="sauce_wip",
         quantity=100,
-        start_time=0,
+        activate_time=0,
+        expect_time=100,
         node_name="sauce_workshop",
     ),
     ProductionOrder(
         job_id=2,
-        output_sku="powder_wip",
+        sku="powder_wip",
         quantity=100,
-        start_time=0,
+        activate_time=0,
+        expect_time=100,
         node_name="powder_workshop",
     ),
     # -- noodle making: delayed so WIPs have time to flow through --
     ProductionOrder(
         job_id=3,
-        output_sku="fg_noodle",
+        sku="fg_noodle",
         quantity=40,
-        start_time=50,
+        activate_time=50,
+        expect_time=100,
         node_name="noodle_ws_1",
     ),
     ProductionOrder(
         job_id=4,
-        output_sku="fg_noodle",
+        sku="fg_noodle",
         quantity=40,
-        start_time=50,
+        activate_time=50,
+        expect_time=100,
         node_name="noodle_ws_2",
     ),
 ]

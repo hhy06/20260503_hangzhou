@@ -284,9 +284,9 @@ class TestTransportOrderReferences:
             pytest.skip(f"{scenario}: no PRODUCTION_JOBS")
         skus = _sku_keys(cfg)
         for pj in om.PRODUCTION_JOBS:
-            assert pj.output_sku in skus, \
-                f"{scenario}: prod job #{pj.job_id} output_sku '{pj.output_sku}' not in SKUS"
+            assert pj.sku in skus, \
+                f"{scenario}: prod job #{pj.job_id} sku '{pj.sku}' not in SKUS"
             assert pj.quantity > 0, \
                 f"{scenario}: prod job #{pj.job_id} quantity must be positive"
-            assert pj.start_time >= 0, \
-                f"{scenario}: prod job #{pj.job_id} start_time must be >= 0"
+            assert pj.activate_time >= 0, \
+                f"{scenario}: prod job #{pj.job_id} activate_time must be >= 0"

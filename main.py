@@ -242,25 +242,25 @@ def process_all_logs(
                 f"  [t={t:.1f}] {ndn}: consumed {inputs_str} for job #{entry['job_id']}"
             )
         elif entry["type"] == "production_started":
-            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
                 f"  [t={t:.1f}] {ndn}: production started job #{entry['job_id']}"
                 f" -> {sku_name} x{entry['quantity']}"
             )
         elif entry["type"] == "production_output":
-            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
                 f"  [t={t:.1f}] {ndn}: produced {sku_name} x{entry['quantity']}"
                 f" -> {entry.get('destination', '?')}"
             )
         elif entry["type"] == "production_completed":
-            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
                 f"  [t={t:.1f}] {ndn}: production completed job #{entry['job_id']}"
                 f" -> {sku_name} x{entry['quantity']}"
             )
         elif entry["type"] == "production_failed":
-            sku_name = _sku_display(entry["output_sku"], sku_map) if sku_map else entry["output_sku"]
+            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
                 f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** job #{entry['job_id']}"
                 f" -> {sku_name} (insufficient material)"
@@ -373,9 +373,9 @@ def run_scenario(scenario_name: str) -> SimulationResult:
         for pj in orders_module.PRODUCTION_JOBS:
             target_node = nodes.get(pj.node_name)
             ndn = _dn(target_node) if target_node else pj.node_name
-            output_name = _sku_display(pj.output_sku, sku_map)
+            output_name = _sku_display(pj.sku, sku_map)
             print(
-                f"  t={pj.start_time}: {ndn}: {output_name} x{pj.quantity} (job #{pj.job_id})"
+                f"  t={pj.activate_time}: {ndn}: {output_name} x{pj.quantity} (job #{pj.job_id})"
             )
     print("=" * 70)
     print()
