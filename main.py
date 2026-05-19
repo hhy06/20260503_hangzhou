@@ -425,5 +425,5 @@ def run_scenario(scenario_name: str) -> SimulationResult:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    scenario = sys.argv[1] if len(sys.argv) > 1 else "scenario1"
+    scenario = sys.argv[1] if len(sys.argv) > 1 else "scenario_hangzhou0"
     run_scenario(scenario)
