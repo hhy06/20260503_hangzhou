@@ -143,6 +143,36 @@ class WarehouseNode(sim.Component):
                     f" > capacity {self.node_max_pallets}"
                 )
 
+    # ------------------------------------------------------------------
+    # inventory query / mutation (the ONLY interface edges and production use)
+    # ------------------------------------------------------------------
+
+    def available_qty(self, sku: str) -> int | float:
+        """Return current stock of *sku*.  SOURCE returns infinity."""
+        if self.role == NodeRole.SOURCE:
+            return float("inf")
+        if self.role != NodeRole.WAREHOUSE:
+            return 0
+        return self.inventory.get(sku, 0)
+
+    def debit_whole(self, sku: str, quantity: int) -> bool:
+        """Deduct exactly *quantity* items.  Returns True on success.
+
+        WAREHOUSE: fails (returns False) if stock < quantity — nothing is
+        deducted.  SOURCE: always succeeds (infinite supply).
+        """
+        if self.role == NodeRole.SOURCE:
+            return True
+        if self.role != NodeRole.WAREHOUSE:
+            return False
+        current = self.inventory.get(sku, 0)
+        if current < quantity:
+            return False
+        self.inventory[sku] = current - quantity
+        if self.inventory[sku] <= 0:
+            del self.inventory[sku]
+        return True
+
     def add_sku(self, sku: str, items_per_pallet: int):
         """Register a new SKU with its pallet conversion factor."""
         if sku in self.conversion_factors:

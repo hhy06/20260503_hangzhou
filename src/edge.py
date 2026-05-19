@@ -87,6 +87,7 @@ class Edge(sim.Component):
 
         self.pending_queue: list[TransportOrder] = []
         self.activated_queue: list[TransportOrder] = []
+        self.edge_stock: dict[str, int] = {}   # in-transit items (debited from A, not yet received by B)
         self.log: list[dict] = []
 
     def __repr__(self) -> str:
@@ -133,30 +134,19 @@ class Edge(sim.Component):
         Flow
         ----
         1. Compute pallet count (quantity → ceil to full pallets).
-        2. Debit the full amount from ``from_node.inventory`` (skipped for
-           SOURCE nodes which have infinite supply).
-        3. Deliver pallets incrementally — one per ``transfer_time`` in
-           PER_PALLET mode, ``batch_size`` per ``transfer_time`` in BATCH
-           mode — to ``to_node.receive()``.
+        2. Debit the full amount from ``from_node`` via ``debit_whole``.
+        3. Load debited items into ``self.edge_stock`` (in-transit buffer).
+        4. Drain ``edge_stock`` to ``to_node.receive()`` — one item per
+           ``transfer_time`` in PER_PALLET mode, ``batch_size`` pallets per
+           ``transfer_time`` in BATCH mode.
         """
         sku = order.sku
         items_per_pallet = self.from_node.conversion_factors[sku]
         num_pallets = math.ceil(order.quantity / items_per_pallet)
         desired_items = num_pallets * items_per_pallet  # round up to full pallets
 
-        # -- 1. Debit source node inventory (only WAREHOUSE nodes) ----------
-        if hasattr(self.from_node, "inventory") and self.from_node.inventory is not None:
-            inv = self.from_node.inventory
-            current = inv.get(sku, 0)
-            debit_quantity = min(desired_items, current)
-            inv[sku] = current - debit_quantity
-            if inv[sku] <= 0:
-                del inv[sku]
-        else:
-            # SOURCE / no-inventory nodes: unlimited supply
-            debit_quantity = desired_items
-
-        if debit_quantity <= 0:
+        # -- 1. Debit source node inventory (all-or-nothing) ----------------
+        if not self.from_node.debit_whole(sku, desired_items):
             self.log.append({
                 "time": self.env.now(),
                 "type": "transport_order_skipped",
@@ -168,10 +158,8 @@ class Edge(sim.Component):
             })
             return
 
-        # Deliver exactly what was debited (no re-rounding to pallets).
-        # The pallet count is informational only.
-        actual_items = debit_quantity
-        actual_pallets = math.ceil(actual_items / items_per_pallet)
+        actual_items = desired_items
+        actual_pallets = num_pallets
 
         self.log.append({
             "time": self.env.now(),
@@ -183,27 +171,28 @@ class Edge(sim.Component):
             "pallets": actual_pallets,
         })
 
-        # -- 2. Incremental delivery ----------------------------------------
-        remaining = actual_items
+        # -- 2. Load into edge stock (in-transit buffer) --------------------
+        self.edge_stock[sku] = self.edge_stock.get(sku, 0) + actual_items
+
+        # -- 3. Incremental delivery from edge stock to B --------------------
         if self.transfer_mode == TransferMode.PER_PALLET:
-            while remaining > 0:
-                deliver = min(items_per_pallet, remaining)
+            while self.edge_stock.get(sku, 0) > 0:
                 yield self.hold(self.transfer_time)
-                self.to_node.receive(sku, deliver, source=self.from_node)
-                remaining -= deliver
+                self.to_node.receive(sku, 1, source=self.from_node)
+                self.edge_stock[sku] -= 1
         else:  # BATCH
-            while remaining > 0:
+            while self.edge_stock.get(sku, 0) > 0:
+                stock = self.edge_stock[sku]
                 pallets_this_batch = min(
                     self.batch_size,
-                    math.ceil(remaining / items_per_pallet),
+                    math.ceil(stock / items_per_pallet),
                 )
-                deliver = min(
-                    pallets_this_batch * items_per_pallet,
-                    remaining,
-                )
+                deliver = min(pallets_this_batch * items_per_pallet, stock)
                 yield self.hold(self.transfer_time)
                 self.to_node.receive(sku, deliver, source=self.from_node)
-                remaining -= deliver
+                self.edge_stock[sku] -= deliver
+
+        del self.edge_stock[sku]  # clean up zero-key
 
         self.log.append({
             "time": self.env.now(),
@@ -234,7 +223,20 @@ class Edge(sim.Component):
 
             if self.activated_queue:
                 self.activated_queue.sort(key=lambda o: o.expect_time)
-                order = self.activated_queue.pop(0)
-                yield from self._execute_order(order)
+                # Scan from highest priority (earliest expect_time) and pick
+                # the first order whose source has enough stock.
+                executed = False
+                for i in range(len(self.activated_queue)):
+                    candidate = self.activated_queue[i]
+                    items_per_pallet = self.from_node.conversion_factors[candidate.sku]
+                    num_pallets = math.ceil(candidate.quantity / items_per_pallet)
+                    desired_items = num_pallets * items_per_pallet
+                    if self.from_node.available_qty(candidate.sku) >= desired_items:
+                        self.activated_queue.pop(i)
+                        yield from self._execute_order(candidate)
+                        executed = True
+                        break
+                if not executed:
+                    yield self.hold(1.0)
             else:
                 yield self.hold(1.0)     # check again soon

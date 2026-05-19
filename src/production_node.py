@@ -120,19 +120,20 @@ class ProductionNode(sim.Component):
 
     def _check_materials(self, required: dict[str, int]) -> bool:
         """Return True if upstream warehouse has enough of every input SKU."""
-        inv = self.upstream_node.inventory
         for sku, needed in required.items():
-            if inv.get(sku, 0) < needed:
+            if self.upstream_node.available_qty(sku) < needed:
                 return False
         return True
 
     def _consume_materials(self, required: dict[str, int]) -> None:
         """Deduct materials from upstream warehouse (instant)."""
-        inv = self.upstream_node.inventory
         for sku, qty in required.items():
-            inv[sku] -= qty
-            if inv[sku] <= 0:
-                del inv[sku]
+            ok = self.upstream_node.debit_whole(sku, qty)
+            if not ok:
+                raise RuntimeError(
+                    f"Production consumed materials that were not checked. "
+                    f"SKU {sku} qty {qty} — this is a simulation logic bug."
+                )
 
     def _output_to_downstream(self, sku: str, quantity: int) -> None:
         """Push finished goods to downstream warehouse (always accepted)."""
@@ -175,7 +176,7 @@ class ProductionNode(sim.Component):
                 "reason": "insufficient_material",
                 "required": dict(required),
                 "available": {
-                    sku: self.upstream_node.inventory.get(sku, 0)
+                    sku: self.upstream_node.available_qty(sku)
                     for sku in required
                 },
             })

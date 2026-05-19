@@ -141,11 +141,11 @@ class TestExecutePerPallet:
             start_time=0, expect_time=10,
         )
         e.add_transport_order(order)
-        env.run(5)
+        env.run(21)
 
         # 10 items debited from WH_A (10/10 = 1 pallet)
         assert wh_a.inventory.get("SKU_X", 0) == 90
-        # 10 items delivered to WH_B at t=2 (after 1 hold of 2.0)
+        # 10 items delivered to WH_B at 1/tick (transfer_time=2.0) → done t=20
         assert wh_b.inventory.get("SKU_X", 0) == 10
 
     def test_multi_pallet_interval(self, env, wh_a, wh_b):
@@ -159,10 +159,9 @@ class TestExecutePerPallet:
             start_time=0, expect_time=10,
         )
         e.add_transport_order(order)
-        env.run(3.5)
+        env.run(31)
 
-        # After t=3: 3 pallets delivered, 1 more in transit
-        # WH_B should have 30 items (3 pallets × 10)
+        # 30 items delivered at 1/tick → done t=30
         assert wh_b.inventory.get("SKU_X", 0) == 30
         # WH_A debited 30 items
         assert wh_a.inventory.get("SKU_X", 0) == 70
@@ -178,11 +177,11 @@ class TestExecutePerPallet:
             start_time=0, expect_time=10,
         )
         e.add_transport_order(order)
-        env.run(2)
+        env.run(11)
 
         # 1 pallet debited (= 10 items, rounded up from 5)
         assert wh_a.inventory.get("SKU_X", 0) == 90
-        # 10 items delivered
+        # 10 items delivered at 1/tick → done t=10
         assert wh_b.inventory.get("SKU_X", 0) == 10
 
 
@@ -245,9 +244,9 @@ class TestExecuteFromSource:
             start_time=0, expect_time=10,
         )
         e.add_transport_order(order)
-        env.run(10)
+        env.run(51)
 
-        # SOURCE has no inventory — no debit
+        # 50 items delivered at 1/tick from SOURCE → done t=50
         assert wh_b.inventory.get("SKU_X", 0) == 50
 
 
@@ -273,7 +272,7 @@ class TestPriorityOrdering:
         e.add_transport_order(low_pri)
         e.add_transport_order(high_pri)
 
-        env.run(3)
+        env.run(11)
         total_b = wh_b.inventory.get("SKU_X", 0)
-        # Both should have been delivered
+        # Both orders executed (20 items @ 0.5/tick → done t=10)
         assert total_b == 20

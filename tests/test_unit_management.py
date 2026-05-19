@@ -67,8 +67,8 @@ class TestSingleHop:
             start_time=0, expect_time=10,
         )
         e.add_transport_order(order)
-        env.run(10)
-        # Source infinite → no debit, 5 pallets × 10 items = 50 delivered
+        env.run(51)
+        # Source infinite → no debit, 50 items delivered at 1/tick → done t=50
         assert wh_a.inventory.get("SKU_X", 0) == 50
 
     def test_warehouse_to_sink(self, env, wh_a, sink):
@@ -83,8 +83,8 @@ class TestSingleHop:
             start_time=0, expect_time=10,
         )
         e.add_transport_order(order)
-        env.run(10)
-        # WH_A debited 50 items
+        env.run(51)
+        # WH_A debited 50 items, delivered at 1/tick → done t=50
         assert wh_a.inventory.get("SKU_X", 0) == 50
         # Sink received 50 items
         assert sink.received.get("SKU_X", 0) == 50
@@ -170,7 +170,8 @@ class TestMultiHop:
         e2.add_transport_order(hop2)
         e3.add_transport_order(hop3)
 
-        env.run(15)
+        # PER_PALLET @ 1/tick: hop1=30t, hop2=30t, hop3=30t → all in sink by t=90
+        env.run(91)
 
         # All 30 items should now be in the sink
         total_in_system = (

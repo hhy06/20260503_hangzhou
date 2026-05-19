@@ -115,20 +115,20 @@ class TestSourceWarehouseSink:
         )
         edges = [e1, e2]
 
-        # Hop 1: source->wh (30 items = 3 pallets @ 1 min each → finishes t=3)
+        # Hop 1: source->wh (30 items x 1/tick @ 1 min → finishes t=30)
         e1.add_transport_order(TransportOrder(
             sku="SKU_X", quantity=30,
             from_node="source", to_node="wh",
             start_time=0, expect_time=10,
         ))
-        # Hop 2: wh->sink (starts after hop 1 delivers)
+        # Hop 2: wh->sink (starts after hop 1 delivers at t=30)
         e2.add_transport_order(TransportOrder(
             sku="SKU_X", quantity=30,
             from_node="wh", to_node="sink",
             start_time=4, expect_time=20,
         ))
 
-        env.run(15)
+        env.run(61)
         return nodes, edges
 
     def test_wh_empty(self, scenario):
@@ -185,20 +185,20 @@ class TestSourceWarehouseSinkLeftover:
         )
         edges = [e1, e2]
 
-        # Hop 1: 50 items = 5 pallets @ 1 min → finishes t=5
+        # Hop 1: 50 items @ 1/tick → finishes t=50
         e1.add_transport_order(TransportOrder(
             sku="SKU_X", quantity=50,
             from_node="source", to_node="wh",
             start_time=0, expect_time=10,
         ))
-        # Hop 2: wh forwards 30 of 50 → wh retains 20
+        # Hop 2: wh forwards 30 (starts after hop 1 delivers at t=50)
         e2.add_transport_order(TransportOrder(
             sku="SKU_X", quantity=30,
             from_node="wh", to_node="sink",
             start_time=6, expect_time=20,
         ))
 
-        env.run(20)
+        env.run(81)
         return nodes, edges
 
     def test_wh_has_leftover(self, scenario):
@@ -262,17 +262,17 @@ class TestSourceProductionSink:
         )
         edges = [e1]
 
-        # Source sends 10 raw to lineside (1 pallet @ 1 min → t=1)
+        # Source sends 10 raw to lineside @ 1/tick → delivered t=1..10
         e1.add_transport_order(TransportOrder(
             sku="raw", quantity=10,
             from_node="source", to_node="lineside",
             start_time=0, expect_time=5,
         ))
 
-        # Production job starts after raw arrives
+        # Production job starts after all raw has arrived
         prod.add_production_order(ProductionOrder(
             job_id=1, sku="fg", quantity=10,
-            activate_time=2, expect_time=20, node_name="prod",
+            activate_time=12, expect_time=20, node_name="prod",
         ))
 
         env.run(20)
@@ -303,7 +303,7 @@ class TestSourceProductionWarehouseSink:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"raw": 100, "fg": 50}
+        cf = {"raw": 100, "fg": 30}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
             conversion_factors=cf, env=env,
@@ -346,28 +346,28 @@ class TestSourceProductionWarehouseSink:
         )
         edges = [e1, e2]
 
-        # Source ships 30 raw to raw_wh (3 pallets @ 1 min → t=3)
+        # Source ships 30 raw to raw_wh (pallet=100 → rounds to 100 items @ 1/tick → t=100)
         e1.add_transport_order(TransportOrder(
             sku="raw", quantity=30,
             from_node="source", to_node="raw_wh",
             start_time=0, expect_time=10,
         ))
 
-        # Production consumes raw → outputs fg to fin_wh
+        # Production consumes raw → outputs fg to fin_wh (starts after raw arrives at t=100)
         # 30 fg @ speed 10/min → 3 min production
         prod.add_production_order(ProductionOrder(
             job_id=1, sku="fg", quantity=30,
-            activate_time=4, expect_time=30, node_name="prod",
+            activate_time=102, expect_time=30, node_name="prod",
         ))
 
-        # Fin_wh ships fg to sink (after production finishes ~t=7)
+        # Fin_wh ships fg to sink (after production finishes ~t=105)
         e2.add_transport_order(TransportOrder(
             sku="fg", quantity=30,
             from_node="fin_wh", to_node="sink",
             start_time=8, expect_time=20,
         ))
 
-        env.run(30)
+        env.run(140)
         return nodes, edges
 
     def test_sink_received_fg(self, scenario):
@@ -416,24 +416,24 @@ class TestMultipleOrdersSameEdge:
             transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
         )
 
-        # Three non-overlapping orders on the same edge
+        # Three non-overlapping orders on the same edge (10+20+30=60 items @ 1/tick → t=60)
         e.add_transport_order(TransportOrder(
-            sku="SKU_X", quantity=10,  # 1 pallet @ t=0..1
+            sku="SKU_X", quantity=10,
             from_node="source", to_node="wh",
             start_time=0, expect_time=5,
         ))
         e.add_transport_order(TransportOrder(
-            sku="SKU_X", quantity=20,  # 2 pallets @ t=2..4
+            sku="SKU_X", quantity=20,
             from_node="source", to_node="wh",
             start_time=2, expect_time=10,
         ))
         e.add_transport_order(TransportOrder(
-            sku="SKU_X", quantity=30,  # 3 pallets @ t=5..8
+            sku="SKU_X", quantity=30,
             from_node="source", to_node="wh",
             start_time=5, expect_time=15,
         ))
 
-        env.run(20)
+        env.run(61)
         return nodes, [e]
 
     def test_total_in_wh(self, scenario):
