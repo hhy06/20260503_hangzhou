@@ -37,7 +37,7 @@ def _make_edge(env, from_node, to_node, mode=TransferMode.PER_PALLET,
                time=1.0, batch=1):
     return Edge(
         from_node=from_node, to_node=to_node,
-        transfer_mode=mode, transfer_time=time, batch_size=batch,
+        transfer_mode=mode, batch_transport_time=time, batch_pallets=batch,
         env=env,
     )
 
@@ -53,12 +53,12 @@ class TestEdgeConstruction:
         assert e.to_node is wh_b
         assert e.transfer_mode == TransferMode.PER_PALLET
 
-    def test_batch_mode_validates_batch_size(self, env, wh_a, wh_b):
-        with pytest.raises(ValueError, match="batch_size"):
+    def test_batch_mode_validates_batch_pallets(self, env, wh_a, wh_b):
+        with pytest.raises(ValueError, match="batch_pallets"):
             Edge(
                 from_node=wh_a, to_node=wh_b,
-                transfer_mode=TransferMode.BATCH, transfer_time=1.0,
-                batch_size=0, env=env,
+                transfer_mode=TransferMode.BATCH, batch_transport_time=1.0,
+                batch_pallets=0, env=env,
             )
 
     def test_name_default(self, env, wh_a, wh_b):
@@ -68,7 +68,7 @@ class TestEdgeConstruction:
     def test_custom_name(self, env, wh_a, wh_b):
         e = Edge(
             from_node=wh_a, to_node=wh_b,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0,
             name="my_edge", env=env,
         )
         assert e.edge_name == "my_edge"
@@ -77,8 +77,8 @@ class TestEdgeConstruction:
         e = _make_edge(env, wh_a, wh_b, mode=TransferMode.BATCH, batch=10)
         r = repr(e)
         assert "batch" in r
-        assert "transfer_time=1" in r
-        assert "batch_size=10" in r
+        assert "batch_transport_time=1" in r
+        assert "batch_pallets=10" in r
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +145,7 @@ class TestExecutePerPallet:
 
         # 10 items debited from WH_A (10/10 = 1 pallet)
         assert wh_a.inventory.get("SKU_X", 0) == 90
-        # 10 items delivered to WH_B at 1/tick (transfer_time=2.0) → done t=20
+        # 10 items delivered to WH_B at 1/tick (batch_transport_time=2.0) → done t=20
         assert wh_b.inventory.get("SKU_X", 0) == 10
 
     def test_multi_pallet_interval(self, env, wh_a, wh_b):
@@ -191,7 +191,7 @@ class TestExecutePerPallet:
 
 class TestExecuteBatch:
     def test_single_batch(self, env, wh_a, wh_b):
-        """20 items = 2 pallets, batch_size=5 → 1 batch of 2 pallets."""
+        """20 items = 2 pallets, batch_pallets=5 → 1 batch of 2 pallets."""
         wh_a.inventory = {"SKU_X": 100}
         e = _make_edge(env, wh_a, wh_b, mode=TransferMode.BATCH, time=3.0, batch=5)
 
@@ -208,7 +208,7 @@ class TestExecuteBatch:
         assert wh_b.inventory.get("SKU_X", 0) == 20
 
     def test_multi_batch(self, env, wh_a, wh_b):
-        """100 items = 10 pallets, batch_size=3 → 4 batches."""
+        """100 items = 10 pallets, batch_pallets=3 → 4 batches."""
         wh_a.inventory = {"SKU_X": 200}
         e = _make_edge(env, wh_a, wh_b, mode=TransferMode.BATCH, time=2.0, batch=3)
 

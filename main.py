@@ -17,6 +17,7 @@ from src.infrastructure.edge import Edge, TransferMode, TransportOrder
 from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
 from src.infrastructure.production_node import ProductionNode
 from src.management.static_order import StaticOrderManagement
+from src.management.safe_stock_management import SafeStockManagement
 
 
 def _dn(node: object) -> str:
@@ -138,8 +139,8 @@ def build_edges(config, nodes: dict[str, Any], env: sim.Environment) -> list[Edg
             from_node=from_node,
             to_node=to_node,
             transfer_mode=ecfg["transfer_mode"],
-            transfer_time=ecfg["transfer_time"],
-            batch_size=ecfg.get("batch_size", 1),
+            batch_transport_time=ecfg["batch_transport_time"],
+            batch_pallets=ecfg.get("batch_pallets", 1),
             env=env,
         )
         from_node.add_edge_out(edge)
@@ -324,6 +325,16 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             decision_interval=management_cfg.get("decision_interval", 10.0),
             env=env,
         )
+    elif mgmt_type == "safe_stock":
+        safe_stock_module = importlib.import_module(f"{scenario_name}.safe_stock")
+        management = SafeStockManagement(
+            safe_stock_config=safe_stock_module.SAFE_STOCK,
+            nodes=nodes,
+            edges=edges,
+            demand_orders=getattr(safe_stock_module, "DEMAND_ORDERS", []),
+            decision_interval=management_cfg.get("decision_interval", 10.0),
+            env=env,
+        )
     else:
         raise ValueError(f"Unknown management type: {mgmt_type}")
 
@@ -356,7 +367,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     for e in edges:
         print(
             f"  {e.name} | mode={e.transfer_mode.value},"
-            f" time={e.transfer_time}, batch={e.batch_size}"
+            f" batch_transport_time={e.batch_transport_time}, batch_pallets={e.batch_pallets}"
         )
     print()
     print("Transport orders:")

@@ -107,11 +107,11 @@ class TestSourceWarehouseSink:
 
         e1 = Edge(
             from_node=source, to_node=wh,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         e2 = Edge(
             from_node=wh, to_node=sink,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         edges = [e1, e2]
 
@@ -177,11 +177,11 @@ class TestSourceWarehouseSinkLeftover:
 
         e1 = Edge(
             from_node=source, to_node=wh,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         e2 = Edge(
             from_node=wh, to_node=sink,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         edges = [e1, e2]
 
@@ -258,7 +258,7 @@ class TestSourceProductionSink:
 
         e1 = Edge(
             from_node=source, to_node=lineside,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         edges = [e1]
 
@@ -338,11 +338,11 @@ class TestSourceProductionWarehouseSink:
 
         e1 = Edge(
             from_node=source, to_node=raw_wh,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         e2 = Edge(
             from_node=fin_wh, to_node=sink,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         edges = [e1, e2]
 
@@ -413,7 +413,7 @@ class TestMultipleOrdersSameEdge:
 
         e = Edge(
             from_node=source, to_node=wh,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
 
         # Three non-overlapping orders on the same edge (10+20+30=60 items @ 1/tick → t=60)
@@ -473,7 +473,7 @@ class TestStartTimeGating:
 
         e = Edge(
             from_node=source, to_node=wh,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
 
         # Order with start_time=50 (far in the future)
@@ -519,11 +519,11 @@ class TestBatchMode:
 
         e = Edge(
             from_node=source, to_node=wh,
-            transfer_mode=TransferMode.BATCH, transfer_time=2.0,
-            batch_size=5, env=env,
+            transfer_mode=TransferMode.BATCH, batch_transport_time=2.0,
+            batch_pallets=5, env=env,
         )
 
-        # 30 items = 3 pallets, batch_size=5 so only 1 batch needed
+        # 30 items = 3 pallets, batch_pallets=5 so only 1 batch needed
         e.add_transport_order(TransportOrder(
             sku="SKU_X", quantity=30,
             from_node="source", to_node="wh",

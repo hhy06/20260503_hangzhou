@@ -1,6 +1,6 @@
 """Static orders for the Hangzhou scenario.
 
-Timeline (with fast transport edges, transfer_time=0.01):
+Timeline (with fast transport edges, batch_transport_time=0.01):
   t=0       Source -> Primary storage (all raw materials)
   t=2       Storage -> Linesides (ingredients for WIP production)
   t=5       WIP production begins

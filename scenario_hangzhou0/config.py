@@ -371,8 +371,8 @@ EDGES.append({
     "from_node": "source",
     "to_node": "raw_material_storage",
     "transfer_mode": TransferMode.BATCH,
-    "transfer_time": 0.01,
-    "batch_size": 999,
+    "batch_transport_time": 0.01,
+    "batch_pallets": 999,
 })
 
 # Source -> main_storage_1 (veg ingredients + packaging)
@@ -380,8 +380,8 @@ EDGES.append({
     "from_node": "source",
     "to_node": "main_storage_1",
     "transfer_mode": TransferMode.BATCH,
-    "transfer_time": 0.01,
-    "batch_size": 999,
+    "batch_transport_time": 0.01,
+    "batch_pallets": 999,
 })
 
 # Source -> main_storage_2 (packaging)
@@ -389,8 +389,8 @@ EDGES.append({
     "from_node": "source",
     "to_node": "main_storage_2",
     "transfer_mode": TransferMode.BATCH,
-    "transfer_time": 0.01,
-    "batch_size": 999,
+    "batch_transport_time": 0.01,
+    "batch_pallets": 999,
 })
 
 # raw_material_storage -> lineside_sauce_i
@@ -399,8 +399,8 @@ for i in range(1, N + 1):
         "from_node": "raw_material_storage",
         "to_node": f"lineside_sauce_{i}",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # output_sauce_i -> WIP_storage
@@ -409,8 +409,8 @@ for i in range(1, N + 1):
         "from_node": f"output_sauce_{i}",
         "to_node": "WIP_storage",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # raw_material_storage -> lineside_powder_i
@@ -419,8 +419,8 @@ for i in range(1, NUM_POWDER_LINES + 1):
         "from_node": "raw_material_storage",
         "to_node": f"lineside_powder_{i}",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # output_powder_i -> WIP_storage
@@ -429,8 +429,8 @@ for i in range(1, NUM_POWDER_LINES + 1):
         "from_node": f"output_powder_{i}",
         "to_node": "WIP_storage",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # WIP_storage -> main_storage_1, main_storage_2
@@ -439,8 +439,8 @@ for si in (1, 2):
         "from_node": "WIP_storage",
         "to_node": f"main_storage_{si}",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # main_storage_1 -> lineside_noodle_i (i=1..8)
@@ -449,8 +449,8 @@ for i in range(1, 9):
         "from_node": "main_storage_1",
         "to_node": f"lineside_noodle_{i}",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # main_storage_2 -> lineside_noodle_i (i=9..16)
@@ -459,8 +459,8 @@ for i in range(9, NUM_NOODLE_LINES + 1):
         "from_node": "main_storage_2",
         "to_node": f"lineside_noodle_{i}",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # output_noodle_i -> fg_storage
@@ -469,8 +469,8 @@ for i in range(1, NUM_NOODLE_LINES + 1):
         "from_node": f"output_noodle_{i}",
         "to_node": "fg_storage",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # main_storage_1 -> lineside_veg
@@ -478,8 +478,8 @@ EDGES.append({
     "from_node": "main_storage_1",
     "to_node": "lineside_veg",
     "transfer_mode": TransferMode.BATCH,
-    "transfer_time": 0.01,
-    "batch_size": 999,
+    "batch_transport_time": 0.01,
+    "batch_pallets": 999,
 })
 
 # output_veg -> main_storage_1, main_storage_2
@@ -488,8 +488,8 @@ for si in (1, 2):
         "from_node": "output_veg",
         "to_node": f"main_storage_{si}",
         "transfer_mode": TransferMode.BATCH,
-        "transfer_time": 0.01,
-        "batch_size": 999,
+        "batch_transport_time": 0.01,
+        "batch_pallets": 999,
     })
 
 # fg_storage -> sink
@@ -497,8 +497,8 @@ EDGES.append({
     "from_node": "fg_storage",
     "to_node": "sink",
     "transfer_mode": TransferMode.BATCH,
-    "transfer_time": 0.01,
-    "batch_size": 999,
+    "batch_transport_time": 0.01,
+    "batch_pallets": 999,
 })
 
 # =========================================================================

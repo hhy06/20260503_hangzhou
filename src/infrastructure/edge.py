@@ -41,11 +41,11 @@ class Edge(sim.Component):
     from_node : WarehouseNode
     to_node : WarehouseNode
     transfer_mode : TransferMode
-        ``PER_PALLET`` — one pallet every *transfer_time* minutes.
-        ``BATCH`` — up to *batch_size* pallets every *transfer_time* minutes.
-    transfer_time : float
+        ``PER_PALLET`` — one pallet every *batch_transport_time* minutes.
+        ``BATCH`` — up to *batch_pallets* pallets every *batch_transport_time* minutes.
+    batch_transport_time : float
         Minutes between pallet (PER_PALLET) or batch (BATCH) deliveries.
-    batch_size : int, optional
+    batch_pallets : int, optional
         Number of pallets per batch (only meaningful in BATCH mode).
     env : sim.Environment | None
     """
@@ -55,8 +55,8 @@ class Edge(sim.Component):
         from_node,
         to_node,
         transfer_mode: TransferMode,
-        transfer_time: float,
-        batch_size: int = 1,
+        batch_transport_time: float,
+        batch_pallets: int = 1,
         name: str | None = None,
         env: sim.Environment | None = None,
         **kwargs,
@@ -64,11 +64,11 @@ class Edge(sim.Component):
         self.from_node = from_node
         self.to_node = to_node
         self.transfer_mode = transfer_mode
-        self.transfer_time = transfer_time
-        self.batch_size = batch_size
+        self.batch_transport_time = batch_transport_time
+        self.batch_pallets = batch_pallets
 
-        if transfer_mode == TransferMode.BATCH and batch_size < 1:
-            raise ValueError("batch_size must be >= 1 for batch mode")
+        if transfer_mode == TransferMode.BATCH and batch_pallets < 1:
+            raise ValueError("batch_pallets must be >= 1 for batch mode")
 
         node_name_from = (
             getattr(from_node, "node_name", None)
@@ -93,7 +93,7 @@ class Edge(sim.Component):
     def __repr__(self) -> str:
         return (
             f"Edge({self.edge_name}, mode={self.transfer_mode.value}, "
-            f"transfer_time={self.transfer_time}, batch_size={self.batch_size})"
+            f"batch_transport_time={self.batch_transport_time}, batch_pallets={self.batch_pallets})"
         )
 
     # ------------------------------------------------------------------
@@ -137,8 +137,8 @@ class Edge(sim.Component):
         2. Debit the full amount from ``from_node`` via ``debit_whole``.
         3. Load debited items into ``self.edge_stock`` (in-transit buffer).
         4. Drain ``edge_stock`` to ``to_node.receive()`` — one item per
-           ``transfer_time`` in PER_PALLET mode, ``batch_size`` pallets per
-           ``transfer_time`` in BATCH mode.
+            ``batch_transport_time`` in PER_PALLET mode, ``batch_pallets`` pallets per
+            ``batch_transport_time`` in BATCH mode.
         """
         sku = order.sku
         items_per_pallet = self.from_node.conversion_factors[sku]
@@ -177,18 +177,18 @@ class Edge(sim.Component):
         # -- 3. Incremental delivery from edge stock to B --------------------
         if self.transfer_mode == TransferMode.PER_PALLET:
             while self.edge_stock.get(sku, 0) > 0:
-                yield self.hold(self.transfer_time)
+                yield self.hold(self.batch_transport_time)
                 self.to_node.receive(sku, 1, source=self.from_node)
                 self.edge_stock[sku] -= 1
         else:  # BATCH
             while self.edge_stock.get(sku, 0) > 0:
                 stock = self.edge_stock[sku]
                 pallets_this_batch = min(
-                    self.batch_size,
+                    self.batch_pallets,
                     math.ceil(stock / items_per_pallet),
                 )
                 deliver = min(pallets_this_batch * items_per_pallet, stock)
-                yield self.hold(self.transfer_time)
+                yield self.hold(self.batch_transport_time)
                 self.to_node.receive(sku, deliver, source=self.from_node)
                 self.edge_stock[sku] -= deliver
 

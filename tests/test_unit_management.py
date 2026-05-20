@@ -59,7 +59,7 @@ class TestSingleHop:
     def test_source_to_warehouse(self, env, source, wh_a):
         e = Edge(
             from_node=source, to_node=wh_a,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=50,
@@ -75,7 +75,7 @@ class TestSingleHop:
         wh_a.inventory = {"SKU_X": 100}
         e = Edge(
             from_node=wh_a, to_node=sink,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=50,
@@ -98,7 +98,7 @@ class TestStartTime:
     def test_order_not_executed_before_start(self, env, source, wh_a):
         e = Edge(
             from_node=source, to_node=wh_a,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=50,
@@ -115,7 +115,7 @@ class TestStartTime:
     def test_order_executes_after_start(self, env, source, wh_a):
         e = Edge(
             from_node=source, to_node=wh_a,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=30,
@@ -136,15 +136,15 @@ class TestMultiHop:
     def test_three_hop_transport(self, env, source, wh_a, wh_b, sink):
         e1 = Edge(
             from_node=source, to_node=wh_a,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         e2 = Edge(
             from_node=wh_a, to_node=wh_b,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
         e3 = Edge(
             from_node=wh_b, to_node=sink,
-            transfer_mode=TransferMode.PER_PALLET, transfer_time=1.0, env=env,
+            transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=env,
         )
 
         # Each order corresponds to one edge hop (per spec #5).
@@ -214,7 +214,7 @@ class TestManagement:
         e = Edge(
             from_node=source, to_node=wh,
             transfer_mode=TransferMode.BATCH,
-            transfer_time=0.01, batch_size=999, env=env,
+            batch_transport_time=0.01, batch_pallets=999, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=50,
@@ -234,7 +234,7 @@ class TestManagement:
         e = Edge(
             from_node=source, to_node=wh,
             transfer_mode=TransferMode.BATCH,
-            transfer_time=0.01, batch_size=999, env=env,
+            batch_transport_time=0.01, batch_pallets=999, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=50,
@@ -255,7 +255,7 @@ class TestManagement:
         e = Edge(
             from_node=source, to_node=wh,
             transfer_mode=TransferMode.BATCH,
-            transfer_time=0.01, batch_size=999, env=env,
+            batch_transport_time=0.01, batch_pallets=999, env=env,
         )
         order = TransportOrder(
             sku="SKU_X", quantity=50,
@@ -278,7 +278,7 @@ class TestManagement:
         e = Edge(
             from_node=source, to_node=wh,
             transfer_mode=TransferMode.BATCH,
-            transfer_time=0.01, batch_size=999, env=env,
+            batch_transport_time=0.01, batch_pallets=999, env=env,
         )
         mgmt = StaticOrderManagement(
             transport_orders=[], edges=[e],
