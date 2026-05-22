@@ -7,17 +7,16 @@ Usage:
 """
 
 import importlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 import sys
 
 import salabim as sim
 
-from src.infrastructure.edge import Edge, TransferMode, TransportOrder
-from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.infrastructure.edge import Edge
+from src.infrastructure.warehouse_node import NodeRole
 from src.infrastructure.production_node import ProductionNode
-from src.management.static_order import StaticOrderManagement
-from src.management.safe_stock_management import SafeStockManagement
+from src.builder import SimulationContext
 
 
 def _dn(node: object) -> str:
@@ -81,72 +80,6 @@ class SimulationResult:
                 logs.append({"node": edge.name, **entry})
         logs.sort(key=lambda x: x["time"])
         return logs
-
-
-# ---------------------------------------------------------------------------
-# Build helpers
-# ---------------------------------------------------------------------------
-
-
-def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
-    """Build all nodes in two passes:
-
-    1. Source / warehouse / sink nodes (WarehouseNode).
-    2. Production nodes (ProductionNode) — requires warehouses to exist.
-    """
-    nodes: dict[str, Any] = {}
-
-    # -- Pass 1: warehouse-class nodes --------------------------------------
-    for node_name, cfg in config.NODES.items():
-        ntype = cfg["type"]
-        if ntype in ("source", "warehouse", "sink"):
-            cf = dict(config.PALLET_SIZE)
-            node = WarehouseNode(
-                name=node_name,
-                role=NodeRole(ntype),
-                conversion_factors=cf,
-                env=env,
-                max_pallets=cfg.get("max_pallets"),
-                display_name=cfg.get("display_name", node_name),
-            )
-            nodes[node_name] = node
-
-    # -- Pass 2: production nodes -------------------------------------------
-    for node_name, cfg in config.NODES.items():
-        if cfg["type"] == "production":
-            node = ProductionNode(
-                name=node_name,
-                bom=cfg["bom"],
-                output_conversion_factors=cfg.get("conversion_factors", {}),
-                upstream_node=nodes[cfg["upstream"]],
-                downstream_node=nodes[cfg["downstream"]],
-                env=env,
-                global_time_step=cfg.get("global_time_step", 10.0),
-                display_name=cfg.get("display_name", node_name),
-            )
-            nodes[node_name] = node
-
-    return nodes
-
-
-def build_edges(config, nodes: dict[str, Any], env: sim.Environment) -> list[Edge]:
-    """Build edges and register them with their incident nodes."""
-    edges = []
-    for ecfg in config.EDGES:
-        from_node = nodes[ecfg["from_node"]]
-        to_node = nodes[ecfg["to_node"]]
-        edge = Edge(
-            from_node=from_node,
-            to_node=to_node,
-            transfer_mode=ecfg["transfer_mode"],
-            batch_transport_time=ecfg["batch_transport_time"],
-            batch_pallets=ecfg.get("batch_pallets", 1),
-            env=env,
-        )
-        from_node.add_edge_out(edge)
-        to_node.add_edge_in(edge)
-        edges.append(edge)
-    return edges
 
 
 # ---------------------------------------------------------------------------
@@ -298,50 +231,18 @@ def process_all_logs(
 
 
 def run_scenario(scenario_name: str) -> SimulationResult:
-    config = importlib.import_module(f"{scenario_name}.config")
+    # Each scenario exposes a ``scenario_builder`` module with a
+    # ``create_simulation()`` that returns a fully initialised context.
+    builder = importlib.import_module(f"{scenario_name}.scenario_builder")
+    ctx: SimulationContext = builder.create_simulation()
+
     orders_module = importlib.import_module(f"{scenario_name}.config_static_jobs")
 
-    sim.yieldless(False)
-    env = sim.Environment(trace=False)
-
-    nodes = build_nodes(config, env)
-    edges = build_edges(config, nodes, env)
-
-    # -- load production orders into production nodes -----------------------
-    if hasattr(orders_module, "PRODUCTION_JOBS"):
-        for pjob in orders_module.PRODUCTION_JOBS:
-            target = nodes.get(pjob.node_name)
-            if target is not None and hasattr(target, "add_production_order"):
-                target.add_production_order(pjob)
-
-    # -- Management: config-based instantiation -----------------------------
-    management_cfg = getattr(config, "MANAGEMENT", {})
-    mgmt_type = management_cfg.get("type", "static_order")
-    if mgmt_type == "static_order":
-        transport_orders = getattr(orders_module, "TRANSPORT_ORDERS", [])
-        management = StaticOrderManagement(
-            transport_orders=transport_orders,
-            edges=edges,
-            decision_interval=management_cfg.get("decision_interval", 10.0),
-            env=env,
-        )
-    elif mgmt_type == "safe_stock":
-        safe_stock_module = importlib.import_module(f"{scenario_name}.safe_stock")
-        management = SafeStockManagement(
-            safe_stock_config=safe_stock_module.SAFE_STOCK,
-            nodes=nodes,
-            edges=edges,
-            demand_orders=getattr(safe_stock_module, "DEMAND_ORDERS", []),
-            decision_interval=management_cfg.get("decision_interval", 10.0),
-            env=env,
-        )
-    else:
-        raise ValueError(f"Unknown management type: {mgmt_type}")
-
-    sku_map: dict[str, str] = getattr(config, "SKUS", {})
-    if isinstance(sku_map, (list, tuple)):
-        # Legacy: SKUS is a list — build identity map for backward compat
-        sku_map = {s: s for s in sku_map}
+    config = ctx.config
+    env = ctx.env
+    nodes = ctx.nodes
+    edges = ctx.edges
+    sku_map = ctx.sku_map
 
     # -- print setup -------------------------------------------------------
     print("=" * 70)
