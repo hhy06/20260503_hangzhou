@@ -3,7 +3,7 @@
   source -> raw_wh -> prod -> fg_wh -> sink
 """
 from src.infrastructure.edge import TransferMode
-from scenario_example.bom import FG_BOM
+from scenario.example.bom import FG_BOM
 
 # ---------------------------------------------------------------------------
 # Nodes

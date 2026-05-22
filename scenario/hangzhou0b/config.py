@@ -7,7 +7,7 @@ specific categories of information to specialised sub-modules:
     bom.py             Bill-of-materials (ingredient maps)
     plant_topology.py  Node and edge definitions
 
-Any consumer that does ``from scenario_hangzhou0b import config`` gets
+Any consumer that does ``from scenario.hangzhou0b import config`` gets
 access to all the names below on ``config.*``.
 """
 

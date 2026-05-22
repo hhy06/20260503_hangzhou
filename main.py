@@ -3,7 +3,7 @@
 Usage:
     python main.py                 → runs scenario1
     python main.py scenario1       → runs scenario1
-    python main.py scenario_hangzhou0 → runs the Hangzhou scenario
+    python main.py scenario.hangzhou0 → runs the Hangzhou scenario
 """
 
 import importlib
@@ -436,5 +436,5 @@ def run_scenario(scenario_name: str) -> SimulationResult:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    scenario = sys.argv[1] if len(sys.argv) > 1 else "scenario_hangzhou0"
+    scenario = sys.argv[1] if len(sys.argv) > 1 else "scenario.hangzhou0"
     run_scenario(scenario)

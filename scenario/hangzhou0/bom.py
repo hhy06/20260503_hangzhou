@@ -3,7 +3,7 @@
 Depends on ``sku.N`` for the number of FG SKUs.
 """
 
-from scenario_hangzhou0.sku import N
+from scenario.hangzhou0.sku import N
 
 # ---------------------------------------------------------------------------
 # WIP Ingredient maps  (what raw materials go into each WIP SKU)

@@ -7,8 +7,8 @@ This module could be replaced by a JSON reader or generator in future.
 
 from src.infrastructure.edge import TransferMode
 
-from scenario_hangzhou0.sku import N
-from scenario_hangzhou0.bom import (
+from scenario.hangzhou0.sku import N
+from scenario.hangzhou0.bom import (
     SAUCE_INGREDIENTS,
     POWDER_INGREDIENTS,
     VEG_INGREDIENTS,

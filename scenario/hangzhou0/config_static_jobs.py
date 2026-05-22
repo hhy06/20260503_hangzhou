@@ -22,7 +22,7 @@ Timeline (with fast transport edges, batch_transport_time=0.01):
 from src.infrastructure.edge import TransportOrder
 from src.infrastructure.production_node import ProductionOrder
 
-from scenario_hangzhou0.config import (
+from scenario.hangzhou0.config import (
     N, NUM_POWDER_LINES, NUM_NOODLE_LINES,
     SAUCE_INGREDIENTS, POWDER_INGREDIENTS, VEG_INGREDIENTS,
     LINE_SKU_MAP, sku_bom_inputs,

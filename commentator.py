@@ -2,7 +2,7 @@
 """Run a simulation scenario and get an LLM commentary on what happened.
 
 Usage:
-    python3 commentator.py scenario_hangzhou0
+    python3 commentator.py scenario.hangzhou0
     python3 commentator.py scenario1
 """
 

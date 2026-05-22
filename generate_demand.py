@@ -3,7 +3,7 @@
 
 Usage::
 
-    python generate_demand.py scenario_hangzhou0 --days 20 --per-day 50
+    python generate_demand.py scenario.hangzhou0 --days 20 --per-day 50
 
 This appends ``DEMAND_ORDERS`` to the scenario's ``safe_stock.py`` file.
 """
@@ -67,7 +67,7 @@ def main():
 
     source = generate(args.scenario, days=args.days, per_day=args.per_day,
                       start_time_step=args.step)
-    out_path = os.path.join(args.scenario, "safe_stock.py")
+    out_path = os.path.join(*(args.scenario.split(".") + ["safe_stock.py"]))
     if os.path.exists(out_path):
         with open(out_path, "a") as f:
             f.write("\n")

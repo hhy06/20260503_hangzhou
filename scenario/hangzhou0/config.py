@@ -7,14 +7,14 @@ specific categories of information to specialised sub-modules:
     bom.py             Bill-of-materials (ingredient maps)
     plant_topology.py  Node and edge definitions
 
-Any consumer that does ``from scenario_hangzhou0 import config`` gets
+Any consumer that does ``from scenario.hangzhou0 import config`` gets
 access to all the names below on ``config.*``.
 """
 
 # ---------------------------------------------------------------------------
 # SKU definitions
 # ---------------------------------------------------------------------------
-from scenario_hangzhou0.sku import (
+from scenario.hangzhou0.sku import (
     N,
     SKUS,
     PALLET_SIZE,
@@ -23,7 +23,7 @@ from scenario_hangzhou0.sku import (
 # ---------------------------------------------------------------------------
 # Bill-of-materials  (ingredient maps, FG BOM helper, line→SKU assignment)
 # ---------------------------------------------------------------------------
-from scenario_hangzhou0.bom import (
+from scenario.hangzhou0.bom import (
     SAUCE_INGREDIENTS,
     POWDER_INGREDIENTS,
     VEG_INGREDIENTS,
@@ -34,7 +34,7 @@ from scenario_hangzhou0.bom import (
 # ---------------------------------------------------------------------------
 # Plant topology  (nodes + edges)
 # ---------------------------------------------------------------------------
-from scenario_hangzhou0.plant_topology import (
+from scenario.hangzhou0.plant_topology import (
     NODES,
     EDGES,
     NUM_POWDER_LINES,

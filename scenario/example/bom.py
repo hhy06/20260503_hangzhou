@@ -2,7 +2,7 @@
 
 Both FG SKUs require one unit of raw_a and one unit of raw_b.
 """
-from scenario_example.sku import N
+from scenario.example.sku import N
 
 _BOM: dict[str, dict] = {}
 

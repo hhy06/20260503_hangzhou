@@ -3,7 +3,7 @@
 
 Usage::
 
-    python generate_stock.py scenario_hangzhou0
+    python generate_stock.py scenario.hangzhou0
 
 Output is written to ``{scenario}/safe_stock.py``.
 """
@@ -150,7 +150,7 @@ def main():
         sys.exit(1)
     scenario = sys.argv[1]
     source = generate(scenario)
-    out_path = os.path.join(scenario, "safe_stock.py")
+    out_path = os.path.join(*(scenario.split(".") + ["safe_stock.py"]))
     if os.path.exists(out_path):
         print(f"  [SKIP] {out_path} already exists — delete it first to regenerate")
         return
