@@ -45,7 +45,7 @@ from .plant_topology import (
 # Management strategy
 # ---------------------------------------------------------------------------
 MANAGEMENT = {
-    "type": "static_order",
+    "type": "safe_stock",
     "decision_interval": 10.0,
 }
 

@@ -21,7 +21,11 @@ def create_simulation() -> SimulationContext:
     nodes = build_nodes(config, env)
     edges = build_edges(config, nodes, env)
 
-    if hasattr(orders_module, "PRODUCTION_JOBS"):
+    # Static production jobs are only loaded for "static_order" management.
+    # For "safe_stock" management the SafeStockManagement issues replenishment
+    # orders dynamically based on stock levels.
+    mgmt_type = getattr(config.MANAGEMENT, "type", "static_order") if isinstance(config.MANAGEMENT, dict) else "static_order"
+    if mgmt_type == "static_order" and hasattr(orders_module, "PRODUCTION_JOBS"):
         for pjob in orders_module.PRODUCTION_JOBS:
             target = nodes.get(pjob.node_name)
             if target is not None and hasattr(target, "add_production_order"):
