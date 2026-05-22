@@ -91,10 +91,7 @@ class Edge(sim.Component):
         self.log: list[dict] = []
 
     def __repr__(self) -> str:
-        return (
-            f"Edge({self.edge_name}, mode={self.transfer_mode.value}, "
-            f"batch_transport_time={self.batch_transport_time}, batch_pallets={self.batch_pallets})"
-        )
+        return f"Edge({self.from_node}->{self.to_node})"
 
     # ------------------------------------------------------------------
     # Order management
