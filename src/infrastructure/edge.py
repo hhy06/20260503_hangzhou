@@ -82,13 +82,16 @@ class Edge(sim.Component):
             or getattr(to_node, "name", None)
             if to_node is not None else "?"
         )
-        self.edge_name = name or f"{node_name_from} -> {node_name_to}"
+        self.edge_name = name or f"E({node_name_from} -> {node_name_to})"
         super().__init__(name=self.edge_name, env=env, **kwargs)
 
         self.pending_queue: list[TransportOrder] = []
         self.activated_queue: list[TransportOrder] = []
         self.edge_stock: dict[str, int] = {}   # in-transit items (debited from A, not yet received by B)
         self.log: list[dict] = []
+
+    def __str__(self) -> str:
+        return self.edge_name
 
     def __repr__(self) -> str:
         mode = self.transfer_mode.value
