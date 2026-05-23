@@ -123,17 +123,10 @@ class TraceManagement(Management):
         """
         edge = self.find_edge(from_node, to_node)
         if edge is None:
-            if hasattr(self, "log"):
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "transport_order_dropped",
-                    "sku": sku,
-                    "quantity": quantity,
-                    "from": from_node,
-                    "to": to_node,
-                    "reason": "no_edge",
-                })
-            return
+            raise ValueError(
+                f"No edge from '{from_node}' to '{to_node}' for SKU {sku} "
+                f"(qty {quantity}) — this is a topology/routing configuration bug."
+            )
         ipp = edge.from_node.conversion_factors.get(sku, 1)
         num_pallets = math.ceil(quantity / ipp)
         pallet_qty = num_pallets * ipp
@@ -283,10 +276,13 @@ class TraceManagement(Management):
 
     def _rounded_qty(self, from_node: str, to_node: str,
                      sku: str, qty: int) -> int:
-        """Return the pallet-rounded transport quantity, or 0 if no edge."""
+        """Return the pallet-rounded transport quantity."""
         edge = self.find_edge(from_node, to_node)
         if edge is None:
-            return 0
+            raise ValueError(
+                f"No edge from '{from_node}' to '{to_node}' for SKU {sku} "
+                f"(qty {qty}) — this is a topology/routing configuration bug."
+            )
         ipp = edge.from_node.conversion_factors.get(sku, 1)
         return math.ceil(qty / ipp) * ipp
 
@@ -419,31 +415,32 @@ class TraceManagement(Management):
     # ------------------------------------------------------------------
 
     def _execute_decision(self, decision: Decision) -> None:
-        """Register transport orders on edges and production orders on nodes."""
+        """Register transport orders on edges and production orders on nodes.
+
+        Raises
+        ------
+        RuntimeError
+            If any planned order references an edge or production node that no
+            longer exists — a serious runtime inconsistency.
+        """
         for order in decision.transport_orders:
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
                 edge.add_transport_order(order)
             else:
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "transport_order_dropped",
-                    "sku": order.sku,
-                    "quantity": order.quantity,
-                    "from": order.from_node,
-                    "to": order.to_node,
-                    "reason": "edge_removed_between_decision_and_execution",
-                })
+                raise RuntimeError(
+                    f"Transport order references missing edge: "
+                    f"'{order.from_node}' -> '{order.to_node}' "
+                    f"for SKU {order.sku} qty {order.quantity}. "
+                    f"Edge was present during make_decisions but is now gone."
+                )
         for order in decision.production_orders:
             node = self._production_nodes.get(order.node_name)
             if node is not None:
                 node.add_production_order(order)
             else:
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "production_order_dropped",
-                    "sku": order.sku,
-                    "quantity": order.quantity,
-                    "node": order.node_name,
-                    "reason": "production_node_not_found",
-                })
+                raise RuntimeError(
+                    f"Production order references missing node: "
+                    f"'{order.node_name}' for SKU {order.sku} qty {order.quantity}. "
+                    f"Node was present during make_decisions but is now gone."
+                )

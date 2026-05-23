@@ -198,30 +198,31 @@ class SafeStockManagement(Management):
     # ------------------------------------------------------------------
 
     def _execute_decision(self, decision: Decision) -> None:
-        """Register the planned orders with edges and production nodes."""
+        """Register the planned orders with edges and production nodes.
+
+        Raises
+        ------
+        RuntimeError
+            If any planned order references an edge or production node that no
+            longer exists — a serious runtime inconsistency.
+        """
         for order in decision.production_orders:
             prod_node = self.nodes.get(order.node_name)
             if prod_node is not None and hasattr(prod_node, "add_production_order"):
                 prod_node.add_production_order(order)
             else:
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "order_dropped",
-                    "sku": order.sku,
-                    "reason": f"production node '{order.node_name}' not found",
-                })
+                raise RuntimeError(
+                    f"Production order references missing node: "
+                    f"'{order.node_name}' for SKU {order.sku}."
+                )
 
         for order in decision.transport_orders:
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
                 edge.add_transport_order(order)
             else:
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "order_dropped",
-                    "sku": order.sku,
-                    "quantity": order.quantity,
-                    "from": order.from_node,
-                    "to": order.to_node,
-                    "reason": "no matching edge found",
-                })
+                raise RuntimeError(
+                    f"Transport order references missing edge: "
+                    f"'{order.from_node}' -> '{order.to_node}' "
+                    f"for SKU {order.sku} qty {order.quantity}."
+                )
