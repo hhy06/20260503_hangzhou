@@ -103,15 +103,15 @@ class WarehouseNode(sim.Component):
     # ------------------------------------------------------------------
 
     def items_per_pallet(self, sku: str) -> int:
-        return self.conversion_factors[sku]
+        return self.conversion_factors.get(sku, 1)
 
     def pallets_for_quantity(self, sku: str, quantity: int) -> int:
         if quantity <= 0:
             return 0
-        return math.ceil(quantity / self.conversion_factors[sku])
+        return math.ceil(quantity / self.conversion_factors.get(sku, 1))
 
     def quantity_for_pallets(self, sku: str, pallets: int) -> int:
-        return pallets * self.conversion_factors[sku]
+        return pallets * self.conversion_factors.get(sku, 1)
 
     # ------------------------------------------------------------------
     # capacity (soft cap)
@@ -131,17 +131,22 @@ class WarehouseNode(sim.Component):
         """Remaining pallet capacity (``inf`` for non-WAREHOUSE)."""
         if self.role != NodeRole.WAREHOUSE:
             return float("inf")
-        return self.node_max_pallets - self.current_pallets()  # type: ignore[operator]
+        if self.node_max_pallets is None:
+            return float("inf")
+        return self.node_max_pallets - self.current_pallets()
 
     def check_capacity(self) -> None:
-        """Print a warning if pallets exceed the soft cap."""
+        """Log a warning if pallets exceed the soft cap."""
         if self.role == NodeRole.WAREHOUSE and self.node_max_pallets is not None:
             pal = self.current_pallets()
             if pal > self.node_max_pallets:
-                print(
-                    f"  [WARN] {self.display_name}: {pal} pallets"
-                    f" > capacity {self.node_max_pallets}"
-                )
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "capacity_warning",
+                    "node": self.display_name,
+                    "pallets": pal,
+                    "max_pallets": self.node_max_pallets,
+                })
 
     # ------------------------------------------------------------------
     # inventory query / mutation (the ONLY interface edges and production use)
@@ -171,6 +176,12 @@ class WarehouseNode(sim.Component):
         self.inventory[sku] = current - quantity
         if self.inventory[sku] <= 0:
             del self.inventory[sku]
+        self.log.append({
+            "time": self.env.now(),
+            "type": "debited",
+            "sku": sku,
+            "quantity": quantity,
+        })
         return True
 
     def add_sku(self, sku: str, items_per_pallet: int):

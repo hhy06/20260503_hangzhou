@@ -215,8 +215,18 @@ class ProductionNode(sim.Component):
         speed: float = bom_entry["speed"]
         remaining: int = job.quantity
 
+        if speed <= 0:
+            self.log.append({
+                "time": self.env.now(),
+                "type": "production_failed",
+                "job_id": job.job_id,
+                "sku": job.sku,
+                "reason": "speed_zero",
+            })
+            return
+
         while remaining > 0:
-            batch_full = int(speed * self.global_time_step)
+            batch_full = max(1, int(speed * self.global_time_step))
 
             if remaining > batch_full:
                 batch = batch_full

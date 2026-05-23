@@ -87,6 +87,7 @@ class TraceManagement(Management):
         # round-robin counters per SKU
         self._rr_counter: dict[str, int] = {}
         self._next_job_id: int = 1
+        self.log: list[dict] = []
 
         super().__init__(
             name=name, decision_interval=decision_interval, env=env, **kwargs,
@@ -100,8 +101,10 @@ class TraceManagement(Management):
         """Locate the edge between two named nodes."""
         return self._edge_map.get(f"{from_node_name}->{to_node_name}")
 
-    def _pick_producer(self, sku: str, candidates: list[str]) -> str:
+    def _pick_producer(self, sku: str, candidates: list[str]) -> str | None:
         """Round-robin selection across candidate production nodes."""
+        if not candidates:
+            return None
         idx = self._rr_counter.get(sku, 0) % len(candidates)
         self._rr_counter[sku] = idx + 1
         return candidates[idx]
@@ -120,6 +123,16 @@ class TraceManagement(Management):
         """
         edge = self.find_edge(from_node, to_node)
         if edge is None:
+            if hasattr(self, "log"):
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "transport_order_dropped",
+                    "sku": sku,
+                    "quantity": quantity,
+                    "from": from_node,
+                    "to": to_node,
+                    "reason": "no_edge",
+                })
             return
         ipp = edge.from_node.conversion_factors.get(sku, 1)
         num_pallets = math.ceil(quantity / ipp)
@@ -313,6 +326,8 @@ class TraceManagement(Management):
             return
 
         noodle = self._pick_producer(fg_sku, producers)
+        if noodle is None:
+            return
         noodle_node = self._production_nodes[noodle]
         lineside = noodle_node.upstream_node.node_name
         ms = self._lineside_suppliers.get(lineside)
@@ -367,6 +382,8 @@ class TraceManagement(Management):
             return
 
         producer = self._pick_producer(wip_sku, producers)
+        if producer is None:
+            return
         prod_node = self._production_nodes[producer]
         out_node = prod_node.downstream_node.node_name
         lineside = prod_node.upstream_node.node_name
@@ -407,7 +424,26 @@ class TraceManagement(Management):
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
                 edge.add_transport_order(order)
+            else:
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "transport_order_dropped",
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "from": order.from_node,
+                    "to": order.to_node,
+                    "reason": "edge_removed_between_decision_and_execution",
+                })
         for order in decision.production_orders:
             node = self._production_nodes.get(order.node_name)
             if node is not None:
                 node.add_production_order(order)
+            else:
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "production_order_dropped",
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "node": order.node_name,
+                    "reason": "production_node_not_found",
+                })

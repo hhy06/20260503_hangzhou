@@ -147,7 +147,7 @@ class Edge(sim.Component):
             ``batch_transport_time`` in BATCH mode.
         """
         sku = order.sku
-        items_per_pallet = self.from_node.conversion_factors[sku]
+        items_per_pallet = self.from_node.conversion_factors.get(sku, 1)
         num_pallets = math.ceil(order.quantity / items_per_pallet)
         desired_items = num_pallets * items_per_pallet  # round up to full pallets
 
@@ -236,7 +236,7 @@ class Edge(sim.Component):
                 executed = False
                 for i in range(len(self.activated_queue)):
                     candidate = self.activated_queue[i]
-                    items_per_pallet = self.from_node.conversion_factors[candidate.sku]
+                    items_per_pallet = self.from_node.conversion_factors.get(candidate.sku, 1)
                     num_pallets = math.ceil(candidate.quantity / items_per_pallet)
                     desired_items = num_pallets * items_per_pallet
                     if self.from_node.available_qty(candidate.sku) >= desired_items:
