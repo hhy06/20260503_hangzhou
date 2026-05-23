@@ -45,7 +45,7 @@ from .plant_topology import (
 # Management strategy
 # ---------------------------------------------------------------------------
 MANAGEMENT = {
-    "type": "safe_stock",
+    "type": "trace",
     "decision_interval": 10.0,
 }
 

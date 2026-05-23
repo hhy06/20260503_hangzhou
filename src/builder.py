@@ -152,6 +152,8 @@ def create_management(
         return TraceManagement(
             nodes=nodes,
             edges=edges,
+            demand_orders=getattr(safe_stock_module, "DEMAND_ORDERS", [])
+            if safe_stock_module else [],
             decision_interval=di,
             env=env,
         )
