@@ -1,23 +1,73 @@
 """Base Management component — abstract periodic decision-maker.
 
-A :class:`Management` subclasses implement a periodic decision loop:
-``process()`` calls :meth:`make_decision` every ``decision_interval``
-time units.
+Every management subclass follows the same decision cycle:
+
+  1. ``gather_info()`` — snapshot current simulation state into a
+     :class:`Snapshot`.
+  2. ``make_decisions(time, info)`` — pure-function decision logic that
+     returns a :class:`Decision` containing transport and production orders.
+  3. ``_execute_decision(decision)`` — pushes the planned orders onto edges
+     and production nodes.
 """
 
+from dataclasses import dataclass, field
 from typing import Any
 import salabim as sim
+
+from src.infrastructure.edge import TransportOrder
+from src.infrastructure.production_node import ProductionOrder
+
+
+# ---------------------------------------------------------------------------
+# Data classes for the gather / decide interface
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Snapshot:
+    """Immutable-ish view of simulation state at a point in time.
+
+    Populated by :meth:`Management.gather_info`.
+    """
+    current_time: float
+    # node_name -> {sku: available_qty}
+    storage_stock: dict[str, dict[str, int]] = field(default_factory=dict)
+    # node_names that have infinite supply (e.g. source)
+    source_nodes: set[str] = field(default_factory=set)
+    # edge_key (from->to) -> list of pending orders
+    edge_pending: dict[str, list[TransportOrder]] = field(default_factory=dict)
+    # edge_key -> list of activated orders
+    edge_activated: dict[str, list[TransportOrder]] = field(default_factory=dict)
+    # node_name -> list[ProductionOrder] in the production queue
+    production_queues: dict[str, list[ProductionOrder]] = field(default_factory=dict)
+
+
+@dataclass
+class Decision:
+    """Output of :meth:`Management.make_decisions`.
+
+    The process loop passes these orders to :meth:`_execute_decision` which
+    registers them with edges and production nodes.
+    """
+    transport_orders: list[TransportOrder] = field(default_factory=list)
+    production_orders: list[ProductionOrder] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Base management
+# ---------------------------------------------------------------------------
 
 
 class Management(sim.Component):
     """Base class for management decision-makers in the simulation.
 
-    Subclasses must implement :meth:`make_decision`.
+    Subclasses must implement :meth:`make_decisions` and optionally override
+    :meth:`gather_info` and :meth:`_execute_decision`.
 
     Parameters
     ----------
     decision_interval : float
-        Minutes between ``make_decision()`` calls (default 10.0).
+        Minutes between decision cycles (default 10.0).
     name : str, optional
         SALABIM component name.
     env : sim.Environment | None
@@ -40,22 +90,61 @@ class Management(sim.Component):
     def find_edge(self, from_node_name: str, to_node_name: str) -> Any | None:
         """Locate the first edge whose endpoints match the given names.
 
-        Subclasses may override with a faster lookup (e.g. a dict).
+        Subclasses must override with a faster lookup (e.g. a dict).
         """
-        # Provided here as a convenience; subclasses with access to
-        # the edge list can implement this themselves.
         raise NotImplementedError(
             f"{type(self).__name__} must implement find_edge()"
         )
 
     # ------------------------------------------------------------------
-    # decision logic (must be overridden)
+    # gather_info — snapshot current simulation state
     # ------------------------------------------------------------------
 
-    def make_decision(self) -> None:
-        """Called every ``decision_interval`` time units."""
+    def gather_info(self) -> Snapshot:
+        """Collect a snapshot of the current simulation state.
+
+        Subclasses should override to populate the snapshot fields.  The
+        default returns an empty Snapshot (current time only).
+        """
+        return Snapshot(current_time=self.env.now())
+
+    # ------------------------------------------------------------------
+    # make_decisions — pure-function order generation
+    # ------------------------------------------------------------------
+
+    def make_decisions(self, time: float, info: Snapshot) -> Decision:
+        """Generate orders based on the snapshot.
+
+        Subclasses must override this.
+
+        Parameters
+        ----------
+        time : float
+            Current simulation time.
+        info : Snapshot
+            Gathered state snapshot.
+
+        Returns
+        -------
+        Decision
+            Transport and production orders to issue.
+        """
         raise NotImplementedError(
-            f"{type(self).__name__} must implement make_decision()"
+            f"{type(self).__name__} must implement make_decisions()"
+        )
+
+    # ------------------------------------------------------------------
+    # _execute_decision — push orders onto edges / production nodes
+    # ------------------------------------------------------------------
+
+    def _execute_decision(self, decision: Decision) -> None:
+        """Register the planned orders with edges and production nodes.
+
+        Subclasses must override this — the base does not know how to
+        dispatch orders without node/edge references.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement _execute_decision()"
         )
 
     # ------------------------------------------------------------------
@@ -63,7 +152,10 @@ class Management(sim.Component):
     # ------------------------------------------------------------------
 
     def process(self):
-        """SALABIM coroutine: call ``make_decision()`` periodically."""
+        """Periodic decision loop: gather, decide, execute, then hold."""
         while True:
-            self.make_decision()
+            now = self.env.now()
+            info = self.gather_info()
+            decision = self.make_decisions(now, info)
+            self._execute_decision(decision)
             yield self.hold(self.decision_interval)

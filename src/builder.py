@@ -15,6 +15,7 @@ from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
 from src.infrastructure.production_node import ProductionNode
 from src.management.static_order import StaticOrderManagement
 from src.management.safe_stock_management import SafeStockManagement
+from src.management.trace_management import TraceManagement
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +144,14 @@ def create_management(
             nodes=nodes,
             edges=edges,
             demand_orders=getattr(safe_stock_module, "DEMAND_ORDERS", []),
+            decision_interval=di,
+            env=env,
+        )
+
+    if mgmt_type == "trace":
+        return TraceManagement(
+            nodes=nodes,
+            edges=edges,
             decision_interval=di,
             env=env,
         )

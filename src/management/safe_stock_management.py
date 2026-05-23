@@ -1,22 +1,21 @@
 """Safe-stock management — pull-based replenishment from stock-level triggers.
 
-A :class:`SafeStockManagement` holds a ``SAFE_STOCK`` configuration mapping
-each SKU to its target stock level, replenishment quantity, storage location,
-and supply source (source node for raw materials, production node for WIP/FG).
+The decision cycle is inherited from :class:`Management`:
 
-On each decision cycle it:
-  1. Issues any pending demand orders (FG consumption).
-  2. Scans every SKU's current stock at its storage node; if below
-     ``safe_stock``, it issues a transport order (raw material) or
-     production order (WIP / FG) for the ``replenish_qty``.
+  1. ``gather_info()`` — snapshot current simulation state.
+  2. ``make_decisions(time, info)`` — pure-function decision logic that returns
+     a ``Decision`` containing transport and production orders.
+  3. ``_execute_decision(decision)`` — pushes the planned orders onto edges
+     and production nodes.
 """
 
 from typing import Any
 import salabim as sim
 
-from src.management.base import Management
+from src.management.base import Management, Snapshot, Decision
 from src.infrastructure.edge import Edge, TransportOrder
 from src.infrastructure.production_node import ProductionOrder
+from src.infrastructure.warehouse_node import NodeRole, WarehouseNode
 
 
 class SafeStockManagement(Management):
@@ -26,18 +25,12 @@ class SafeStockManagement(Management):
     ----------
     safe_stock_config : list[dict]
         Each dict has keys ``{sku, safe_stock, replenish_qty, storage,
-        replenish_from | produce_at}``.  One entry per (SKU, storage) pair.
+        replenish_from | produce_at | push_to}``.
     nodes : dict[str, Component]
-        All simulation nodes (used to look up storage & production nodes).
     edges : list[Edge]
-        All simulation edges (used to issue transport orders).
     demand_orders : list[dict], optional
-        Demand schedule: each entry has ``{sku, quantity, start_time}``.
-        These are issued as ``fg_storage -> sink`` transport orders.
     decision_interval : float
         Minutes between decision cycles (default 10.0).
-    name : str, optional
-    env : sim.Environment | None
     """
 
     def __init__(
@@ -59,6 +52,18 @@ class SafeStockManagement(Management):
         self._job_id_counter: int = 0
         self.log: list[dict] = []
 
+        # Build edge lookup map
+        self._edge_map: dict[str, Edge] = {}
+        for e in self.edges:
+            key = f"{e.from_node.node_name}->{e.to_node.node_name}"
+            self._edge_map[key] = e
+
+        # Index production nodes for queue inspection
+        self._production_nodes: dict[str, Any] = {}
+        for name, node in self.nodes.items():
+            if hasattr(node, "production_queue"):
+                self._production_nodes[name] = node
+
         super().__init__(
             name=name, decision_interval=decision_interval, env=env, **kwargs,
         )
@@ -71,147 +76,152 @@ class SafeStockManagement(Management):
         self._job_id_counter += 1
         return self._job_id_counter
 
-    def find_edge(self, from_node: str, to_node: str) -> Edge | None:
+    def find_edge(self, from_node_name: str, to_node_name: str) -> Edge | None:
+        return self._edge_map.get(f"{from_node_name}->{to_node_name}")
+
+    # ------------------------------------------------------------------
+    # gather_info — snapshot current simulation state
+    # ------------------------------------------------------------------
+
+    def gather_info(self) -> Snapshot:
+        """Collect a snapshot of stock levels, edge queues, and production queues."""
+        info = Snapshot(current_time=self.env.now())
+
+        for name, node in self.nodes.items():
+            if not isinstance(node, WarehouseNode):
+                continue
+            if node.role == NodeRole.SOURCE:
+                info.source_nodes.add(name)
+            elif hasattr(node, "inventory"):
+                info.storage_stock[name] = dict(node.inventory)
+
         for e in self.edges:
-            if e.from_node.node_name == from_node and e.to_node.node_name == to_node:
-                return e
-        return None
+            key = f"{e.from_node.node_name}->{e.to_node.node_name}"
+            info.edge_pending[key] = list(e.pending_queue)
+            info.edge_activated[key] = list(e.activated_queue)
+
+        for name, pnode in self._production_nodes.items():
+            info.production_queues[name] = list(pnode.production_queue)
+
+        return info
 
     # ------------------------------------------------------------------
-    # demand (FG consumption)
+    # make_decisions — pure-function order generation
     # ------------------------------------------------------------------
 
-    def _issue_demand(self) -> None:
-        """Issue any demand orders whose start_time has been reached."""
-        now = self.env.now()
+    def make_decisions(self, time: float, info: Snapshot) -> Decision:
+        """Generate orders based on the snapshot.
+
+        Parameters
+        ----------
+        time : float
+            Current simulation time.
+        info : Snapshot
+            Gathered state snapshot.
+
+        Returns
+        -------
+        Decision
+            Transport and production orders to issue.
+        """
+        decision = Decision()
+
+        # --- 1. Demand orders (FG consumption) ---
         for i, d in enumerate(self.demand_orders):
             if i in self._issued_demand:
                 continue
-            if d.get("start_time", 0) <= now + 1e-9:
-                edge = self.find_edge(d.get("from_node", "fg_storage"), d.get("to_node", "sink"))
-                if edge is not None:
-                    order = TransportOrder(
-                        sku=d["sku"],
-                        quantity=d["quantity"],
-                        from_node=d.get("from_node", "fg_storage"),
-                        to_node=d.get("to_node", "sink"),
-                        start_time=now,
-                        expect_time=now + self.decision_interval,
-                    )
-                    edge.add_transport_order(order)
+            if d.get("start_time", 0) <= time + 1e-9:
+                decision.transport_orders.append(TransportOrder(
+                    sku=d["sku"],
+                    quantity=d["quantity"],
+                    from_node=d.get("from_node", "fg_storage"),
+                    to_node=d.get("to_node", "sink"),
+                    start_time=time,
+                    expect_time=time + self.decision_interval,
+                ))
                 self._issued_demand.add(i)
 
-    # ------------------------------------------------------------------
-    # replenishment
-    # ------------------------------------------------------------------
-
-    def _replenish(self, sku: str, cfg: dict) -> None:
-        """Issue a replenishment order for *sku* based on its config.
-
-        Dispatch logic
-        --------------
-        * ``produce_at`` present      → production order (WIP / FG).
-        * ``push_to`` present         → transport order **from** the storage
-          node to ``push_to`` (moves output-buffer stock forward).
-        * ``replenish_from`` present  → transport order **from** that node
-          to storage, gated on source stock.
-        """
-        if "produce_at" in cfg:
-            self._issue_production(sku, cfg)
-        elif "push_to" in cfg:
-            self._issue_push(sku, cfg)
-        elif "replenish_from" in cfg:
-            self._issue_transport(sku, cfg)
-
-    def _issue_production(self, sku: str, cfg: dict) -> None:
-        """Queue a production order — production retry handles material delays."""
-        now = self.env.now()
-        prod_node = self.nodes.get(cfg["produce_at"])
-        if prod_node is not None and hasattr(prod_node, "add_production_order"):
-            job_id = self._next_job_id()
-            order = ProductionOrder(
-                job_id=job_id,
-                sku=sku,
-                quantity=cfg["replenish_qty"],
-                activate_time=now,
-                expect_time=now + self.decision_interval,
-                node_name=cfg["produce_at"],
-            )
-            prod_node.add_production_order(order)
-
-    def _issue_transport(self, sku: str, cfg: dict) -> None:
-        """Issue transport order, gated on source stock availability."""
-        src_node = self.nodes.get(cfg["replenish_from"])
-        if src_node is None:
-            return
-
-        # Gate: only issue if source has enough stock (SOURCE is infinite)
-        available = src_node.available_qty(sku)
-        if available < cfg["replenish_qty"]:
-            return  # skip this cycle — will re-check next decision
-
-        edge = self.find_edge(cfg["replenish_from"], cfg["storage"])
-        if edge is not None:
-            now = self.env.now()
-            order = TransportOrder(
-                sku=sku,
-                quantity=cfg["replenish_qty"],
-                from_node=cfg["replenish_from"],
-                to_node=cfg["storage"],
-                start_time=now,
-                expect_time=now + self.decision_interval,
-            )
-            edge.add_transport_order(order)
-
-    def _issue_push(self, sku: str, cfg: dict) -> None:
-        """Push stock from the storage node forward to *push_to*.
-
-        Unlike ``_issue_transport`` (which is a pull triggered by low stock
-        at the destination), this is a push triggered by stock *existing*
-        at the source — typically used to clear output buffers.
-        """
-        src_node = self.nodes.get(cfg["storage"])
-        if src_node is None:
-            return
-
-        available = src_node.available_qty(sku)
-        if available <= 0:
-            return
-
-        qty = min(cfg["replenish_qty"], available)
-        edge = self.find_edge(cfg["storage"], cfg["push_to"])
-        if edge is not None:
-            now = self.env.now()
-            order = TransportOrder(
-                sku=sku,
-                quantity=qty,
-                from_node=cfg["storage"],
-                to_node=cfg["push_to"],
-                start_time=now,
-                expect_time=now + self.decision_interval,
-            )
-            edge.add_transport_order(order)
-
-    # ------------------------------------------------------------------
-    # decision logic
-    # ------------------------------------------------------------------
-
-    def make_decision(self) -> None:
-        """Check stock levels — issue replenishments for SKUs below safe stock."""
-        # 1. Issue demand orders
-        self._issue_demand()
-
-        # 2. Check each entry's stock level
+        # --- 2. Safe-stock replenishment ---
         for entry in self.safe_stock_config:
-            storage_node = self.nodes.get(entry["storage"])
-            if storage_node is None:
-                continue
-            available = storage_node.available_qty(entry["sku"])
+            sku = entry["sku"]
+            storage = entry["storage"]
+            storage_stock = info.storage_stock.get(storage, {}).get(sku, 0)
+
             if "push_to" in entry:
-                # Push entries fire when stock EXISTS (clear output buffers)
-                if available > 0:
-                    self._replenish(entry["sku"], entry)
+                # Push: fire when stock EXISTS (clear output buffers)
+                if storage_stock > 0:
+                    qty = min(entry["replenish_qty"], storage_stock)
+                    decision.transport_orders.append(TransportOrder(
+                        sku=sku, quantity=qty,
+                        from_node=storage, to_node=entry["push_to"],
+                        start_time=time,
+                        expect_time=time + self.decision_interval,
+                    ))
+
+            elif "produce_at" in entry:
+                # Production: fire when storage is below safe_stock
+                if storage_stock < entry["safe_stock"]:
+                    prod_node_name = entry["produce_at"]
+                    pqueue = info.production_queues.get(prod_node_name, [])
+                    if not any(j.sku == sku for j in pqueue):
+                        decision.production_orders.append(ProductionOrder(
+                            job_id=self._next_job_id(),
+                            sku=sku,
+                            quantity=entry["replenish_qty"],
+                            activate_time=time,
+                            expect_time=time + self.decision_interval,
+                            node_name=prod_node_name,
+                        ))
+
+            elif "replenish_from" in entry:
+                # Transport: fire when storage is below safe_stock AND
+                # the source has enough stock to fulfil the order.
+                if storage_stock < entry["safe_stock"]:
+                    src = entry["replenish_from"]
+                    if src in info.source_nodes:
+                        src_available = float("inf")
+                    else:
+                        src_available = info.storage_stock.get(src, {}).get(sku, 0)
+                    if src_available >= entry["replenish_qty"]:
+                        decision.transport_orders.append(TransportOrder(
+                            sku=sku,
+                            quantity=entry["replenish_qty"],
+                            from_node=src, to_node=storage,
+                            start_time=time,
+                            expect_time=time + self.decision_interval,
+                        ))
+
+        return decision
+
+    # ------------------------------------------------------------------
+    # _execute_decision — push orders onto edges / production nodes
+    # ------------------------------------------------------------------
+
+    def _execute_decision(self, decision: Decision) -> None:
+        """Register the planned orders with edges and production nodes."""
+        for order in decision.production_orders:
+            prod_node = self.nodes.get(order.node_name)
+            if prod_node is not None and hasattr(prod_node, "add_production_order"):
+                prod_node.add_production_order(order)
             else:
-                # Pull entries fire when stock is BELOW safe_stock
-                if available < entry["safe_stock"]:
-                    self._replenish(entry["sku"], entry)
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "order_dropped",
+                    "sku": order.sku,
+                    "reason": f"production node '{order.node_name}' not found",
+                })
+
+        for order in decision.transport_orders:
+            edge = self.find_edge(order.from_node, order.to_node)
+            if edge is not None:
+                edge.add_transport_order(order)
+            else:
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "order_dropped",
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "from": order.from_node,
+                    "to": order.to_node,
+                    "reason": "no matching edge found",
+                })

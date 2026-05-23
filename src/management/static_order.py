@@ -1,14 +1,14 @@
 """Static-order management — issues pre-defined transport orders on schedule.
 
 A :class:`StaticOrderManagement` holds a list of static ``TransportOrder``
-objects.  On each ``make_decision()`` call it scans its un-issued orders and
-inserts those whose ``start_time <= current_time`` onto the correct edge.
+objects.  On each decision cycle it scans its un-issued orders and inserts
+those whose ``start_time <= current_time`` into the decision output.
 """
 
 from typing import Any
 import salabim as sim
 
-from src.management.base import Management
+from src.management.base import Management, Snapshot, Decision
 from src.infrastructure.edge import Edge, TransportOrder
 
 
@@ -24,7 +24,7 @@ class StaticOrderManagement(Management):
     name : str, optional
         SALABIM component name.
     decision_interval : float
-        Minutes between ``make_decision()`` calls (default 10.0).
+        Minutes between decision cycles (default 10.0).
     env : sim.Environment | None
     """
 
@@ -64,24 +64,39 @@ class StaticOrderManagement(Management):
     # decision logic
     # ------------------------------------------------------------------
 
-    def make_decision(self) -> None:
-        """Issue any pending orders whose ``start_time`` has been reached."""
-        now = self.env.now()
+    def make_decisions(self, time: float, info: Snapshot) -> Decision:
+        """Issue any pending orders whose ``start_time`` has been reached.
+
+        The ``info`` snapshot is ignored — this manager reads from its
+        pre-defined static order list.
+        """
+        decision = Decision()
         for i, order in enumerate(self.transport_orders):
             if i in self._issued:
                 continue
-            if order.start_time <= now + 1e-9:
-                edge = self.find_edge(order.from_node, order.to_node)
-                if edge is not None:
-                    edge.add_transport_order(order)
-                else:
-                    self.log.append({
-                        "time": now,
-                        "type": "order_dropped",
-                        "sku": order.sku,
-                        "quantity": order.quantity,
-                        "from": order.from_node,
-                        "to": order.to_node,
-                        "reason": "no matching edge found",
-                    })
+            if order.start_time <= time + 1e-9:
+                decision.transport_orders.append(order)
                 self._issued.add(i)
+        return decision
+
+    # ------------------------------------------------------------------
+    # _execute_decision
+    # ------------------------------------------------------------------
+
+    def _execute_decision(self, decision: Decision) -> None:
+        """Dispatch transport orders to the matching edges."""
+        now = self.env.now()
+        for order in decision.transport_orders:
+            edge = self.find_edge(order.from_node, order.to_node)
+            if edge is not None:
+                edge.add_transport_order(order)
+            else:
+                self.log.append({
+                    "time": now,
+                    "type": "order_dropped",
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "from": order.from_node,
+                    "to": order.to_node,
+                    "reason": "no matching edge found",
+                })
