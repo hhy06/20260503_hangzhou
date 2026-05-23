@@ -183,9 +183,11 @@ class Edge(sim.Component):
         # -- 3. Incremental delivery from edge stock to B --------------------
         if self.transfer_mode == TransferMode.PER_PALLET:
             while self.edge_stock.get(sku, 0) > 0:
+                stock = self.edge_stock[sku]
+                deliver = min(items_per_pallet, stock)
                 yield self.hold(self.batch_transport_time)
-                self.to_node.receive(sku, 1, source=self.from_node)
-                self.edge_stock[sku] -= 1
+                self.to_node.receive(sku, deliver, source=self.from_node)
+                self.edge_stock[sku] -= deliver
         else:  # BATCH
             while self.edge_stock.get(sku, 0) > 0:
                 stock = self.edge_stock[sku]

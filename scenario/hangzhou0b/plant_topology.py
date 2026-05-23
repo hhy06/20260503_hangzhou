@@ -232,9 +232,8 @@ for i in range(1, N + 1):
     EDGES.append({
         "from_node": f"output_sauce_{i}",
         "to_node": "WIP_storage",
-        "transfer_mode": TransferMode.BATCH,
+        "transfer_mode": TransferMode.PER_PALLET,
         "batch_transport_time": 1.0,
-        "batch_pallets": 999,
     })
 
 # raw_material_storage -> lineside_powder_i
@@ -255,13 +254,13 @@ for i in range(1, NUM_POWDER_LINES + 1):
         "batch_transport_time": 1.0,
     })
 
-# WIP_storage -> main_storage_1, main_storage_2  (1 batch/hour, 24 pallets)
+# WIP_storage -> main_storage_1, main_storage_2  (fast batch for dynamic replenishment)
 for si in (1, 2):
     EDGES.append({
         "from_node": "WIP_storage",
         "to_node": f"main_storage_{si}",
         "transfer_mode": TransferMode.BATCH,
-        "batch_transport_time": 60.0,
+        "batch_transport_time": 1.0,
         "batch_pallets": 24,
     })
 
