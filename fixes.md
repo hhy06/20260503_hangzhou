@@ -30,18 +30,36 @@ Then `create_management()` separately correctly read `"trace"` and
 every noodle line received **two sets** of FG production orders — the static
 pre-loads **plus** the trace-generated orders — congesting the queues.
 
-### Fixed code
+### Intermediate (flawed) fix — applied first, then corrected
 
 ```python
 mgmt_type = config.MANAGEMENT.get("type", "static_order") if isinstance(config.MANAGEMENT, dict) else "static_order"
 ```
 
-### Why it works
+This fixed the `getattr` → `KeyError` symptom but kept unnecessary defensive
+code: an `isinstance` guard and a fallback default.  Both are noise because
+`config.MANAGEMENT` is **always** a dict and **always** has a `"type"` key in
+every scenario.  The proper fallback location is `builder.create_management()`
+(line 126-128), not the scenario builder.
 
-`dict.get("type", default)` is the correct way to read a key from a dict with a
-fallback.  When `MANAGEMENT = {"type": "trace", ...}`, `mgmt_type` is now
-correctly `"trace"`, so `PRODUCTION_JOBS` are skipped and only
-`TraceManagement` orders are generated.
+### Final (correct) fix
+
+```python
+mgmt_type = config.MANAGEMENT["type"]
+```
+
+### Why this is correct
+
+- `config.MANAGEMENT` is always a `dict` — both `hangzhou0b` and `example`
+  scenarios define it as `MANAGEMENT = {...}`.  The `isinstance` check is dead
+  code.
+- The dict always has a `"type"` key — both scenarios include it.  The
+  fallback `"static_order"` is dead code that masks configuration errors.
+- If someone accidentally omits `"type"`, a loud `KeyError` is **better** than
+  silently defaulting to `"static_order"` — fail fast, fail obvious.
+- The authoritative fallback lives in `builder.py:127`
+  (`mgmt_cfg.get("type", "static_order")`), which is the single point of truth
+  for default management type.  The scenario builder should not duplicate it.
 
 ---
 

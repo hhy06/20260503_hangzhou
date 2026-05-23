@@ -24,7 +24,7 @@ def create_simulation() -> SimulationContext:
     # Static production jobs are only loaded for "static_order" management.
     # For "safe_stock" management the SafeStockManagement issues replenishment
     # orders dynamically based on stock levels.
-    mgmt_type = config.MANAGEMENT.get("type", "static_order") if isinstance(config.MANAGEMENT, dict) else "static_order"
+    mgmt_type = config.MANAGEMENT["type"]
     if mgmt_type == "static_order" and hasattr(orders_module, "PRODUCTION_JOBS"):
         for pjob in orders_module.PRODUCTION_JOBS:
             target = nodes.get(pjob.node_name)
