@@ -2,8 +2,8 @@
 """Run a simulation scenario and get an LLM commentary on what happened.
 
 Usage:
-    python3 commentator.py scenario.hangzhou0
-    python3 commentator.py scenario1
+    python3 commentator.py scenario.hangzhou0b
+    python3 commentator.py scenario.example
 """
 
 import sys
@@ -101,10 +101,16 @@ def main() -> None:
         print(f"Usage: {sys.argv[0]} <scenario_name>", file=sys.stderr)
         sys.exit(1)
 
-    scenario = sys.argv[1]
+    raw = sys.argv[1]
+
+    # Normalise filesystem-style paths (e.g. "scenario/hangzhou0b/")
+    # to dotted Python module paths (e.g. "scenario.hangzhou0b").
+    scenario = raw.strip("./").rstrip("/").replace("/", ".")
 
     print("=" * 70)
     print(f"COMMENTATOR: running main.py {scenario}")
+    if scenario != raw:
+        print(f"             (normalised from: {raw})")
     print(f"             model = {OLLAMA_MODEL}")
     print("=" * 70)
     print()
@@ -130,6 +136,10 @@ def main() -> None:
     print("=" * 70)
     print(commentary)
     print("=" * 70)
+
+    with open("commentator.txt", "w") as f:
+        f.write(commentary)
+    print("(also written to commentator.txt)")
 
 
 if __name__ == "__main__":
