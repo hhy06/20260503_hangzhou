@@ -121,11 +121,29 @@ def create_management(
     env,
     *,
     safe_stock_module=None,
+    demand_module=None,
 ):
-    """Instantiate the management strategy declared in *config*."""
+    """Instantiate the management strategy declared in *config*.
+
+    Parameters
+    ----------
+    safe_stock_module : module, optional
+        Module exporting ``SAFE_STOCK`` (required for safe_stock management).
+    demand_module : module, optional
+        Module exporting ``DEMAND_ORDERS``.  Falls back to
+        ``safe_stock_module.DEMAND_ORDERS`` if not provided.
+    """
     mgmt_cfg = getattr(config, "MANAGEMENT", {})
     mgmt_type = mgmt_cfg.get("type", "static_order")
     di = mgmt_cfg.get("decision_interval", 10.0)
+
+    # Resolve demand orders from demand_module or safe_stock_module
+    if demand_module is not None:
+        demand_orders = getattr(demand_module, "DEMAND_ORDERS", [])
+    elif safe_stock_module is not None:
+        demand_orders = getattr(safe_stock_module, "DEMAND_ORDERS", [])
+    else:
+        demand_orders = []
 
     if mgmt_type == "static_order":
         transport_orders = getattr(orders_module, "TRANSPORT_ORDERS", [])
@@ -143,7 +161,7 @@ def create_management(
             safe_stock_config=safe_stock_module.SAFE_STOCK,
             nodes=nodes,
             edges=edges,
-            demand_orders=getattr(safe_stock_module, "DEMAND_ORDERS", []),
+            demand_orders=demand_orders,
             decision_interval=di,
             env=env,
         )
@@ -152,8 +170,7 @@ def create_management(
         return TraceManagement(
             nodes=nodes,
             edges=edges,
-            demand_orders=getattr(safe_stock_module, "DEMAND_ORDERS", [])
-            if safe_stock_module else [],
+            demand_orders=demand_orders,
             decision_interval=di,
             env=env,
         )

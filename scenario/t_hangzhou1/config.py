@@ -58,7 +58,8 @@ def dump_config() -> None:
     """Print all configuration data for inspection."""
     from collections.abc import Mapping, Sequence
     from .config_static_jobs import TRANSPORT_ORDERS, PRODUCTION_JOBS
-    from .safe_stock import SAFE_STOCK, DEMAND_ORDERS
+    from .safe_stock import SAFE_STOCK
+    from .demand import DEMAND_ORDERS
 
     items = {
         "N": N,

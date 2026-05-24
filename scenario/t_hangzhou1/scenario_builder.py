@@ -11,6 +11,8 @@ from src.builder import (
 from . import config
 from . import config_static_jobs as orders_module
 from . import safe_stock
+from . import demand as demand_module
+from . import init_stock
 
 
 def create_simulation() -> SimulationContext:
@@ -20,6 +22,14 @@ def create_simulation() -> SimulationContext:
 
     nodes = build_nodes(config, env)
     edges = build_edges(config, nodes, env)
+
+    # Inject initial stock into warehouse nodes
+    for node_name, skus in init_stock.INIT_STOCK.items():
+        node = nodes.get(node_name)
+        if node is not None:
+            for sku, qty in skus.items():
+                if qty > 0:
+                    node.receive(sku, qty)
 
     # Static production jobs are only loaded for "static_order" management.
     # For "safe_stock" management the SafeStockManagement issues replenishment
@@ -34,6 +44,7 @@ def create_simulation() -> SimulationContext:
     management = create_management(
         config, orders_module, nodes, edges, env,
         safe_stock_module=safe_stock,
+        demand_module=demand_module,
     )
 
     sku_map = getattr(config, "SKUS", {})
