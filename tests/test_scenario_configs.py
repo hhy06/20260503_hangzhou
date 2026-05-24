@@ -21,7 +21,8 @@ from src.infrastructure.production_node import ProductionOrder
 # Scenario registry  —  add new scenarios here
 # ---------------------------------------------------------------------------
 SCENARIOS = [
-    "scenario.hangzhou0b",
+    "scenario.ss_hangzhou0b",
+    "scenario.t_hangzhou1",
 ]
 
 

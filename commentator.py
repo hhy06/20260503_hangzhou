@@ -2,7 +2,7 @@
 """Run a simulation scenario and get an LLM commentary on what happened.
 
 Usage:
-    python3 commentator.py scenario.hangzhou0b
+    python3 commentator.py scenario.ss_hangzhou0b
     python3 commentator.py scenario.example
 """
 
@@ -103,8 +103,8 @@ def main() -> None:
 
     raw = sys.argv[1]
 
-    # Normalise filesystem-style paths (e.g. "scenario/hangzhou0b/")
-    # to dotted Python module paths (e.g. "scenario.hangzhou0b").
+    # Normalise filesystem-style paths (e.g. "scenario/ss_hangzhou0b/")
+    # to dotted Python module paths (e.g. "scenario.ss_hangzhou0b").
     scenario = raw.strip("./").rstrip("/").replace("/", ".")
 
     print("=" * 70)

@@ -41,7 +41,7 @@ def create_simulation() -> SimulationContext:
         sku_map = {s: s for s in sku_map}
 
     return SimulationContext(
-        scenario_name="scenario.hangzhou0b",
+        scenario_name="scenario.ss_hangzhou0b",
         env=env,
         nodes=nodes,
         edges=edges,

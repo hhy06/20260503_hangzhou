@@ -1,4 +1,4 @@
-python scenario/hangzhou0b/dump_scenario.py
+python -m scenario.ss_hangzhou0b.dump_scenario
 
 python3 main.py
 
