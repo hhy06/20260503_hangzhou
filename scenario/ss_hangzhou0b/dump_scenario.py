@@ -2,7 +2,7 @@
 
 Usage (from project root)::
 
-    python -m scenario.ss_hangzhou0b.dump_scenario
+    python -m scenario.<scenario_name>.dump_scenario
 
 Note:
     This module uses **relative imports** so the scenario folder can be
