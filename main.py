@@ -245,6 +245,11 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     edges = ctx.edges
     sku_map = ctx.sku_map
 
+    # -- resolve management type for display gating -------------------------
+    mgmt_cfg = getattr(config, "MANAGEMENT", {})
+    mgmt_type = mgmt_cfg.get("type", "static_order")
+    di = mgmt_cfg.get("decision_interval", 10.0)
+
     # -- print setup -------------------------------------------------------
     print("=" * 70)
     print(f"SIMULATION: {scenario_name}")
@@ -272,24 +277,25 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             f" batch_transport_time={e.batch_transport_time}, batch_pallets={e.batch_pallets}"
         )
     print()
-    print("Transport orders:")
-    if hasattr(orders_module, "TRANSPORT_ORDERS"):
-        for o in orders_module.TRANSPORT_ORDERS:
-            sku_name = _sku_display(o.sku, sku_map)
-            print(
-                f"  t={o.start_time}: {o.from_node} -> {o.to_node}:"
-                f" {sku_name} x{o.quantity}"
-                f" (expect={o.expect_time})"
-            )
-    if hasattr(orders_module, "PRODUCTION_JOBS"):
-        print("Production orders:")
-        for pj in orders_module.PRODUCTION_JOBS:
-            target_node = nodes.get(pj.node_name)
-            ndn = _dn(target_node) if target_node else pj.node_name
-            output_name = _sku_display(pj.sku, sku_map)
-            print(
-                f"  t={pj.activate_time}: {ndn}: {output_name} x{pj.quantity} (order #{pj.order_id})"
-            )
+    if mgmt_type == "static_order":
+        print("Transport orders:")
+        if hasattr(orders_module, "TRANSPORT_ORDERS"):
+            for o in orders_module.TRANSPORT_ORDERS:
+                sku_name = _sku_display(o.sku, sku_map)
+                print(
+                    f"  t={o.start_time}: {o.from_node} -> {o.to_node}:"
+                    f" {sku_name} x{o.quantity}"
+                    f" (expect={o.expect_time})"
+                )
+        if hasattr(orders_module, "PRODUCTION_JOBS"):
+            print("Production orders:")
+            for pj in orders_module.PRODUCTION_JOBS:
+                target_node = nodes.get(pj.node_name)
+                ndn = _dn(target_node) if target_node else pj.node_name
+                output_name = _sku_display(pj.sku, sku_map)
+                print(
+                    f"  t={pj.activate_time}: {ndn}: {output_name} x{pj.quantity} (order #{pj.order_id})"
+                )
     print("=" * 70)
     print()
 
@@ -325,9 +331,6 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             )
 
     # -- write unified output -----------------------------------------------
-    mgmt_cfg = getattr(config, "MANAGEMENT", {})
-    mgmt_type = mgmt_cfg.get("type", "static_order")
-    di = mgmt_cfg.get("decision_interval", 10.0)
     run_dir = write_output(
         scenario_name=scenario_name,
         nodes=nodes,
