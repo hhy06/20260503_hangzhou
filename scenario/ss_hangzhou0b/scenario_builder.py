@@ -31,16 +31,6 @@ def create_simulation() -> SimulationContext:
                 if qty > 0:
                     node.receive(sku, qty)
 
-    # Static production jobs are only loaded for "static_order" management.
-    # For "safe_stock" management the SafeStockManagement issues replenishment
-    # orders dynamically based on stock levels.
-    mgmt_type = config.MANAGEMENT["type"]
-    if mgmt_type == "static_order" and hasattr(orders_module, "PRODUCTION_JOBS"):
-        for pjob in orders_module.PRODUCTION_JOBS:
-            target = nodes.get(pjob.node_name)
-            if target is not None and hasattr(target, "add_production_order"):
-                target.add_production_order(pjob)
-
     management = create_management(
         config, orders_module, nodes, edges, env,
         safe_stock_module=safe_stock,

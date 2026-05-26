@@ -223,6 +223,7 @@ class TestManagement:
         )
         mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
+            production_orders=[], nodes={},
             decision_interval=10.0, env=env,
         )
         # Management issues order at t=0; edge wakes at t=1.0 to execute.
@@ -243,6 +244,7 @@ class TestManagement:
         )
         mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
+            production_orders=[], nodes={},
             decision_interval=10.0, env=env,
         )
         env.run(10)
@@ -264,6 +266,7 @@ class TestManagement:
         )
         mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
+            production_orders=[], nodes={},
             decision_interval=10.0, env=env,
         )
         # t=10 → start=15 not yet
@@ -282,6 +285,7 @@ class TestManagement:
         )
         mgmt = StaticOrderManagement(
             transport_orders=[], edges=[e],
+            production_orders=[], nodes={},
             decision_interval=10.0, env=env,
         )
         found = mgmt.find_edge("source", "wh")

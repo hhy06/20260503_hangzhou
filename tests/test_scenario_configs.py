@@ -275,7 +275,7 @@ class TestTransportOrderReferences:
         nodes = set(cfg.NODES.keys())
         for pj in om.PRODUCTION_JOBS:
             assert pj.node_name in nodes, \
-                f"{scenario}: prod job #{pj.job_id} node '{pj.node_name}' not in NODES"
+                f"{scenario}: prod job #{pj.order_id} node '{pj.node_name}' not in NODES"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
     def test_production_orders_sku_references_exist(self, scenario):
@@ -286,8 +286,8 @@ class TestTransportOrderReferences:
         skus = _sku_keys(cfg)
         for pj in om.PRODUCTION_JOBS:
             assert pj.sku in skus, \
-                f"{scenario}: prod job #{pj.job_id} sku '{pj.sku}' not in SKUS"
+                f"{scenario}: prod job #{pj.order_id} sku '{pj.sku}' not in SKUS"
             assert pj.quantity > 0, \
-                f"{scenario}: prod job #{pj.job_id} quantity must be positive"
+                f"{scenario}: prod job #{pj.order_id} quantity must be positive"
             assert pj.activate_time >= 0, \
-                f"{scenario}: prod job #{pj.job_id} activate_time must be >= 0"
+                f"{scenario}: prod job #{pj.order_id} activate_time must be >= 0"

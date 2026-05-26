@@ -49,7 +49,7 @@ class SafeStockManagement(Management):
         self.edges = list(edges)
         self.demand_orders = list(demand_orders) if demand_orders else []
         self._issued_demand: set[int] = set()
-        self._job_id_counter: int = 0
+        self._next_order_id_counter: int = 1
         self.log: list[dict] = []
 
         # Build edge lookup map
@@ -72,9 +72,9 @@ class SafeStockManagement(Management):
     # helpers
     # ------------------------------------------------------------------
 
-    def _next_job_id(self) -> int:
-        self._job_id_counter += 1
-        return self._job_id_counter
+    def _next_oid(self) -> int:
+        self._next_order_id_counter += 1
+        return self._next_order_id_counter
 
     def find_edge(self, from_node_name: str, to_node_name: str) -> Edge | None:
         return self._edge_map.get(f"{from_node_name}->{to_node_name}")
@@ -132,6 +132,7 @@ class SafeStockManagement(Management):
                 continue
             if d.get("start_time", 0) <= time + 1e-9:
                 decision.transport_orders.append(TransportOrder(
+                    order_id=self._next_oid(),
                     sku=d["sku"],
                     quantity=d["quantity"],
                     from_node=d.get("from_node", "fg_storage"),
@@ -152,6 +153,7 @@ class SafeStockManagement(Management):
                 if storage_stock > 0:
                     qty = min(entry["replenish_qty"], storage_stock)
                     decision.transport_orders.append(TransportOrder(
+                        order_id=self._next_oid(),
                         sku=sku, quantity=qty,
                         from_node=storage, to_node=entry["push_to"],
                         start_time=time,
@@ -165,7 +167,7 @@ class SafeStockManagement(Management):
                     pqueue = info.production_queues.get(prod_node_name, [])
                     if not any(j.sku == sku for j in pqueue):
                         decision.production_orders.append(ProductionOrder(
-                            job_id=self._next_job_id(),
+                            order_id=self._next_oid(),
                             sku=sku,
                             quantity=entry["replenish_qty"],
                             activate_time=time,
@@ -184,6 +186,7 @@ class SafeStockManagement(Management):
                         src_available = info.storage_stock.get(src, {}).get(sku, 0)
                     if src_available >= entry["replenish_qty"]:
                         decision.transport_orders.append(TransportOrder(
+                            order_id=self._next_oid(),
                             sku=sku,
                             quantity=entry["replenish_qty"],
                             from_node=src, to_node=storage,
@@ -206,9 +209,21 @@ class SafeStockManagement(Management):
             If any planned order references an edge or production node that no
             longer exists — a serious runtime inconsistency.
         """
+        now = self.env.now()
         for order in decision.production_orders:
             prod_node = self.nodes.get(order.node_name)
             if prod_node is not None and hasattr(prod_node, "add_production_order"):
+                self.log.append({
+                    "time": now,
+                    "type": "order_issued",
+                    "order_type": "production",
+                    "order_id": order.order_id,
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "node_name": order.node_name,
+                    "activate_time": order.activate_time,
+                    "expect_time": order.expect_time,
+                })
                 prod_node.add_production_order(order)
             else:
                 raise RuntimeError(
@@ -219,6 +234,18 @@ class SafeStockManagement(Management):
         for order in decision.transport_orders:
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
+                self.log.append({
+                    "time": now,
+                    "type": "order_issued",
+                    "order_type": "transport",
+                    "order_id": order.order_id,
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "from_node": order.from_node,
+                    "to_node": order.to_node,
+                    "start_time": order.start_time,
+                    "expect_time": order.expect_time,
+                })
                 edge.add_transport_order(order)
             else:
                 raise RuntimeError(

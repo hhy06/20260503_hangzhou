@@ -22,16 +22,16 @@ class ProductionOrder:
     """A production order targeting a specific ProductionNode.
 
     The order becomes eligible when ``activate_time <= env.now()``.  Among
-    eligible orders, the one with the lowest ``job_id`` is picked first.
+    eligible orders, the one with the lowest ``order_id`` is picked first.
     ``expect_time`` is used for scheduling / priority display.
     """
-    job_id: int
     sku: str
     quantity: int
     activate_time: float
     expect_time: float
     node_name: str                     # which production node to run on
     metadata: dict[str, Any] = field(default_factory=dict)
+    order_id: int = 0                  # unified identity (assigned by management at issue time)
 
 
 class ProductionNode(sim.Component):
@@ -106,9 +106,9 @@ class ProductionNode(sim.Component):
     # ------------------------------------------------------------------
 
     def add_production_order(self, order: ProductionOrder) -> None:
-        """Queue a production order (sorted by activate_time, then job_id)."""
+        """Queue a production order (sorted by activate_time, then order_id)."""
         self.production_queue.append(order)
-        self.production_queue.sort(key=lambda j: (j.activate_time, j.job_id))
+        self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
 
     def add_edge_out(self, edge) -> None:
         self.edges_out.append(edge)
@@ -137,12 +137,13 @@ class ProductionNode(sim.Component):
                     f"SKU {sku} qty {qty} — this is a simulation logic bug."
                 )
 
-    def _output_to_downstream(self, sku: str, quantity: int) -> None:
+    def _output_to_downstream(self, sku: str, quantity: int, job: ProductionOrder) -> None:
         """Push finished goods to downstream warehouse (always accepted)."""
         self.downstream_node.receive(sku, quantity, source=self)
         self.log.append({
             "time": self.env.now(),
             "type": "production_output",
+            "order_id": job.order_id,
             "sku": sku,
             "quantity": quantity,
             "destination": self.downstream_node.display_name,
@@ -173,7 +174,7 @@ class ProductionNode(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "production_failed",
-                "job_id": job.job_id,
+                "order_id": job.order_id,
                 "sku": job.sku,
                 "reason": "insufficient_material",
                 "required": dict(required),
@@ -185,7 +186,7 @@ class ProductionNode(sim.Component):
             # Requeue so production retries when materials arrive
             job.activate_time = self.env.now() + self.retry_delay
             self.production_queue.append(job)
-            self.production_queue.sort(key=lambda j: (j.activate_time, j.job_id))
+            self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
             return
 
         # --- 2. consume ---
@@ -193,7 +194,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "materials_consumed",
-            "job_id": job.job_id,
+            "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
             "inputs": dict(required),
@@ -201,7 +202,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "production_started",
-            "job_id": job.job_id,
+            "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
         })
@@ -219,7 +220,7 @@ class ProductionNode(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "production_failed",
-                "job_id": job.job_id,
+                "order_id": job.order_id,
                 "sku": job.sku,
                 "reason": "speed_zero",
             })
@@ -236,13 +237,13 @@ class ProductionNode(sim.Component):
                 batch_duration = remaining / speed
 
             yield self.hold(batch_duration)
-            self._output_to_downstream(job.sku, batch)
+            self._output_to_downstream(job.sku, batch, job)
             remaining -= batch
 
         self.log.append({
             "time": self.env.now(),
             "type": "production_completed",
-            "job_id": job.job_id,
+            "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
         })
@@ -263,7 +264,7 @@ class ProductionNode(sim.Component):
                 yield self.hold(1.0)
                 continue
 
-            eligible.sort(key=lambda j: j.job_id)
+            eligible.sort(key=lambda j: j.order_id)
             job = eligible[0]
             self.production_queue.remove(job)
 

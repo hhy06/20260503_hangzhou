@@ -10,6 +10,7 @@ import salabim as sim
 
 from src.management.base import Management, Snapshot, Decision
 from src.infrastructure.edge import Edge, TransportOrder
+from src.infrastructure.production_node import ProductionOrder
 
 
 class StaticOrderManagement(Management):
@@ -19,8 +20,12 @@ class StaticOrderManagement(Management):
     ----------
     transport_orders : list[TransportOrder]
         Static transport orders to manage.
+    production_orders : list[ProductionOrder]
+        Static production orders to manage.
     edges : list[Edge]
         All edges in the simulation (used for route lookup).
+    nodes : dict[str, Any]
+        All nodes in the simulation (used for production node lookup).
     name : str, optional
         SALABIM component name.
     decision_interval : float
@@ -31,15 +36,21 @@ class StaticOrderManagement(Management):
     def __init__(
         self,
         transport_orders: list[TransportOrder],
+        production_orders: list[ProductionOrder],
         edges: list[Edge],
+        nodes: dict[str, Any],
         name: str = "Management",
         decision_interval: float = 10.0,
         env: sim.Environment | None = None,
         **kwargs,
     ):
         self.transport_orders = list(transport_orders)
+        self.production_orders = list(production_orders)
         self.edges = edges
-        self._issued: set[int] = set()
+        self.nodes = nodes
+        self._issued_tx: set[int] = set()
+        self._issued_prod: set[int] = set()
+        self._next_order_id: int = 1
         self.log: list[dict] = []
 
         super().__init__(
@@ -72,11 +83,33 @@ class StaticOrderManagement(Management):
         """
         decision = Decision()
         for i, order in enumerate(self.transport_orders):
-            if i in self._issued:
+            if i in self._issued_tx:
                 continue
             if order.start_time <= time + 1e-9:
-                decision.transport_orders.append(order)
-                self._issued.add(i)
+                issued = TransportOrder(
+                    order_id=self._next_order_id,
+                    sku=order.sku, quantity=order.quantity,
+                    from_node=order.from_node, to_node=order.to_node,
+                    start_time=order.start_time, expect_time=order.expect_time,
+                )
+                self._next_order_id += 1
+                decision.transport_orders.append(issued)
+                self._issued_tx.add(i)
+        for i, order in enumerate(self.production_orders):
+            if i in self._issued_prod:
+                continue
+            if order.activate_time <= time + 1e-9:
+                issued = ProductionOrder(
+                    order_id=self._next_order_id,
+                    sku=order.sku, quantity=order.quantity,
+                    activate_time=order.activate_time,
+                    expect_time=order.expect_time,
+                    node_name=order.node_name,
+                    metadata=dict(order.metadata),
+                )
+                self._next_order_id += 1
+                decision.production_orders.append(issued)
+                self._issued_prod.add(i)
         return decision
 
     # ------------------------------------------------------------------
@@ -84,21 +117,53 @@ class StaticOrderManagement(Management):
     # ------------------------------------------------------------------
 
     def _execute_decision(self, decision: Decision) -> None:
-        """Dispatch transport orders to the matching edges.
+        """Dispatch orders to edges / production nodes.
 
         Raises
         ------
         RuntimeError
-            If any planned order references an edge that no longer exists.
+            If any planned order references an edge or node that no longer exists.
         """
         now = self.env.now()
         for order in decision.transport_orders:
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
+                self.log.append({
+                    "time": now,
+                    "type": "order_issued",
+                    "order_type": "transport",
+                    "order_id": order.order_id,
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "from_node": order.from_node,
+                    "to_node": order.to_node,
+                    "start_time": order.start_time,
+                    "expect_time": order.expect_time,
+                })
                 edge.add_transport_order(order)
             else:
                 raise RuntimeError(
                     f"Transport order references missing edge: "
                     f"'{order.from_node}' -> '{order.to_node}' "
                     f"for SKU {order.sku} qty {order.quantity}."
+                )
+        for order in decision.production_orders:
+            prod_node = self.nodes.get(order.node_name)
+            if prod_node is not None and hasattr(prod_node, "add_production_order"):
+                self.log.append({
+                    "time": now,
+                    "type": "order_issued",
+                    "order_type": "production",
+                    "order_id": order.order_id,
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "node_name": order.node_name,
+                    "activate_time": order.activate_time,
+                    "expect_time": order.expect_time,
+                })
+                prod_node.add_production_order(order)
+            else:
+                raise RuntimeError(
+                    f"Production order references missing node: "
+                    f"'{order.node_name}' for SKU {order.sku}."
                 )

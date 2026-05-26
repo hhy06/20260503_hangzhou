@@ -20,12 +20,6 @@ def create_simulation() -> SimulationContext:
     nodes = build_nodes(config, env)
     edges = build_edges(config, nodes, env)
 
-    if hasattr(orders_module, "PRODUCTION_JOBS"):
-        for pjob in orders_module.PRODUCTION_JOBS:
-            target = nodes.get(pjob.node_name)
-            if target is not None and hasattr(target, "add_production_order"):
-                target.add_production_order(pjob)
-
     management = create_management(config, orders_module, nodes, edges, env)
 
     sku_map = getattr(config, "SKUS", {})

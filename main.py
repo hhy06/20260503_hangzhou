@@ -17,6 +17,7 @@ from src.infrastructure.edge import Edge
 from src.infrastructure.warehouse_node import NodeRole
 from src.infrastructure.production_node import ProductionNode
 from src.builder import SimulationContext
+from src.output import write_output
 
 
 def _dn(node: object) -> str:
@@ -166,12 +167,12 @@ def process_all_logs(
                 inputs_parts.append(f"{sku_name}x{qty}")
             inputs_str = ", ".join(inputs_parts)
             print(
-                f"  [t={t:.1f}] {ndn}: consumed {inputs_str} for job #{entry['job_id']}"
+                f"  [t={t:.1f}] {ndn}: consumed {inputs_str} for order #{entry['order_id']}"
             )
         elif entry["type"] == "production_started":
             sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
-                f"  [t={t:.1f}] {ndn}: production started job #{entry['job_id']}"
+                f"  [t={t:.1f}] {ndn}: production started order #{entry['order_id']}"
                 f" -> {sku_name} x{entry['quantity']}"
             )
         elif entry["type"] == "production_output":
@@ -183,13 +184,13 @@ def process_all_logs(
         elif entry["type"] == "production_completed":
             sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
-                f"  [t={t:.1f}] {ndn}: production completed job #{entry['job_id']}"
+                f"  [t={t:.1f}] {ndn}: production completed order #{entry['order_id']}"
                 f" -> {sku_name} x{entry['quantity']}"
             )
         elif entry["type"] == "production_failed":
             sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
             print(
-                f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** job #{entry['job_id']}"
+                f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** order #{entry['order_id']}"
                 f" -> {sku_name} (insufficient material)"
             )
         # -- transport events --
@@ -287,7 +288,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             ndn = _dn(target_node) if target_node else pj.node_name
             output_name = _sku_display(pj.sku, sku_map)
             print(
-                f"  t={pj.activate_time}: {ndn}: {output_name} x{pj.quantity} (job #{pj.job_id})"
+                f"  t={pj.activate_time}: {ndn}: {output_name} x{pj.quantity} (order #{pj.order_id})"
             )
     print("=" * 70)
     print()
@@ -322,6 +323,21 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             print(
                 f"  {ndn} (production): completed {len([e for e in node.log if e['type'] == 'production_completed'])} jobs"
             )
+
+    # -- write unified output -----------------------------------------------
+    mgmt_cfg = getattr(config, "MANAGEMENT", {})
+    mgmt_type = mgmt_cfg.get("type", "static_order")
+    di = mgmt_cfg.get("decision_interval", 10.0)
+    run_dir = write_output(
+        scenario_name=scenario_name,
+        nodes=nodes,
+        edges=edges,
+        management=ctx.management,
+        sim_duration=config.SIM_DURATION,
+        management_type=mgmt_type,
+        decision_interval=di,
+    )
+    print(f"\nUnified output written to: {run_dir}")
 
     # -- build & return result for programmatic consumption ----------------
     return SimulationResult(

@@ -240,7 +240,7 @@ _job_id = 0
 for i in range(1, N + 1):
     _job_id += 1
     PRODUCTION_JOBS.append(ProductionOrder(
-        job_id=_job_id, sku=f"sauce_{i}", quantity=SAUCE_QTY,
+        order_id=_job_id, sku=f"sauce_{i}", quantity=SAUCE_QTY,
         activate_time=5, expect_time=30, node_name=f"workstation_sauce_{i}",
     ))
 
@@ -249,7 +249,7 @@ for pl in range(1, NUM_POWDER_LINES + 1):
     for pi in _powder_line_sku[pl]:
         _job_id += 1
         PRODUCTION_JOBS.append(ProductionOrder(
-            job_id=_job_id, sku=f"powder_{pi}", quantity=POWDER_QTY,
+            order_id=_job_id, sku=f"powder_{pi}", quantity=POWDER_QTY,
             activate_time=5, expect_time=30,
             node_name=f"workstation_powder_{pl}",
         ))
@@ -258,7 +258,7 @@ for pl in range(1, NUM_POWDER_LINES + 1):
 for vi in range(1, N + 1):
     _job_id += 1
     PRODUCTION_JOBS.append(ProductionOrder(
-        job_id=_job_id, sku=f"veg_{vi}", quantity=VEG_QTY,
+        order_id=_job_id, sku=f"veg_{vi}", quantity=VEG_QTY,
         activate_time=5, expect_time=210,
         node_name="workstation_veg",
     ))
@@ -269,7 +269,7 @@ for ln in range(1, NUM_NOODLE_LINES + 1):
         sku_name = f"SKU_{sku_idx}"
         _job_id += 1
         PRODUCTION_JOBS.append(ProductionOrder(
-            job_id=_job_id, sku=sku_name, quantity=SKU_QTY,
+            order_id=_job_id, sku=sku_name, quantity=SKU_QTY,
             activate_time=220, expect_time=300,
             node_name=f"workstation_noodle_{ln}",
         ))

@@ -39,12 +39,12 @@ for sku in ("fg_x", "fg_y"):
 
 PRODUCTION_JOBS: list[ProductionOrder] = [
     ProductionOrder(
-        job_id=1, sku="fg_x", quantity=1,
+        order_id=1, sku="fg_x", quantity=1,
         activate_time=0, expect_time=100,
         node_name="prod",
     ),
     ProductionOrder(
-        job_id=2, sku="fg_y", quantity=1,
+        order_id=2, sku="fg_y", quantity=1,
         activate_time=0, expect_time=100,
         node_name="prod",
     ),

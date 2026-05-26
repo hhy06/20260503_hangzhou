@@ -1,0 +1,11 @@
+{
+  "scenario": "scenario.ss_hangzhou0b",
+  "started_at": "2026-05-26T14:18:10.989990",
+  "sim_duration": 5000,
+  "management_type": "safe_stock",
+  "decision_interval": 10.0,
+  "num_nodes": 106,
+  "num_edges": 73,
+  "event_count": 1495,
+  "order_count": 200
+}

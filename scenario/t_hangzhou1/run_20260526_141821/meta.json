@@ -1,0 +1,11 @@
+{
+  "scenario": "scenario.t_hangzhou1",
+  "started_at": "2026-05-26T14:18:21.395925",
+  "sim_duration": 5000,
+  "management_type": "trace",
+  "decision_interval": 10.0,
+  "num_nodes": 106,
+  "num_edges": 73,
+  "event_count": 15332,
+  "order_count": 558
+}

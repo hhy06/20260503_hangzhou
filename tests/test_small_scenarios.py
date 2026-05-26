@@ -271,7 +271,7 @@ class TestSourceProductionSink:
 
         # Production job starts after all raw has arrived
         prod.add_production_order(ProductionOrder(
-            job_id=1, sku="fg", quantity=10,
+            order_id=1, sku="fg", quantity=10,
             activate_time=12, expect_time=20, node_name="prod",
         ))
 
@@ -356,7 +356,7 @@ class TestSourceProductionWarehouseSink:
         # Production consumes raw → outputs fg to fin_wh (starts after raw arrives at t=100)
         # 30 fg @ speed 10/min → 3 min production
         prod.add_production_order(ProductionOrder(
-            job_id=1, sku="fg", quantity=30,
+            order_id=1, sku="fg", quantity=30,
             activate_time=102, expect_time=30, node_name="prod",
         ))
 

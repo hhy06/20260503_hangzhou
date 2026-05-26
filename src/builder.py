@@ -147,9 +147,12 @@ def create_management(
 
     if mgmt_type == "static_order":
         transport_orders = getattr(orders_module, "TRANSPORT_ORDERS", [])
+        production_orders = getattr(orders_module, "PRODUCTION_JOBS", [])
         return StaticOrderManagement(
             transport_orders=transport_orders,
+            production_orders=production_orders,
             edges=edges,
+            nodes=nodes,
             decision_interval=di,
             env=env,
         )

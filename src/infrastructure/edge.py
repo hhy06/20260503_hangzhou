@@ -31,6 +31,7 @@ class TransportOrder:
     to_node: str              # node_name of destination
     start_time: float         # earliest allowed activation time
     expect_time: float        # earlier = higher priority
+    order_id: int = 0         # unified identity (assigned by management at issue time)
 
 
 class Edge(sim.Component):
@@ -122,6 +123,7 @@ class Edge(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "transport_order_added",
+            "order_id": order.order_id,
             "sku": order.sku,
             "quantity": order.quantity,
             "from": order.from_node,
@@ -156,6 +158,7 @@ class Edge(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "transport_order_skipped",
+                "order_id": order.order_id,
                 "sku": sku,
                 "quantity": desired_items,
                 "from": order.from_node,
@@ -170,6 +173,7 @@ class Edge(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "transport_started",
+            "order_id": order.order_id,
             "sku": sku,
             "quantity": actual_items,
             "from": order.from_node,
@@ -205,6 +209,7 @@ class Edge(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "transport_completed",
+            "order_id": order.order_id,
             "sku": sku,
             "quantity": actual_items,
             "from": order.from_node,

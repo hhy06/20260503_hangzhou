@@ -86,7 +86,7 @@ class TraceManagement(Management):
 
         # round-robin counters per SKU
         self._rr_counter: dict[str, int] = {}
-        self._next_job_id: int = 1
+        self._next_order_id: int = 1
         self.log: list[dict] = []
 
         super().__init__(
@@ -130,7 +130,10 @@ class TraceManagement(Management):
         ipp = edge.from_node.conversion_factors.get(sku, 1)
         num_pallets = math.ceil(quantity / ipp)
         pallet_qty = num_pallets * ipp
+        oid = self._next_order_id
+        self._next_order_id += 1
         decision.transport_orders.append(TransportOrder(
+            order_id=oid,
             sku=sku, quantity=pallet_qty,
             from_node=from_node, to_node=to_node,
             start_time=now, expect_time=now,
@@ -151,13 +154,14 @@ class TraceManagement(Management):
         if node is not None:
             ipp = node.output_conversion_factors.get(sku, 1)
         pallet_qty = math.ceil(quantity / ipp) * ipp
+        oid = self._next_order_id
+        self._next_order_id += 1
         decision.production_orders.append(ProductionOrder(
-            job_id=self._next_job_id,
+            order_id=oid,
             sku=sku, quantity=pallet_qty,
             activate_time=now, expect_time=now,
             node_name=node_name,
         ))
-        self._next_job_id += 1
 
     # ------------------------------------------------------------------
     # gather_info
@@ -423,9 +427,22 @@ class TraceManagement(Management):
             If any planned order references an edge or production node that no
             longer exists — a serious runtime inconsistency.
         """
+        now = self.env.now()
         for order in decision.transport_orders:
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
+                self.log.append({
+                    "time": now,
+                    "type": "order_issued",
+                    "order_type": "transport",
+                    "order_id": order.order_id,
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "from_node": order.from_node,
+                    "to_node": order.to_node,
+                    "start_time": order.start_time,
+                    "expect_time": order.expect_time,
+                })
                 edge.add_transport_order(order)
             else:
                 raise RuntimeError(
@@ -437,6 +454,17 @@ class TraceManagement(Management):
         for order in decision.production_orders:
             node = self._production_nodes.get(order.node_name)
             if node is not None:
+                self.log.append({
+                    "time": now,
+                    "type": "order_issued",
+                    "order_type": "production",
+                    "order_id": order.order_id,
+                    "sku": order.sku,
+                    "quantity": order.quantity,
+                    "node_name": order.node_name,
+                    "activate_time": order.activate_time,
+                    "expect_time": order.expect_time,
+                })
                 node.add_production_order(order)
             else:
                 raise RuntimeError(
