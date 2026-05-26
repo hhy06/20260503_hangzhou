@@ -7,17 +7,11 @@ DEMAND_ORDERS: list[dict] = []
 # DEMAND ORDERS  —  daily FG consumption (fg_storage -> sink)
 # =======================================================================
 
+
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50000,
+    quantity=5000,
     from_node='fg_storage',
     to_node='sink',
-    start_time=0.5,
-))
-DEMAND_ORDERS.append(dict(
-    sku='SKU_1',
-    quantity=50000,
-    from_node='fg_storage',
-    to_node='sink',
-    start_time=1440,
+    start_time=10000,
 ))
