@@ -83,6 +83,8 @@ class WarehouseNode(sim.Component):
         if role == NodeRole.SINK:
             self.received: dict[str, int] = {}
 
+        self._exceed_max_capacity = False
+
         self.edges_out: list = []
         self.edges_in: list = []
         self.log: list[dict] = []
@@ -136,17 +138,21 @@ class WarehouseNode(sim.Component):
         return self.node_max_pallets - self.current_pallets()
 
     def check_capacity(self) -> None:
-        """Log a warning if pallets exceed the soft cap."""
+        """Log a warning on transition from under to over capacity."""
         if self.role == NodeRole.WAREHOUSE and self.node_max_pallets is not None:
             pal = self.current_pallets()
             if pal > self.node_max_pallets:
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "capacity_warning",
-                    "node": self.display_name,
-                    "pallets": pal,
-                    "max_pallets": self.node_max_pallets,
-                })
+                if not self._exceed_max_capacity:
+                    self._exceed_max_capacity = True
+                    self.log.append({
+                        "time": self.env.now(),
+                        "type": "capacity_warning",
+                        "node": self.display_name,
+                        "pallets": pal,
+                        "max_pallets": self.node_max_pallets,
+                    })
+            else:
+                self._exceed_max_capacity = False
 
     # ------------------------------------------------------------------
     # inventory query / mutation (the ONLY interface edges and production use)
@@ -249,12 +255,4 @@ class WarehouseNode(sim.Component):
     def add_edge_in(self, edge):
         self.edges_in.append(edge)
 
-    # ------------------------------------------------------------------
-    # SALABIM process — periodic capacity check only
-    # ------------------------------------------------------------------
 
-    def process(self):
-        """Periodically check capacity and print warnings."""
-        while True:
-            self.check_capacity()
-            yield self.hold(10.0)
