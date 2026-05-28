@@ -16,9 +16,11 @@ from __future__ import annotations
 
 import importlib
 import json
+import math
 import os
 import re
 import sys
+from collections import defaultdict
 from typing import Any
 
 
@@ -458,6 +460,108 @@ def _merge_node_events(events: list[dict]) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Chart-data builders
+# ---------------------------------------------------------------------------
+
+
+def _compute_storage_chart(
+    node_id: str,
+    event_records: list[dict],
+    sim_duration: float,
+    conversion_factors: dict[str, int],
+) -> list[list[float]]:
+    """Compute [t, pallets] step points spanning the full simulation.
+
+    Reconstructs pallet level from ``received`` (+pallets) and
+    ``debited`` (-pallets) events in chronological order.
+    ``init_state`` records are **not** used because the same data
+    is already present as ``received`` events at t=0.
+
+    A final point at ``sim_duration`` is appended so the step line
+    always extends to the right edge of the chart.
+    """
+    # Gather inventory-changing events for this node, grouped by time
+    changes: dict[float, list[tuple[str, str, int]]] = defaultdict(list)
+    for ev in event_records:
+        if ev.get("node") != node_id:
+            continue
+        etype = ev.get("type")
+        if etype not in ("received", "debited"):
+            continue
+        changes[ev.get("time", 0.0)].append((
+            etype,
+            ev.get("sku", ""),
+            ev.get("quantity", 0),
+        ))
+
+    if not changes:
+        return []
+
+    result: list[list[float]] = []
+    sku_qty: dict[str, int] = defaultdict(int)
+
+    for t in sorted(changes):
+        # Apply all deltas at this timestamp
+        for etype, sku, qty in changes[t]:
+            if etype == "received":
+                sku_qty[sku] += qty
+            else:
+                sku_qty[sku] -= qty
+                if sku_qty[sku] <= 0:
+                    del sku_qty[sku]
+
+        # Compute total pallets across all SKUs after applying all deltas
+        pal = 0
+        for s, q in sku_qty.items():
+            ipp = conversion_factors.get(s, 1)
+            if ipp < 1:
+                ipp = 1
+            pal += int(math.ceil(q / ipp))
+
+        if not result or result[-1][1] != pal:
+            result.append([t, float(pal)])
+
+    # Extend the line to the right edge of the chart
+    if result and sim_duration > result[-1][0]:
+        result.append([sim_duration, result[-1][1]])
+
+    return result
+
+
+def _compute_rate_chart(
+    node_id: str,
+    event_records: list[dict],
+    event_type: str,
+    sim_duration: float,
+) -> list[list[float]]:
+    """Bin events of *event_type* into uniform time windows.
+
+    Returns ``[[window_start, total_items], ...]``.
+    """
+    events: list[tuple[float, int]] = []
+    for ev in event_records:
+        if ev.get("node") != node_id:
+            continue
+        if ev.get("type") == event_type:
+            events.append((ev.get("time", 0.0), ev.get("quantity", 0)))
+
+    if not events:
+        return []
+
+    num_bins = min(max(int(sim_duration / 10), 20), 500)
+    if num_bins <= 0:
+        num_bins = 1
+    window_size = sim_duration / num_bins
+
+    bins = [0.0] * num_bins
+    for t, qty in events:
+        idx = min(int(t / window_size), num_bins - 1)
+        bins[idx] += qty
+
+    return [[i * window_size, bins[i]] for i in range(num_bins)]
+
+
+# ---------------------------------------------------------------------------
 # Job-card builders
 # ---------------------------------------------------------------------------
 
@@ -793,12 +897,43 @@ def process_run(
             target["jobs"].append(oid)
 
     # ==================================================================
-    # 5.  Build order / job cards
+    # 5.  Compute chart data (storage, traffic, production)
+    # ==================================================================
+    conversion_factors: dict[str, int] = {}
+    if scenario_mod is not None and hasattr(scenario_mod, "config"):
+        conversion_factors = getattr(scenario_mod.config, "PALLET_SIZE", {})
+
+    sim_duration = meta.get("sim_duration", 0.0)
+
+    for nid, ndata in nodes.items():
+        ntype = ndata.get("type", "")
+        if ntype == "warehouse":
+            chart = _compute_storage_chart(
+                nid, event_records, sim_duration, conversion_factors,
+            )
+            if chart:
+                ndata["chart_storage"] = chart
+        elif ntype == "production":
+            chart = _compute_rate_chart(
+                nid, event_records, "production_output", sim_duration,
+            )
+            if chart:
+                ndata["chart_production"] = chart
+
+    for eid, edata in edges.items():
+        chart = _compute_rate_chart(
+            eid, event_records, "transport_started", sim_duration,
+        )
+        if chart:
+            edata["chart_traffic"] = chart
+
+    # ==================================================================
+    # 6.  Build order / job cards
     # ==================================================================
     orders = _build_job_cards(event_records, order_records, merged_by_node)
 
     # ==================================================================
-    # 6.  Build node_list / edge_list
+    # 7.  Build node_list / edge_list
     # ==================================================================
     node_list = sorted(
         [
@@ -821,7 +956,7 @@ def process_run(
     )
 
     # ==================================================================
-    # 7.  Assemble result
+    # 8.  Assemble result
     # ==================================================================
     return {
         "meta": {

@@ -716,6 +716,27 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     display: none;
   }
 }
+
+/* Chart containers */
+.chart-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 16px;
+}
+.chart-container h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.chart-container .chart-wrap {
+  position: relative;
+  height: 250px;
+}
 </style>
 </head>
 <body>
@@ -764,6 +785,11 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 </div>
 
 <!-- ==============================================================
+     Chart.js library (embedded)
+     ============================================================== -->
+<script>{{CHART_JS}}</script>
+
+<!-- ==============================================================
      Embedded data block
      ============================================================== -->
 <script>const SIM_DATA = {{SIM_DATA}};</script>
@@ -804,6 +830,92 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
   function timeLink (t) {
     var f = fmtTime(t);
     return '<a href="#" class="time-link" data-time="' + f + '" onclick="return window.SETA_highlightTime(\\'' + f + '\\')">' + f + '</a>';
+  }
+
+  /* -------------------------------------------------------
+     Chart helpers
+     ------------------------------------------------------- */
+  var _chartInstances = [];
+
+  function _chartOpts (title, yLabel, color, fill) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      color: '#a0a0b0',
+      scales: {
+        x: { title: { display: true, text: '时间', color: '#a0a0b0' }, ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
+        y: { title: { display: true, text: yLabel, color: '#a0a0b0' }, beginAtZero: true, ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
+      },
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2a4a', titleColor: '#e0e0e0', bodyColor: '#e0e0e0', borderColor: '#2a2a4e', borderWidth: 1 } },
+    };
+  }
+
+  function _createChart (canvasId, type, data, opts) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    var chart = new Chart(canvas.getContext('2d'), { type: type, data: data, options: opts });
+    _chartInstances.push(chart);
+    return chart;
+  }
+
+  function _destroyCharts () {
+    for (var i = 0; i < _chartInstances.length; i++) _chartInstances[i].destroy();
+    _chartInstances = [];
+  }
+
+  function _storageChartConfig (chartData) {
+    var opts = _chartOpts('库存水位', '托盘数', '#06b6d4', true);
+    opts.scales.x.type = 'linear';
+    return {
+      type: 'line',
+      data: {
+        datasets: [{
+          data: chartData.map(function (p) { return { x: p[0], y: p[1] }; }),
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.08)',
+          fill: true,
+          stepped: 'before',
+          pointRadius: 0,
+          borderWidth: 2,
+        }],
+      },
+      options: opts,
+    };
+  }
+
+  function _rateChartConfig (chartData, color, yLabel) {
+    return {
+      type: 'bar',
+      data: {
+        labels: chartData.map(function (p) { return p[0].toFixed(1); }),
+        datasets: [{
+          data: chartData.map(function (p) { return p[1]; }),
+          backgroundColor: color,
+          borderRadius: 2,
+          borderWidth: 0,
+        }],
+      },
+      options: _chartOpts('', yLabel, color, false),
+    };
+  }
+
+  function _chartSafeId (prefix, id) {
+    return prefix + id.replace(/[^a-zA-Z0-9_-]/g, '_');
+  }
+
+  var _pendingCharts = [];
+
+  function _flushCharts () {
+    for (var i = 0; i < _pendingCharts.length; i++) {
+      var pc = _pendingCharts[i];
+      var chart;
+      if (pc.type === 'storage') {
+        chart = _createChart(pc.id, 'line', pc.config.data, pc.config.options);
+      } else {
+        chart = _createChart(pc.id, 'bar', pc.config.data, pc.config.options);
+      }
+    }
+    _pendingCharts = [];
   }
 
   /* -------------------------------------------------------
@@ -1010,6 +1122,18 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     html += '<tr><td>事件</td><td>' + esc(String((node.events && node.events.length) || 0)) + '</td></tr>';
     html += '</table>';
 
+    // Chart: storage (warehouse) or production output (production)
+    if (node.chart_storage) {
+      var cid = _chartSafeId('c_s_', node.id);
+      html += '<div class="chart-container"><h3>库存水位</h3><div class="chart-wrap"><canvas id="' + cid + '"></canvas></div></div>';
+      _pendingCharts.push({ id: cid, type: 'storage', config: _storageChartConfig(node.chart_storage) });
+    }
+    if (node.chart_production) {
+      var cid = _chartSafeId('c_p_', node.id);
+      html += '<div class="chart-container"><h3>产出率</h3><div class="chart-wrap"><canvas id="' + cid + '"></canvas></div></div>';
+      _pendingCharts.push({ id: cid, type: 'bar', config: _rateChartConfig(node.chart_production, '#22c55e', '件数') });
+    }
+
     // Initial inventory
     if (node.init_inventory && Object.keys(node.init_inventory).length > 0) {
       html += '<h2 class="section-title">初始库存</h2>';
@@ -1100,6 +1224,13 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     html += '<tr><td>任务</td><td>' + esc(String((edge.jobs && edge.jobs.length) || 0)) + '</td></tr>';
     html += '<tr><td>事件</td><td>' + esc(String((edge.events && edge.events.length) || 0)) + '</td></tr>';
     html += '</table>';
+
+    // Chart: edge traffic
+    if (edge.chart_traffic) {
+      var cid = _chartSafeId('c_e_', edge.id);
+      html += '<div class="chart-container"><h3>运输原物料</h3><div class="chart-wrap"><canvas id="' + cid + '"></canvas></div></div>';
+      _pendingCharts.push({ id: cid, type: 'bar', config: _rateChartConfig(edge.chart_traffic, '#a855f7', '件数') });
+    }
 
     // Jobs on this edge
     if (edge.jobs && edge.jobs.length > 0) {
@@ -1216,7 +1347,9 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
       html = renderNotFound('未知路由: ' + esc(hash));
     }
 
+    _destroyCharts();
     document.getElementById('viewContent').innerHTML = html;
+    _flushCharts();
 
     // Update header stats
     var m = SIM_DATA.meta;
@@ -1424,9 +1557,19 @@ def render_report(data: dict, output_path: str) -> str:
     scenario = data.get("meta", {}).get("scenario", "SETA 报告")
     scenario_safe = html.escape(str(scenario))
 
+    # Embed Chart.js library
+    chart_js_path = os.path.join(os.path.dirname(__file__), "chart.umd.min.js")
+    chart_js = ""
+    try:
+        with open(chart_js_path, "r", encoding="utf-8") as f:
+            chart_js = f.read()
+    except FileNotFoundError:
+        pass
+
     output = (
         _TEMPLATE.replace("{{SIM_DATA}}", json_data)
         .replace("{{SCENARIO}}", scenario_safe)
+        .replace("{{CHART_JS}}", chart_js)
     )
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
