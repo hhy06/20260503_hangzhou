@@ -54,3 +54,81 @@ DEMAND_ORDERS.append(dict(
     to_node='sink',
     start_time=4000.5,
 ))
+
+
+
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_1',
+    quantity=12000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=14000.5,
+))
+DEMAND_ORDERS.append(dict(
+    sku='SKU_5',
+    quantity=12000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=14000.5,
+))
+DEMAND_ORDERS.append(dict(
+    sku='SKU_10',
+    quantity=22000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=14000.5,
+))
+
+
+
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_1',
+    quantity=12000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=15000.5,
+))
+
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_1',
+    quantity=12000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=25000.5,
+))
+
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_1',
+    quantity=12000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=35000.5,
+))
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_2',
+    quantity=42000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=36000.5,
+))
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_3',
+    quantity=32000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=37000.5,
+))
+
+DEMAND_ORDERS.append(dict(
+    sku='SKU_4',
+    quantity=22000,
+    from_node='fg_storage',
+    to_node='sink',
+    start_time=38000.5,
+))
