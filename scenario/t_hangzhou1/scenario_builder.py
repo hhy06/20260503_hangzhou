@@ -29,7 +29,7 @@ def create_simulation() -> SimulationContext:
         if node is not None:
             for sku, qty in skus.items():
                 if qty > 0:
-                    node.receive(sku, qty)
+                    node.receive(sku, qty, source="期初库存")
 
     management = create_management(
         config, orders_module, nodes, edges, env,
