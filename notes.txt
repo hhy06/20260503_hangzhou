@@ -100,3 +100,8 @@ No outright failures reported, but significant shortfall in execution.
 **Summary Verdict:**
 Simulation exhibits partial success but reveals clear execution flaws including incomplete production runs, stalled workflows, and potential bugs in scheduling/resource allocation. The system failed to fulfill over half of its outbound commitments.
 ======================================================================
+
+
+python -m src.seta <run_dir> -o report0.html
+
+

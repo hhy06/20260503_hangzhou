@@ -21,7 +21,7 @@ _TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SETA Report — {{SCENARIO}}</title>
+<title>SETA 报告 — {{SCENARIO}}</title>
 <style>
 /* =========================================================
    CSS Variables & Reset
@@ -723,14 +723,14 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 <!-- Loading state -->
 <div id="loading">
   <div class="spinner"></div>
-  <span>Loading simulation data…</span>
+  <span>正在加载仿真数据…</span>
 </div>
 
 <!-- Application root -->
 <div id="app" style="display:none">
   <header class="app-header">
-    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
-    <div class="logo">SETA <small>sim trace analyzer</small></div>
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="切换侧边栏">☰</button>
+    <div class="logo">SETA <small>仿真轨迹分析</small></div>
     <div class="header-stats" id="headerStats"></div>
   </header>
   <div class="app-body">
@@ -739,19 +739,19 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-section">
-        <h3>Nodes</h3>
+        <h3>节点</h3>
         <div class="filter-group" id="nodeFilters">
-          <button class="filter-btn active" data-type="all">All</button>
-          <button class="filter-btn" data-type="warehouse">WH</button>
-          <button class="filter-btn" data-type="production">Prod</button>
-          <button class="filter-btn" data-type="source">Src</button>
-          <button class="filter-btn" data-type="sink">Sink</button>
+          <button class="filter-btn active" data-type="all">全部</button>
+          <button class="filter-btn" data-type="warehouse">仓库</button>
+          <button class="filter-btn" data-type="production">生产</button>
+          <button class="filter-btn" data-type="source">源点</button>
+          <button class="filter-btn" data-type="sink">汇点</button>
         </div>
-        <input class="search-input" id="nodeSearch" type="text" placeholder="Search nodes…" autocomplete="off">
+        <input class="search-input" id="nodeSearch" type="text" placeholder="搜索节点…" autocomplete="off">
       </div>
       <div class="node-list" id="nodeList"></div>
       <div class="sidebar-section">
-        <h3>Edges</h3>
+        <h3>边</h3>
       </div>
       <div class="edge-list" id="edgeList"></div>
     </nav>
@@ -810,7 +810,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      Breadcrumb
      ------------------------------------------------------- */
   function setBreadcrumb (parts) {
-    var html = '<a href="#/">Dashboard</a>';
+    var html = '<a href="#/">仪表盘</a>';
     parts.forEach(function (p) {
       html += '<span class="sep">›</span>';
       if (p.url) {
@@ -841,7 +841,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     // Show raw toggle if raw data is non-empty
     if (ev.raw && typeof ev.raw === 'object' && Object.keys(ev.raw).length > 0) {
-      html += ' <button class="event-raw-toggle" onclick="window.SETA_toggleRaw(this)">raw</button>';
+      html += ' <button class="event-raw-toggle" onclick="window.SETA_toggleRaw(this)">原始</button>';
     }
     html += '</span></div>';
 
@@ -857,7 +857,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function renderEventList (events) {
     if (!events || events.length === 0) {
-      return '<div class="empty-state" style="padding:20px"><p>No events recorded.</p></div>';
+      return '<div class="empty-state" style="padding:20px"><p>暂无事件记录。</p></div>';
     }
     var html = '<div class="event-list">';
     for (var i = 0; i < events.length; i++) {
@@ -877,36 +877,36 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     var cardCls = 'job-card ' + typeCls;
     if (statusCls === 'failed') cardCls += ' failed';
 
-    var summary = order.display_summary || ('Order #' + order.order_id + ' — ' + order.sku + ' ×' + order.quantity);
+    var summary = order.display_summary || ('订单 #' + order.order_id + ' — ' + order.sku + ' ×' + order.quantity);
 
     var html = '<div class="' + cardCls + '">';
     html += '<div class="job-card-header" onclick="window.SETA_toggleCard(this)">';
     html += '<span class="card-expand-icon">▶</span>';
     html += '<span class="card-order-id">#' + esc(String(order.order_id)) + '</span>';
     html += '<span class="card-summary">' + esc(summary) + '</span>';
-    html += badgeSm(statusCls === 'completed' ? 'OK' : statusCls === 'failed' ? 'FAIL' : '…', statusCls);
+    html += badgeSm(statusCls === 'completed' ? '完成' : statusCls === 'failed' ? '失败' : '…', statusCls);
     html += '</div>';
     html += '<div class="job-card-body">';
 
     // Detail table
     html += '<table class="detail-table">';
     html += '<tr><td>SKU</td><td>' + esc(order.sku || '—') + '</td></tr>';
-    html += '<tr><td>Quantity</td><td>' + esc(String(order.quantity)) + '</td></tr>';
-    html += '<tr><td>Type</td><td>' + esc(order.order_type) + '</td></tr>';
-    html += '<tr><td>Status</td><td>' + badge(order.status, order.status) + '</td></tr>';
-    if (order.activate_time != null) html += '<tr><td>Activate time</td><td>' + timeLink(order.activate_time) + '</td></tr>';
-    if (order.expect_time != null) html += '<tr><td>Expected end</td><td>' + timeLink(order.expect_time) + '</td></tr>';
-    if (order.actual_start != null) html += '<tr><td>Actual start</td><td>' + timeLink(order.actual_start) + '</td></tr>';
-    if (order.actual_end != null) html += '<tr><td>Actual end</td><td>' + timeLink(order.actual_end) + '</td></tr>';
-    if (order.duration != null) html += '<tr><td>Duration</td><td>' + esc(fmtTime(order.duration)) + '</td></tr>';
-    if (order.from_node) html += '<tr><td>From</td><td><a href="#/node/' + esc(order.from_node) + '">' + esc(order.from_node) + '</a></td></tr>';
-    if (order.to_node) html += '<tr><td>To</td><td><a href="#/node/' + esc(order.to_node) + '">' + esc(order.to_node) + '</a></td></tr>';
-    if (order.node_name) html += '<tr><td>Node</td><td><a href="#/node/' + esc(order.node_name) + '">' + esc(order.node_name) + '</a></td></tr>';
+    html += '<tr><td>数量</td><td>' + esc(String(order.quantity)) + '</td></tr>';
+    html += '<tr><td>类型</td><td>' + esc(order.order_type) + '</td></tr>';
+    html += '<tr><td>状态</td><td>' + badge(order.status, order.status) + '</td></tr>';
+    if (order.activate_time != null) html += '<tr><td>激活时间</td><td>' + timeLink(order.activate_time) + '</td></tr>';
+    if (order.expect_time != null) html += '<tr><td>预计结束</td><td>' + timeLink(order.expect_time) + '</td></tr>';
+    if (order.actual_start != null) html += '<tr><td>实际开始</td><td>' + timeLink(order.actual_start) + '</td></tr>';
+    if (order.actual_end != null) html += '<tr><td>实际结束</td><td>' + timeLink(order.actual_end) + '</td></tr>';
+    if (order.duration != null) html += '<tr><td>时长</td><td>' + esc(fmtTime(order.duration)) + '</td></tr>';
+    if (order.from_node) html += '<tr><td>从</td><td><a href="#/node/' + esc(order.from_node) + '">' + esc(order.from_node) + '</a></td></tr>';
+    if (order.to_node) html += '<tr><td>到</td><td><a href="#/node/' + esc(order.to_node) + '">' + esc(order.to_node) + '</a></td></tr>';
+    if (order.node_name) html += '<tr><td>节点</td><td><a href="#/node/' + esc(order.node_name) + '">' + esc(order.node_name) + '</a></td></tr>';
     html += '</table>';
 
     // Events
     if (order.events && order.events.length > 0) {
-      html += '<div style="margin-top:10px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Event Timeline</div>';
+      html += '<div style="margin-top:10px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">事件时间线</div>';
       html += renderEventList(order.events);
     }
 
@@ -920,7 +920,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function renderDashboard () {
     var m = SIM_DATA.meta;
-    if (!m) return '<div class="empty-state"><h2>No metadata</h2></div>';
+    if (!m) return '<div class="empty-state"><h2>无元数据</h2></div>';
 
     setBreadcrumb([]);
 
@@ -936,32 +936,32 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     // Summary grid
     html += '<div class="dashboard-grid">';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(m.scenario) + '</div><div class="stat-label">Scenario</div></div>';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(fmtTime(m.sim_duration)) + '</div><div class="stat-label">Duration</div><div class="stat-sub">time units</div></div>';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(m.management_type || '—') + '</div><div class="stat-label">Management</div><div class="stat-sub">every ' + esc(fmtTime(m.decision_interval)) + 't</div></div>';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.num_nodes)) + '</div><div class="stat-label">Nodes</div></div>';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.num_edges)) + '</div><div class="stat-label">Edges</div></div>';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.order_count)) + '</div><div class="stat-label">Orders</div></div>';
-    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.event_count)) + '</div><div class="stat-label">Events</div></div>';
-    html += '<div class="stat-card"><div class="stat-value" style="color:var(--accent-green)">' + esc(String(statusCounts.completed)) + '</div><div class="stat-label">Completed</div></div>';
-    html += '<div class="stat-card"><div class="stat-value" style="color:var(--accent-red)">' + esc(String(statusCounts.failed)) + '</div><div class="stat-label">Failed</div></div>';
-    html += '<div class="stat-card"><div class="stat-value" style="color:var(--accent-orange)">' + esc(String(statusCounts.in_progress)) + '</div><div class="stat-label">In Progress</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(m.scenario) + '</div><div class="stat-label">场景</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(fmtTime(m.sim_duration)) + '</div><div class="stat-label">时长</div><div class="stat-sub">时间单位</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(m.management_type || '—') + '</div><div class="stat-label">管理方式</div><div class="stat-sub">每 ' + esc(fmtTime(m.decision_interval)) + 't</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.num_nodes)) + '</div><div class="stat-label">节点</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.num_edges)) + '</div><div class="stat-label">边</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.order_count)) + '</div><div class="stat-label">订单</div></div>';
+    html += '<div class="stat-card"><div class="stat-value">' + esc(String(m.event_count)) + '</div><div class="stat-label">事件</div></div>';
+    html += '<div class="stat-card"><div class="stat-value" style="color:var(--accent-green)">' + esc(String(statusCounts.completed)) + '</div><div class="stat-label">已完成</div></div>';
+    html += '<div class="stat-card"><div class="stat-value" style="color:var(--accent-red)">' + esc(String(statusCounts.failed)) + '</div><div class="stat-label">失败</div></div>';
+    html += '<div class="stat-card"><div class="stat-value" style="color:var(--accent-orange)">' + esc(String(statusCounts.in_progress)) + '</div><div class="stat-label">进行中</div></div>';
     html += '</div>';
 
     // Status breakdown
     var total = orderIds.length;
     if (total > 0) {
       html += '<div class="status-row">';
-      html += '<div class="status-item"><span class="status-dot completed"></span> Completed: ' + statusCounts.completed + '</div>';
-      html += '<div class="status-item"><span class="status-dot failed"></span> Failed: ' + statusCounts.failed + '</div>';
-      html += '<div class="status-item"><span class="status-dot in_progress"></span> In Progress: ' + statusCounts.in_progress + '</div>';
-      html += '<div class="status-item" style="color:var(--text-muted)">Total orders: ' + total + '</div>';
+      html += '<div class="status-item"><span class="status-dot completed"></span> 已完成: ' + statusCounts.completed + '</div>';
+      html += '<div class="status-item"><span class="status-dot failed"></span> 失败: ' + statusCounts.failed + '</div>';
+      html += '<div class="status-item"><span class="status-dot in_progress"></span> 进行中: ' + statusCounts.in_progress + '</div>';
+      html += '<div class="status-item" style="color:var(--text-muted)">总订单: ' + total + '</div>';
       html += '</div>';
     }
 
     // Quick links — nodes
     if (SIM_DATA.node_list && SIM_DATA.node_list.length > 0) {
-      html += '<h2 class="section-title">Nodes</h2>';
+      html += '<h2 class="section-title">节点</h2>';
       html += '<div class="quick-links">';
       for (var j = 0; j < SIM_DATA.node_list.length; j++) {
         var n = SIM_DATA.node_list[j];
@@ -972,11 +972,11 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     // Quick links — edges
     if (SIM_DATA.edge_list && SIM_DATA.edge_list.length > 0) {
-      html += '<h2 class="section-title" style="margin-top:20px;">Edges</h2>';
+      html += '<h2 class="section-title" style="margin-top:20px;">边</h2>';
       html += '<div class="quick-links">';
       for (var k = 0; k < SIM_DATA.edge_list.length; k++) {
         var e = SIM_DATA.edge_list[k];
-        html += '<a class="quick-link" href="#/edge/' + esc(e.id) + '">' + badgeSm('edge', 'edge') + ' ' + esc(e.display_name || e.id) + '</a>';
+        html += '<a class="quick-link" href="#/edge/' + esc(e.id) + '">' + badgeSm('边', 'edge') + ' ' + esc(e.display_name || e.id) + '</a>';
       }
       html += '</div>';
     }
@@ -989,9 +989,9 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function renderNodeView (nodeId) {
     var node = getNode(nodeId);
-    if (!node) return renderNotFound('Node "' + esc(nodeId) + '" not found.');
+    if (!node) return renderNotFound('未找到节点 "' + esc(nodeId) + '"');
 
-    setBreadcrumb([{ label: 'Node: ' + (node.display_name || node.id), url: null }]);
+    setBreadcrumb([{ label: '节点: ' + (node.display_name || node.id), url: null }]);
 
     var html = '';
 
@@ -1005,14 +1005,14 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     // Detail table
     html += '<table class="detail-table">';
     html += '<tr><td>ID</td><td>' + esc(node.id) + '</td></tr>';
-    html += '<tr><td>Type</td><td>' + badge(node.type, node.type) + '</td></tr>';
-    html += '<tr><td>Jobs</td><td>' + esc(String((node.jobs && node.jobs.length) || 0)) + '</td></tr>';
-    html += '<tr><td>Events</td><td>' + esc(String((node.events && node.events.length) || 0)) + '</td></tr>';
+    html += '<tr><td>类型</td><td>' + badge(node.type, node.type) + '</td></tr>';
+    html += '<tr><td>任务</td><td>' + esc(String((node.jobs && node.jobs.length) || 0)) + '</td></tr>';
+    html += '<tr><td>事件</td><td>' + esc(String((node.events && node.events.length) || 0)) + '</td></tr>';
     html += '</table>';
 
     // Initial inventory
     if (node.init_inventory && Object.keys(node.init_inventory).length > 0) {
-      html += '<h2 class="section-title">Initial Inventory</h2>';
+      html += '<h2 class="section-title">初始库存</h2>';
       html += '<div class="inv-list">';
       var invKeys = Object.keys(node.init_inventory);
       for (var i = 0; i < invKeys.length; i++) {
@@ -1024,14 +1024,14 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     // Job cards (orders touching this node)
     if (node.jobs && node.jobs.length > 0) {
-      html += '<h2 class="section-title">Jobs</h2>';
+      html += '<h2 class="section-title">任务</h2>';
       for (var j = 0; j < node.jobs.length; j++) {
         var oid = node.jobs[j];
         var order = getOrder(oid);
         if (order) {
           html += renderJobCard(order);
         } else {
-          html += '<div class="job-card"><div class="job-card-header">Order #' + esc(String(oid)) + ' (data not found)</div></div>';
+          html += '<div class="job-card"><div class="job-card-header">订单 #' + esc(String(oid)) + '（数据未找到）</div></div>';
         }
       }
     }
@@ -1051,19 +1051,19 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
       }
 
       if (otherEvents.length > 0) {
-        html += '<h2 class="section-title" style="margin-top:20px;">Node Events</h2>';
+        html += '<h2 class="section-title" style="margin-top:20px;">节点事件</h2>';
         html += renderEventList(otherEvents);
       }
 
       if (warnings.length > 0) {
-        html += '<h2 class="section-title" style="margin-top:20px;">Warnings</h2>';
+        html += '<h2 class="section-title" style="margin-top:20px;">告警</h2>';
         for (var w = 0; w < warnings.length; w++) {
           var warn = warnings[w];
           html += '<div class="warning-item" data-time="' + esc(fmtTime(warn.time)) + '">';
           html += '<span class="warning-icon">⚠</span>';
-          html += '<span><strong>[t=' + timeLink(warn.time) + ']</strong> ' + esc(warn.display || warn.reason || 'capacity_warning');
+          html += '<span><strong>[t=' + timeLink(warn.time) + ']</strong> ' + esc(warn.display || warn.reason || '容量告警');
           if (warn.raw && typeof warn.raw === 'object' && Object.keys(warn.raw).length > 0) {
-            html += ' <button class="event-raw-toggle" onclick="window.SETA_toggleRaw(this)">raw</button>';
+      html += ' <button class="event-raw-toggle" onclick="window.SETA_toggleRaw(this)">原始</button>';
             html += '<div class="event-raw-data">' + esc(JSON.stringify(warn.raw, null, 1)) + '</div>';
           }
           html += '</span></div>';
@@ -1079,15 +1079,15 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function renderEdgeView (edgeId) {
     var edge = getEdge(edgeId);
-    if (!edge) return renderNotFound('Edge "' + esc(edgeId) + '" not found.');
+    if (!edge) return renderNotFound('未找到边 "' + esc(edgeId) + '"');
 
-    setBreadcrumb([{ label: 'Edge: ' + (edge.display_name || edge.id), url: null }]);
+    setBreadcrumb([{ label: '边: ' + (edge.display_name || edge.id), url: null }]);
 
     var html = '';
 
     // Header
     html += '<div class="view-header">';
-    html += badge('edge', 'edge');
+    html += badge('边', 'edge');
     html += '<h1>' + esc(edge.display_name || edge.id) + '</h1>';
     html += '<span class="view-subtitle">' + esc(edge.id) + '</span>';
     html += '</div>';
@@ -1095,15 +1095,15 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     // From → To
     html += '<table class="detail-table">';
     html += '<tr><td>ID</td><td>' + esc(edge.id) + '</td></tr>';
-    html += '<tr><td>From</td><td><a href="#/node/' + esc(edge.from) + '">' + esc(edge.from_display || edge.from) + '</a></td></tr>';
-    html += '<tr><td>To</td><td><a href="#/node/' + esc(edge.to) + '">' + esc(edge.to_display || edge.to) + '</a></td></tr>';
-    html += '<tr><td>Jobs</td><td>' + esc(String((edge.jobs && edge.jobs.length) || 0)) + '</td></tr>';
-    html += '<tr><td>Events</td><td>' + esc(String((edge.events && edge.events.length) || 0)) + '</td></tr>';
+    html += '<tr><td>从</td><td><a href="#/node/' + esc(edge.from) + '">' + esc(edge.from_display || edge.from) + '</a></td></tr>';
+    html += '<tr><td>到</td><td><a href="#/node/' + esc(edge.to) + '">' + esc(edge.to_display || edge.to) + '</a></td></tr>';
+    html += '<tr><td>任务</td><td>' + esc(String((edge.jobs && edge.jobs.length) || 0)) + '</td></tr>';
+    html += '<tr><td>事件</td><td>' + esc(String((edge.events && edge.events.length) || 0)) + '</td></tr>';
     html += '</table>';
 
     // Jobs on this edge
     if (edge.jobs && edge.jobs.length > 0) {
-      html += '<h2 class="section-title">Transport Jobs</h2>';
+      html += '<h2 class="section-title">运输任务</h2>';
       for (var i = 0; i < edge.jobs.length; i++) {
         var order = getOrder(edge.jobs[i]);
         if (order) {
@@ -1114,7 +1114,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     // Edge events
     if (edge.events && edge.events.length > 0) {
-      html += '<h2 class="section-title" style="margin-top:20px;">Edge Events</h2>';
+      html += '<h2 class="section-title" style="margin-top:20px;">边事件</h2>';
       html += renderEventList(edge.events);
     }
 
@@ -1126,45 +1126,45 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function renderOrderView (orderId) {
     var order = getOrder(orderId);
-    if (!order) return renderNotFound('Order #' + esc(orderId) + ' not found.');
+    if (!order) return renderNotFound('未找到订单 #' + esc(orderId));
 
-    setBreadcrumb([{ label: 'Order #' + order.order_id, url: null }]);
+    setBreadcrumb([{ label: '订单 #' + order.order_id, url: null }]);
 
     var html = '';
 
     // Header
     html += '<div class="view-header">';
     html += badge(order.status, order.status);
-    html += '<h1>Order #' + esc(String(order.order_id)) + '</h1>';
+    html += '<h1>订单 #' + esc(String(order.order_id)) + '</h1>';
     html += '<span class="view-subtitle">' + esc(order.sku || '') + ' ×' + esc(String(order.quantity)) + '</span>';
     html += '</div>';
 
     // Full detail table
     html += '<table class="detail-table">';
-    html += '<tr><td>Order ID</td><td>' + esc(String(order.order_id)) + '</td></tr>';
+    html += '<tr><td>订单ID</td><td>' + esc(String(order.order_id)) + '</td></tr>';
     html += '<tr><td>SKU</td><td>' + esc(order.sku || '—') + '</td></tr>';
-    html += '<tr><td>Quantity</td><td>' + esc(String(order.quantity)) + '</td></tr>';
-    html += '<tr><td>Type</td><td>' + esc(order.order_type) + '</td></tr>';
-    html += '<tr><td>Status</td><td>' + badge(order.status, order.status) + '</td></tr>';
+    html += '<tr><td>数量</td><td>' + esc(String(order.quantity)) + '</td></tr>';
+    html += '<tr><td>类型</td><td>' + esc(order.order_type) + '</td></tr>';
+    html += '<tr><td>状态</td><td>' + badge(order.status, order.status) + '</td></tr>';
 
-    if (order.activate_time != null) html += '<tr><td>Activate time</td><td>' + timeLink(order.activate_time) + '</td></tr>';
-    if (order.expect_time != null) html += '<tr><td>Expected end</td><td>' + timeLink(order.expect_time) + '</td></tr>';
-    if (order.actual_start != null) html += '<tr><td>Actual start</td><td>' + timeLink(order.actual_start) + '</td></tr>';
-    if (order.actual_end != null) html += '<tr><td>Actual end</td><td>' + timeLink(order.actual_end) + '</td></tr>';
-    if (order.duration != null) html += '<tr><td>Duration</td><td>' + esc(fmtTime(order.duration)) + '</td></tr>';
+    if (order.activate_time != null) html += '<tr><td>激活时间</td><td>' + timeLink(order.activate_time) + '</td></tr>';
+    if (order.expect_time != null) html += '<tr><td>预计结束</td><td>' + timeLink(order.expect_time) + '</td></tr>';
+    if (order.actual_start != null) html += '<tr><td>实际开始</td><td>' + timeLink(order.actual_start) + '</td></tr>';
+    if (order.actual_end != null) html += '<tr><td>实际结束</td><td>' + timeLink(order.actual_end) + '</td></tr>';
+    if (order.duration != null) html += '<tr><td>时长</td><td>' + esc(fmtTime(order.duration)) + '</td></tr>';
 
     if (order.from_node) {
-      html += '<tr><td>From</td><td><a href="#/node/' + esc(order.from_node) + '">' + esc(order.from_node) + '</a></td></tr>';
+      html += '<tr><td>从</td><td><a href="#/node/' + esc(order.from_node) + '">' + esc(order.from_node) + '</a></td></tr>';
     }
     if (order.to_node) {
-      html += '<tr><td>To</td><td><a href="#/node/' + esc(order.to_node) + '">' + esc(order.to_node) + '</a></td></tr>';
+      html += '<tr><td>到</td><td><a href="#/node/' + esc(order.to_node) + '">' + esc(order.to_node) + '</a></td></tr>';
     }
     if (order.node_name) {
-      html += '<tr><td>Production node</td><td><a href="#/node/' + esc(order.node_name) + '">' + esc(order.node_name) + '</a></td></tr>';
+      html += '<tr><td>生产节点</td><td><a href="#/node/' + esc(order.node_name) + '">' + esc(order.node_name) + '</a></td></tr>';
     }
 
     if (order.nodes_involved && order.nodes_involved.length > 0) {
-      html += '<tr><td>Nodes involved</td><td>';
+      html += '<tr><td>涉及节点</td><td>';
       for (var ni = 0; ni < order.nodes_involved.length; ni++) {
         if (ni > 0) html += ', ';
         html += '<a href="#/node/' + esc(order.nodes_involved[ni]) + '">' + esc(order.nodes_involved[ni]) + '</a>';
@@ -1176,7 +1176,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     // Event timeline
     if (order.events && order.events.length > 0) {
-      html += '<h2 class="section-title">Event Timeline</h2>';
+      html += '<h2 class="section-title">事件时间线</h2>';
       html += renderEventList(order.events);
     }
 
@@ -1190,9 +1190,9 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     setBreadcrumb([]);
     return '<div class="empty-state">'
       + '<div class="empty-icon">🔍</div>'
-      + '<h2>Not Found</h2>'
-      + '<p>' + esc(msg || 'The requested page does not exist.') + '</p>'
-      + '<p style="margin-top:12px"><a href="#/">Back to Dashboard</a></p>'
+      + '<h2>未找到</h2>'
+      + '<p>' + esc(msg || '请求的页面不存在。') + '</p>'
+      + '<p style="margin-top:12px"><a href="#/">返回仪表盘</a></p>'
       + '</div>';
   }
 
@@ -1213,7 +1213,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     } else if (parts[0] === 'order' && parts[1]) {
       html = renderOrderView(parts[1]);
     } else {
-      html = renderNotFound('Unknown route: ' + esc(hash));
+      html = renderNotFound('未知路由: ' + esc(hash));
     }
 
     document.getElementById('viewContent').innerHTML = html;
@@ -1222,10 +1222,10 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     var m = SIM_DATA.meta;
     if (m) {
       document.getElementById('headerStats').innerHTML =
-        '<span>Scenario: <strong>' + esc(m.scenario) + '</strong></span>'
-        + '<span>Orders: <strong>' + esc(String(m.order_count)) + '</strong></span>'
-        + '<span>Events: <strong>' + esc(String(m.event_count)) + '</strong></span>'
-        + '<span>Duration: <strong>' + esc(fmtTime(m.sim_duration)) + '</strong></span>';
+        '<span>场景: <strong>' + esc(m.scenario) + '</strong></span>'
+        + '<span>订单: <strong>' + esc(String(m.order_count)) + '</strong></span>'
+        + '<span>事件: <strong>' + esc(String(m.event_count)) + '</strong></span>'
+        + '<span>时长: <strong>' + esc(fmtTime(m.sim_duration)) + '</strong></span>';
     }
   }
 
@@ -1258,7 +1258,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
       for (var j = 0; j < SIM_DATA.edge_list.length; j++) {
         var e = SIM_DATA.edge_list[j];
         edgeHtml += '<a class="sidebar-item" href="#/edge/' + esc(e.id) + '">'
-          + badgeSm('edge', 'edge')
+          + badgeSm('边', 'edge')
           + '<span class="item-label">' + esc(e.display_name || e.id) + '</span>'
           + '</a>';
       }
@@ -1349,7 +1349,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     if (dataEl && dataEl.classList.contains('event-raw-data')) {
       var isHidden = dataEl.style.display === 'none' || dataEl.style.display === '';
       dataEl.style.display = isHidden ? 'block' : 'none';
-      btnEl.textContent = isHidden ? 'hide' : 'raw';
+      btnEl.textContent = isHidden ? '隐藏' : '原始';
     }
   };
 
@@ -1421,7 +1421,7 @@ def render_report(data: dict, output_path: str) -> str:
     # Safeguard: escape any </script> that might appear inside the JSON data
     json_data = json_data.replace("</script>", "<\\/script>")
 
-    scenario = data.get("meta", {}).get("scenario", "SETA Report")
+    scenario = data.get("meta", {}).get("scenario", "SETA 报告")
     scenario_safe = html.escape(str(scenario))
 
     output = (
