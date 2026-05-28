@@ -12,1400 +12,1400 @@ DEMAND_ORDERS: list[dict] = []
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=0.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=10.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=20.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=30.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=40.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=50.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=60.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=70.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=80.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=90.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=100.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=110.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=120.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=130.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=140.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=150.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=160.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=170.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=180.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_5',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_6',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_7',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_8',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_9',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,
 ))
 DEMAND_ORDERS.append(dict(
     sku='SKU_10',
-    quantity=50,
+    quantity=120,
     from_node='fg_storage',
     to_node='sink',
     start_time=190.5,

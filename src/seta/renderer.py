@@ -1201,7 +1201,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function route () {
     var hash = window.location.hash.replace(/^#/, '') || '/';
-    var parts = hash.split('/').filter(Boolean);
+    var parts = hash.split('/').filter(Boolean).map(function(p){return decodeURIComponent(p);});
     var html = '';
 
     if (parts.length === 0 || parts[0] === '') {

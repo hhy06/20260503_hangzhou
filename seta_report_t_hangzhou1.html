@@ -449690,7 +449690,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
   function timeLink (t) {
     var f = fmtTime(t);
-    return '<a href="#" class="time-link" data-time="' + f + '" onclick="return window.SETA_highlightTime('' + f + '')">' + f + '</a>';
+    return '<a href="#" class="time-link" data-time="' + f + '" onclick="return window.SETA_highlightTime(\'' + f + '\')">' + f + '</a>';
   }
 
   /* -------------------------------------------------------
@@ -450088,7 +450088,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
      ------------------------------------------------------- */
   function route () {
     var hash = window.location.hash.replace(/^#/, '') || '/';
-    var parts = hash.split('/').filter(Boolean);
+    var parts = hash.split('/').filter(Boolean).map(function(p){return decodeURIComponent(p);});
     var html = '';
 
     if (parts.length === 0 || parts[0] === '') {
