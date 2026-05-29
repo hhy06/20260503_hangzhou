@@ -223,8 +223,9 @@ for i in range(1, N + 1):
     EDGES.append({
         "from_node": "raw_material_storage",
         "to_node": f"lineside_sauce_{i}",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # output_sauce_i -> WIP_storage
@@ -232,8 +233,9 @@ for i in range(1, N + 1):
     EDGES.append({
         "from_node": f"output_sauce_{i}",
         "to_node": "WIP_storage",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # raw_material_storage -> lineside_powder_i
@@ -241,8 +243,9 @@ for i in range(1, NUM_POWDER_LINES + 1):
     EDGES.append({
         "from_node": "raw_material_storage",
         "to_node": f"lineside_powder_{i}",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # output_powder_i -> WIP_storage
@@ -250,8 +253,9 @@ for i in range(1, NUM_POWDER_LINES + 1):
     EDGES.append({
         "from_node": f"output_powder_{i}",
         "to_node": "WIP_storage",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # WIP_storage -> main_storage_1, main_storage_2  (fast batch for dynamic replenishment)
@@ -269,8 +273,9 @@ for i in range(1, 9):
     EDGES.append({
         "from_node": "main_storage_1",
         "to_node": f"lineside_noodle_{i}",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # main_storage_2 -> lineside_noodle_i (i=9..16)
@@ -278,8 +283,9 @@ for i in range(9, NUM_NOODLE_LINES + 1):
     EDGES.append({
         "from_node": "main_storage_2",
         "to_node": f"lineside_noodle_{i}",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # output_noodle_i -> fg_storage
@@ -287,16 +293,18 @@ for i in range(1, NUM_NOODLE_LINES + 1):
     EDGES.append({
         "from_node": f"output_noodle_{i}",
         "to_node": "fg_storage",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # main_storage_1 -> lineside_veg
 EDGES.append({
     "from_node": "main_storage_1",
     "to_node": "lineside_veg",
-    "transfer_mode": TransferMode.PER_PALLET,
-    "batch_transport_time": 1.0,
+    "transfer_mode": TransferMode.BATCH,
+    "batch_transport_time": 10.0,
+    "batch_pallets": 10,
 })
 
 # output_veg -> main_storage_1, main_storage_2
@@ -304,8 +312,9 @@ for si in (1, 2):
     EDGES.append({
         "from_node": "output_veg",
         "to_node": f"main_storage_{si}",
-        "transfer_mode": TransferMode.PER_PALLET,
-        "batch_transport_time": 1.0,
+        "transfer_mode": TransferMode.BATCH,
+        "batch_transport_time": 10.0,
+        "batch_pallets": 10,
     })
 
 # fg_storage -> sink
