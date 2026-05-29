@@ -1,0 +1,210 @@
+---
+title: Factory Topology
+---
+flowchart LR
+
+    subgraph 供应商
+        source["供应商"]:::source
+    end
+
+    subgraph 原料与半成品
+        raw_material_storage["原料库"]:::warehouse
+        WIP_storage["半成品库"]:::warehouse
+        main_storage_1["1库"]:::warehouse
+        main_storage_2["2库"]:::warehouse
+    end
+
+    subgraph 酱包产线
+        lineside_sauce_1["酱包线边仓1"]:::warehouse
+        workstation_sauce_1["酱包车间1"]:::production
+        output_sauce_1["酱包产出缓存1"]:::warehouse
+        lineside_sauce_2["酱包线边仓2"]:::warehouse
+        workstation_sauce_2["酱包车间2"]:::production
+        output_sauce_2["酱包产出缓存2"]:::warehouse
+        lineside_sauce_3["酱包线边仓3"]:::warehouse
+        workstation_sauce_3["酱包车间3"]:::production
+        output_sauce_3["酱包产出缓存3"]:::warehouse
+        lineside_sauce_4["酱包线边仓4"]:::warehouse
+        workstation_sauce_4["酱包车间4"]:::production
+        output_sauce_4["酱包产出缓存4"]:::warehouse
+        lineside_sauce_5["酱包线边仓5"]:::warehouse
+        workstation_sauce_5["酱包车间5"]:::production
+        output_sauce_5["酱包产出缓存5"]:::warehouse
+        lineside_sauce_6["酱包线边仓6"]:::warehouse
+        workstation_sauce_6["酱包车间6"]:::production
+        output_sauce_6["酱包产出缓存6"]:::warehouse
+        lineside_sauce_7["酱包线边仓7"]:::warehouse
+        workstation_sauce_7["酱包车间7"]:::production
+        output_sauce_7["酱包产出缓存7"]:::warehouse
+        lineside_sauce_8["酱包线边仓8"]:::warehouse
+        workstation_sauce_8["酱包车间8"]:::production
+        output_sauce_8["酱包产出缓存8"]:::warehouse
+        lineside_sauce_9["酱包线边仓9"]:::warehouse
+        workstation_sauce_9["酱包车间9"]:::production
+        output_sauce_9["酱包产出缓存9"]:::warehouse
+        lineside_sauce_10["酱包线边仓10"]:::warehouse
+        workstation_sauce_10["酱包车间10"]:::production
+        output_sauce_10["酱包产出缓存10"]:::warehouse
+    end
+
+    subgraph 粉包产线
+        lineside_powder_1["粉包线边仓1"]:::warehouse
+        workstation_powder_1["粉包车间1"]:::production
+        output_powder_1["粉包产出缓存1"]:::warehouse
+        lineside_powder_2["粉包线边仓2"]:::warehouse
+        workstation_powder_2["粉包车间2"]:::production
+        output_powder_2["粉包产出缓存2"]:::warehouse
+        lineside_powder_3["粉包线边仓3"]:::warehouse
+        workstation_powder_3["粉包车间3"]:::production
+        output_powder_3["粉包产出缓存3"]:::warehouse
+        lineside_powder_4["粉包线边仓4"]:::warehouse
+        workstation_powder_4["粉包车间4"]:::production
+        output_powder_4["粉包产出缓存4"]:::warehouse
+        lineside_powder_5["粉包线边仓5"]:::warehouse
+        workstation_powder_5["粉包车间5"]:::production
+        output_powder_5["粉包产出缓存5"]:::warehouse
+        lineside_powder_6["粉包线边仓6"]:::warehouse
+        workstation_powder_6["粉包车间6"]:::production
+        output_powder_6["粉包产出缓存6"]:::warehouse
+    end
+
+    subgraph 菜包产线
+        lineside_veg["菜包线边仓"]:::warehouse
+        workstation_veg["菜包车间"]:::production
+        output_veg["菜包产出缓存"]:::warehouse
+    end
+
+    subgraph 面线产线
+        lineside_noodle_1["面线边仓1"]:::warehouse
+        workstation_noodle_1["面线车间1"]:::production
+        output_noodle_1["面线产出缓存1"]:::warehouse
+        lineside_noodle_2["面线边仓2"]:::warehouse
+        workstation_noodle_2["面线车间2"]:::production
+        output_noodle_2["面线产出缓存2"]:::warehouse
+        lineside_noodle_3["面线边仓3"]:::warehouse
+        workstation_noodle_3["面线车间3"]:::production
+        output_noodle_3["面线产出缓存3"]:::warehouse
+        lineside_noodle_4["面线边仓4"]:::warehouse
+        workstation_noodle_4["面线车间4"]:::production
+        output_noodle_4["面线产出缓存4"]:::warehouse
+        lineside_noodle_5["面线边仓5"]:::warehouse
+        workstation_noodle_5["面线车间5"]:::production
+        output_noodle_5["面线产出缓存5"]:::warehouse
+        lineside_noodle_6["面线边仓6"]:::warehouse
+        workstation_noodle_6["面线车间6"]:::production
+        output_noodle_6["面线产出缓存6"]:::warehouse
+        lineside_noodle_7["面线边仓7"]:::warehouse
+        workstation_noodle_7["面线车间7"]:::production
+        output_noodle_7["面线产出缓存7"]:::warehouse
+        lineside_noodle_8["面线边仓8"]:::warehouse
+        workstation_noodle_8["面线车间8"]:::production
+        output_noodle_8["面线产出缓存8"]:::warehouse
+        lineside_noodle_9["面线边仓9"]:::warehouse
+        workstation_noodle_9["面线车间9"]:::production
+        output_noodle_9["面线产出缓存9"]:::warehouse
+        lineside_noodle_10["面线边仓10"]:::warehouse
+        workstation_noodle_10["面线车间10"]:::production
+        output_noodle_10["面线产出缓存10"]:::warehouse
+        lineside_noodle_11["面线边仓11"]:::warehouse
+        workstation_noodle_11["面线车间11"]:::production
+        output_noodle_11["面线产出缓存11"]:::warehouse
+        lineside_noodle_12["面线边仓12"]:::warehouse
+        workstation_noodle_12["面线车间12"]:::production
+        output_noodle_12["面线产出缓存12"]:::warehouse
+        lineside_noodle_13["面线边仓13"]:::warehouse
+        workstation_noodle_13["面线车间13"]:::production
+        output_noodle_13["面线产出缓存13"]:::warehouse
+        lineside_noodle_14["面线边仓14"]:::warehouse
+        workstation_noodle_14["面线车间14"]:::production
+        output_noodle_14["面线产出缓存14"]:::warehouse
+        lineside_noodle_15["面线边仓15"]:::warehouse
+        workstation_noodle_15["面线车间15"]:::production
+        output_noodle_15["面线产出缓存15"]:::warehouse
+        lineside_noodle_16["面线边仓16"]:::warehouse
+        workstation_noodle_16["面线车间16"]:::production
+        output_noodle_16["面线产出缓存16"]:::warehouse
+    end
+
+    subgraph 成品与发货
+        fg_storage["成品库"]:::warehouse
+        sink["发货"]:::sink
+    end
+
+    source -->|BATCH, t=1.0, bp=999| raw_material_storage
+    source -->|BATCH, t=1.0, bp=999| main_storage_1
+    source -->|BATCH, t=1.0, bp=999| main_storage_2
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_1
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_2
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_3
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_4
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_5
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_6
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_7
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_8
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_9
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_10
+    output_sauce_1 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_2 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_3 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_4 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_5 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_6 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_7 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_8 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_9 -->|PER_PALLET, t=1.0| WIP_storage
+    output_sauce_10 -->|PER_PALLET, t=1.0| WIP_storage
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_1
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_2
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_3
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_4
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_5
+    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_6
+    output_powder_1 -->|PER_PALLET, t=1.0| WIP_storage
+    output_powder_2 -->|PER_PALLET, t=1.0| WIP_storage
+    output_powder_3 -->|PER_PALLET, t=1.0| WIP_storage
+    output_powder_4 -->|PER_PALLET, t=1.0| WIP_storage
+    output_powder_5 -->|PER_PALLET, t=1.0| WIP_storage
+    output_powder_6 -->|PER_PALLET, t=1.0| WIP_storage
+    WIP_storage -->|BATCH, t=1.0, bp=24| main_storage_1
+    WIP_storage -->|BATCH, t=1.0, bp=24| main_storage_2
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_1
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_2
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_3
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_4
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_5
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_6
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_7
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_8
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_9
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_10
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_11
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_12
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_13
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_14
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_15
+    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_16
+    output_noodle_1 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_2 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_3 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_4 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_5 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_6 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_7 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_8 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_9 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_10 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_11 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_12 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_13 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_14 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_15 -->|PER_PALLET, t=1.0| fg_storage
+    output_noodle_16 -->|PER_PALLET, t=1.0| fg_storage
+    main_storage_1 -->|PER_PALLET, t=1.0| lineside_veg
+    output_veg -->|PER_PALLET, t=1.0| main_storage_1
+    output_veg -->|PER_PALLET, t=1.0| main_storage_2
+    fg_storage -->|BATCH, t=1.0, bp=999| sink
+
+    classDef source fill:#90EE90,stroke:#228B22,stroke-width:2px
+    classDef sink fill:#FFB6C1,stroke:#DC143C,stroke-width:2px
+    classDef warehouse fill:#87CEEB,stroke:#1E90FF,stroke-width:2px
+    classDef production fill:#FFD700,stroke:#FF8C00,stroke-width:2px
