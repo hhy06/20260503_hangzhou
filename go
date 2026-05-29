@@ -1,3 +1,9 @@
+#!/bin/bash
+set -e
 python -m scenario.ss_hangzhou0b.dump_scenario
-
-python3 main.py scenario.ss_hangzhou0b
+python3 main.py scenario.ss_hangzhou0b 2>&1 | tee /tmp/.run_output.txt
+run_dir=$(grep 'Unified output written to:' /tmp/.run_output.txt | sed 's/^.*: //')
+if [ -n "$run_dir" ]; then
+  python3 -m src.seta "$run_dir"
+fi
+rm -f /tmp/.run_output.txt

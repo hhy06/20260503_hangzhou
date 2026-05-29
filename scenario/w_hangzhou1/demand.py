@@ -85,7 +85,7 @@ DEMAND_ORDERS.append(dict(
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=12000,
+    quantity=1200,
     from_node='fg_storage',
     to_node='sink',
     start_time=15000.5,
@@ -94,7 +94,7 @@ DEMAND_ORDERS.append(dict(
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=12000,
+    quantity=1200,
     from_node='fg_storage',
     to_node='sink',
     start_time=25000.5,
@@ -103,7 +103,7 @@ DEMAND_ORDERS.append(dict(
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_1',
-    quantity=12000,
+    quantity=1200,
     from_node='fg_storage',
     to_node='sink',
     start_time=35000.5,
@@ -111,7 +111,7 @@ DEMAND_ORDERS.append(dict(
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_2',
-    quantity=42000,
+    quantity=4200,
     from_node='fg_storage',
     to_node='sink',
     start_time=36000.5,
@@ -119,7 +119,7 @@ DEMAND_ORDERS.append(dict(
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_3',
-    quantity=32000,
+    quantity=3200,
     from_node='fg_storage',
     to_node='sink',
     start_time=37000.5,
@@ -127,7 +127,7 @@ DEMAND_ORDERS.append(dict(
 
 DEMAND_ORDERS.append(dict(
     sku='SKU_4',
-    quantity=22000,
+    quantity=2200,
     from_node='fg_storage',
     to_node='sink',
     start_time=38000.5,
