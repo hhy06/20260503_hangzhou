@@ -23,6 +23,7 @@ from src.infrastructure.production_node import ProductionOrder
 SCENARIOS = [
     "scenario.ss_hangzhou0b",
     "scenario.t_hangzhou1",
+    "scenario.w_hangzhou1",
 ]
 
 

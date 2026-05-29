@@ -105,3 +105,22 @@ Simulation exhibits partial success but reveals clear execution flaws including 
 python -m src.seta <run_dir> -o report0.html
 
 
+
+
+Mechanism	Behavior
+Wake schedule	Every decision_interval (10min) for demand issuance; heavy logic only at decision times (default 04:00, 16:00 — 4h before 08:00/20:00 shifts)
+Trace	Scans FG demands in next 24h, traces full BOM tree (FG→WIP→raw) adding producible SKUs to active set
+Sort	Shortage ratio = total_stock / total_safe_stock (summed across all nodes/config), ascending = most urgent first
+Assign	Round-robin across eligible lines; qty = speed × shift_duration (675min)
+Orders issued	activate_time = upcoming production start; quantity = line capacity
+Full-tree transport	Output transports scheduled at production end; input transports at production start; source→storage immediately
+Toggles	trace_mode ("full"/"split"), transport_mode ("full_tree"/"separate") — documented in config, "full" + "full_tree" implemented
+Files modified:
+- src/management/__init__.py — exported WeighSafeStockManagement
+- src/builder.py — added "weigh_safe_stock" branch to create_management()
+- tests/test_scenario_configs.py — added scenario.w_hangzhou1 to registry
+- gow — shell script to run the scenario
+Run it:
+python3 main.py scenario.w_hangzhou1
+
+

@@ -16,6 +16,7 @@ from src.infrastructure.production_node import ProductionNode
 from src.management.static_order import StaticOrderManagement
 from src.management.safe_stock_management import SafeStockManagement
 from src.management.trace_management import TraceManagement
+from src.management.weigh_safe_stock_management import WeighSafeStockManagement
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +175,24 @@ def create_management(
             nodes=nodes,
             edges=edges,
             demand_orders=demand_orders,
+            decision_interval=di,
+            env=env,
+        )
+
+    if mgmt_type == "weigh_safe_stock":
+        if safe_stock_module is None:
+            raise ValueError("safe_stock_module is required for weigh_safe_stock management")
+        return WeighSafeStockManagement(
+            safe_stock_config=safe_stock_module.SAFE_STOCK,
+            nodes=nodes,
+            edges=edges,
+            demand_orders=demand_orders,
+            production_start_times=mgmt_cfg.get("production_start_times", [480, 1200]),
+            decision_offset=mgmt_cfg.get("decision_offset", 240),
+            shift_duration=mgmt_cfg.get("shift_duration", 675),
+            day_start=mgmt_cfg.get("day_start", 0),
+            trace_mode=mgmt_cfg.get("trace_mode", "full"),
+            transport_mode=mgmt_cfg.get("transport_mode", "full_tree"),
             decision_interval=di,
             env=env,
         )

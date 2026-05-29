@@ -1,0 +1,3 @@
+python -m scenario.w_hangzhou1.dump_scenario
+
+python3 main.py scenario.w_hangzhou1
