@@ -4,13 +4,13 @@ Factory Topology Visualizer
 
 Imports a topology config module and generates a Mermaid flowchart.
 Handles warehouse nodes, production nodes, source, and sink with proper labeling.
+Draws both explicit EDGES and implicit production upstream/downstream links.
 """
 
 import sys
 import importlib.util
 from pathlib import Path
-from types import ModuleType
-from typing import Any
+from typing import Any, List, Tuple
 
 
 def load_topology_module(module_path: str) -> Any:
@@ -19,39 +19,21 @@ def load_topology_module(module_path: str) -> Any:
     if not path.exists():
         raise FileNotFoundError(f"Topology file not found: {module_path}")
 
-    # The topology file lives inside a package (e.g. scenario/t_hangzhou1/plant_topology.py)
-    # We need to load it as part of its package so relative imports work.
-    # Strategy: add the *grandparent* of the file (e.g. scenario/) to sys.path,
-    # then import it as scenario.t_hangzhou1.plant_topology
-
-    # Determine package root: the directory containing the immediate parent of the file
-    # e.g. for scenario/t_hangzhou1/plant_topology.py:
-    #   file_dir = scenario/t_hangzhou1
-    #   package_root = scenario
-    #   package_name = t_hangzhou1
     file_dir = path.parent
     package_root = file_dir.parent
     package_name = file_dir.name
     module_name = path.stem
     full_qual_name = f"{package_name}.{module_name}"
 
-    # Add package root to sys.path if not already there
     root_str = str(package_root)
     if root_str not in sys.path:
         sys.path.insert(0, root_str)
 
-    # Ensure the package directory has an __init__.py (or is recognized as a namespace package)
-    # Python 3.3+ supports implicit namespace packages, but let's be safe
     init_file = file_dir / "__init__.py"
     if not init_file.exists():
         init_file.touch()
 
-    # Load the module via importlib
-    spec = importlib.util.spec_from_file_location(
-        full_qual_name,
-        str(path),
-        submodule_search_locations=None
-    )
+    spec = importlib.util.spec_from_file_location(full_qual_name, str(path))
     if spec is None or spec.loader is None:
         raise ImportError(f"Cannot load module from {path}")
 
@@ -62,7 +44,7 @@ def load_topology_module(module_path: str) -> Any:
 
 
 def escape_mermaid_id(node_id: str) -> str:
-    """Escape node ID for Mermaid (replace hyphens, dots, etc. with underscores)."""
+    """Escape node ID for Mermaid."""
     safe = node_id.replace("-", "_").replace(".", "_").replace("/", "_")
     if safe and safe[0].isdigit():
         safe = "n" + safe
@@ -70,7 +52,6 @@ def escape_mermaid_id(node_id: str) -> str:
 
 
 def node_style(node_type: str) -> str:
-    """Return Mermaid style class for a node type."""
     styles = {
         "source": ":::source",
         "sink": ":::sink",
@@ -78,6 +59,24 @@ def node_style(node_type: str) -> str:
         "production": ":::production",
     }
     return styles.get(node_type, "")
+
+
+def get_implicit_production_edges(nodes: dict) -> List[Tuple[str, str, str]]:
+    """
+    Extract implicit edges from production nodes.
+    Returns list of (from_node, to_node, label) tuples.
+    """
+    implicit = []
+    for nid, info in nodes.items():
+        if info.get("type") != "production":
+            continue
+        upstream = info.get("upstream")
+        downstream = info.get("downstream")
+        if upstream and upstream in nodes:
+            implicit.append((upstream, nid, "feed"))
+        if downstream and downstream in nodes:
+            implicit.append((nid, downstream, "output"))
+    return implicit
 
 
 def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
@@ -91,6 +90,9 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
     lines.append("---")
     lines.append("flowchart LR")
     lines.append("")
+
+    # Collect implicit production edges
+    implicit_edges = get_implicit_production_edges(nodes)
 
     # Group nodes into logical subgraphs
     subgraphs = {
@@ -144,6 +146,7 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
             safe_id = escape_mermaid_id(nid)
             subgraphs.setdefault("其他", []).append((safe_id, name, ntype))
 
+    # Emit subgraphs
     for sg_name, node_list in subgraphs.items():
         if not node_list:
             continue
@@ -154,6 +157,7 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
         lines.append("    end")
         lines.append("")
 
+    # Emit explicit edges (cross-subgraph or within)
     for edge in edges:
         from_node = edge.get("from_node", "")
         to_node = edge.get("to_node", "")
@@ -174,6 +178,15 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
 
         edge_label = "|" + ", ".join(label_parts) + "|" if label_parts else ""
         lines.append(f"    {safe_from} -->{edge_label} {safe_to}")
+
+    lines.append("")
+
+    # Emit implicit production edges (upstream -> workstation -> downstream)
+    # These are drawn as plain edges without labels to keep it clean
+    for from_node, to_node, label in implicit_edges:
+        safe_from = escape_mermaid_id(from_node)
+        safe_to = escape_mermaid_id(to_node)
+        lines.append(f"    {safe_from} --> {safe_to}")
 
     lines.append("")
     lines.append("    classDef source fill:#90EE90,stroke:#228B22,stroke-width:2px")
