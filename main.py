@@ -78,7 +78,7 @@ class SimulationResult:
                     logs.append({"node": name, **entry})
         for edge in self.edges:
             for entry in edge.log:
-                logs.append({"node": edge.name, **entry})
+                logs.append({"node": str(edge), **entry})
         logs.sort(key=lambda x: x["time"])
         return logs
 
@@ -126,7 +126,7 @@ def process_all_logs(
         for edge in edges:
             for i, l in enumerate(edge.log):
                 if since_t <= l["time"] <= up_to_t + 1e-9:
-                    key = (edge.name, i)
+                    key = (str(edge), i)
                     if key not in seen:
                         seen.add(key)
                         all_new.append((edge, l))
@@ -285,7 +285,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("Edges:")
     for e in edges:
         print(
-            f"  {e.name} | mode={e.transfer_mode.value},"
+            f"  {e} | mode={e.transfer_mode.value},"
             f" batch_transport_time={e.batch_transport_time}, batch_pallets={e.batch_pallets}"
         )
     print()
