@@ -165,6 +165,10 @@ class Edge(sim.Component):
                 "to": order.to_node,
                 "reason": "insufficient inventory",
             })
+            # Re-queue so the order is retried later instead of being dropped
+            order.start_time = self.env.now() + 1.0
+            self.activated_queue.append(order)
+            self.activated_queue.sort(key=lambda o: o.expect_time)
             return
 
         actual_items = desired_items
