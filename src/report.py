@@ -191,6 +191,104 @@ def build_report(run_dir: str) -> dict:
     return report
 
 
+def write_text_report(run_dir: str) -> str:
+    """Write per-node/edge report.txt with issued/started counts.
+
+    Returns the path to the created file.
+    """
+    jsonl_path = os.path.join(run_dir, "sim.jsonl")
+    meta_path = os.path.join(run_dir, "meta.json")
+
+    meta = {}
+    if os.path.isfile(meta_path):
+        with open(meta_path) as f:
+            meta = json.load(f)
+
+    # Counters per component
+    edge_issued: dict[str, int] = {}    # transport_order_added events
+    edge_started: dict[str, int] = {}   # transport_started events
+    prod_issued: dict[str, int] = {}    # order_issued (production) by node_name
+    prod_started: dict[str, int] = {}   # production_started events
+    storage_received: dict[str, int] = {}
+    storage_debited: dict[str, int] = {}
+
+    with open(jsonl_path) as f:
+        for line in f:
+            rec = json.loads(line)
+            t = rec.get("_type")
+
+            if t == "order_issued":
+                if rec.get("order_type") == "production":
+                    node = rec.get("node_name")
+                    if node:
+                        prod_issued[node] = prod_issued.get(node, 0) + 1
+
+            elif t == "event":
+                ev_type = rec.get("type")
+                node = rec.get("node")
+
+                if ev_type == "transport_order_added":
+                    edge_issued[node] = edge_issued.get(node, 0) + 1
+                elif ev_type == "transport_started":
+                    edge_started[node] = edge_started.get(node, 0) + 1
+                elif ev_type == "production_started":
+                    prod_started[node] = prod_started.get(node, 0) + 1
+                elif ev_type == "received":
+                    storage_received[node] = storage_received.get(node, 0) + 1
+                elif ev_type == "debited":
+                    storage_debited[node] = storage_debited.get(node, 0) + 1
+
+    scenario = meta.get("scenario", "")
+    mgmt = meta.get("management_type", "")
+    duration = meta.get("sim_duration", "")
+
+    lines: list[str] = []
+    lines.append(f"=== {scenario} ({mgmt}, {duration} min) ===")
+    lines.append("")
+
+    # --- Transport edges ---
+    edge_names = sorted(set(edge_issued) | set(edge_started))
+    lines.append(f"{'=== Transport Edges ===':<80}")
+    lines.append(f"{'edge':<50} {'issued':>8} {'started':>8}")
+    lines.append("-" * 80)
+    for name in edge_names:
+        i = edge_issued.get(name, 0)
+        s = edge_started.get(name, 0)
+        lines.append(f"{name:<50} {i:>8} {s:>8}")
+    lines.append("")
+
+    # --- Production nodes ---
+    prod_names = sorted(set(prod_issued) | set(prod_started))
+    if prod_names:
+        lines.append(f"{'=== Production Nodes ===':<80}")
+        lines.append(f"{'node':<50} {'issued':>8} {'started':>8}")
+        lines.append("-" * 80)
+        for name in prod_names:
+            i = prod_issued.get(name, 0)
+            s = prod_started.get(name, 0)
+            lines.append(f"{name:<50} {i:>8} {s:>8}")
+        lines.append("")
+
+    # --- Storage nodes ---
+    storage_names = sorted(set(storage_received) | set(storage_debited))
+    if storage_names:
+        lines.append(f"{'=== Storage Nodes ===':<80}")
+        lines.append(f"{'node':<50} {'received':>10} {'debited':>10}")
+        lines.append("-" * 80)
+        for name in storage_names:
+            r = storage_received.get(name, 0)
+            d = storage_debited.get(name, 0)
+            lines.append(f"{name:<50} {r:>10} {d:>10}")
+        lines.append("")
+
+    report_txt = "\n".join(lines)
+    txt_path = os.path.join(run_dir, "report.txt")
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(report_txt)
+
+    return txt_path
+
+
 def main():
     if len(sys.argv) != 2:
         print(__doc__)
@@ -203,10 +301,13 @@ def main():
     with open(report_path, "w") as f:
         json.dump(report, f, indent=2, default=str, ensure_ascii=False)
 
+    txt_path = write_text_report(run_dir)
+
     s = report["summary"]
     print(f"  transport jobs: {s['transport_jobs_total']} ({s['transport_jobs_delayed']} delayed, {s['transport_jobs_incomplete']} incomplete)")
     print(f"  production jobs: {s['production_jobs_total']} ({s['production_jobs_delayed']} delayed, {s['production_jobs_incomplete']} incomplete)")
-    print(f"Report written to: {report_path}")
+    print(f"  Report JSON: {report_path}")
+    print(f"  Report TXT:  {txt_path}")
 
 
 if __name__ == "__main__":
