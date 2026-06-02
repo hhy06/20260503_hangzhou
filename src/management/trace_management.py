@@ -52,12 +52,14 @@ class TraceManagement(Management):
         decision_interval: float = 10.0,
         name: str = "TraceManagement",
         env: sim.Environment | None = None,
+        pallet_size: dict[str, int] | None = None,
         **kwargs,
     ):
         self.nodes = dict(nodes)
         self.edges = list(edges)
         self._demand_orders = list(demand_orders or [])
         self._next_demand_idx = 0
+        self._pallet_size = pallet_size or {}
 
         # edge lookup
         self._edge_map: dict[str, Edge] = {}
@@ -360,14 +362,7 @@ class TraceManagement(Management):
 
     def _pallet_qty(self, sku: str, quantity: int) -> int:
         """Round *quantity* up to the next full pallet for *sku*."""
-        # Pallet sizes are uniform for each SKU across the system.
-        # Use any production node's output_conversion_factors as source of truth.
-        ipp = 100  # default (most SKUs)
-        for pnode in self._production_nodes.values():
-            cf = pnode.output_conversion_factors.get(sku)
-            if cf is not None:
-                ipp = cf
-                break
+        ipp = self._pallet_size.get(sku, 100)
         return math.ceil(quantity / ipp) * ipp
 
     def _accum_wip_tree(

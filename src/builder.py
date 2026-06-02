@@ -178,6 +178,7 @@ def create_management(
             demand_orders=demand_orders,
             decision_interval=di,
             env=env,
+            pallet_size=getattr(config, "PALLET_SIZE", None),
         )
 
     if mgmt_type == "weigh_safe_stock":
