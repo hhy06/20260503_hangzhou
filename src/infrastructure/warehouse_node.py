@@ -182,11 +182,13 @@ class WarehouseNode(sim.Component):
         self.inventory[sku] = current - quantity
         if self.inventory[sku] <= 0:
             del self.inventory[sku]
+        pallets = math.ceil(quantity / self.conversion_factors.get(sku, 1))
         self.log.append({
             "time": self.env.now(),
             "type": "debited",
             "sku": sku,
             "quantity": quantity,
+            "pallets": pallets,
         })
         return True
 
@@ -215,22 +217,26 @@ class WarehouseNode(sim.Component):
 
         if self.role == NodeRole.SINK:
             self.received[sku] = self.received.get(sku, 0) + quantity
+            pallets = math.ceil(quantity / self.conversion_factors.get(sku, 1))
             self.log.append({
                 "time": self.env.now(),
                 "type": "received",
                 "sku": sku,
                 "quantity": quantity,
+                "pallets": pallets,
                 "source": self._source_name(source),
             })
             return
 
         # WAREHOUSE
         self.inventory[sku] = self.inventory.get(sku, 0) + quantity
+        pallets = math.ceil(quantity / self.conversion_factors.get(sku, 1))
         self.log.append({
             "time": self.env.now(),
             "type": "received",
             "sku": sku,
             "quantity": quantity,
+            "pallets": pallets,
             "source": self._source_name(source),
         })
         self.check_capacity()

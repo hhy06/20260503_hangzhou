@@ -191,8 +191,12 @@ def build_report(run_dir: str) -> dict:
     return report
 
 
+def _inc(key: str, d: dict[str, int], val: int = 1):
+    d[key] = d.get(key, 0) + val
+
+
 def write_text_report(run_dir: str) -> str:
-    """Write per-node/edge report.txt with issued/started counts.
+    """Write per-node/edge report.txt with issued/started counts and amounts.
 
     Returns the path to the created file.
     """
@@ -204,13 +208,21 @@ def write_text_report(run_dir: str) -> str:
         with open(meta_path) as f:
             meta = json.load(f)
 
-    # Counters per component
-    edge_issued: dict[str, int] = {}    # transport_order_added events
-    edge_started: dict[str, int] = {}   # transport_started events
-    prod_issued: dict[str, int] = {}    # order_issued (production) by node_name
-    prod_started: dict[str, int] = {}   # production_started events
-    storage_received: dict[str, int] = {}
-    storage_debited: dict[str, int] = {}
+    # --- Edge counters ---
+    edge_issued_cnt: dict[str, int] = {}
+    edge_started_cnt: dict[str, int] = {}
+    edge_issued_pallets: dict[str, int] = {}
+    edge_started_pallets: dict[str, int] = {}
+
+    # --- Production counters ---
+    prod_issued_cnt: dict[str, int] = {}
+    prod_started_cnt: dict[str, int] = {}
+    prod_issued_qty: dict[str, int] = {}
+    prod_started_qty: dict[str, int] = {}
+
+    # --- Storage counters (pallets only) ---
+    storage_pallets_in: dict[str, int] = {}
+    storage_pallets_out: dict[str, int] = {}
 
     with open(jsonl_path) as f:
         for line in f:
@@ -221,22 +233,30 @@ def write_text_report(run_dir: str) -> str:
                 if rec.get("order_type") == "production":
                     node = rec.get("node_name")
                     if node:
-                        prod_issued[node] = prod_issued.get(node, 0) + 1
+                        _inc(node, prod_issued_cnt)
+                        _inc(node, prod_issued_qty, rec.get("quantity", 0))
 
             elif t == "event":
                 ev_type = rec.get("type")
                 node = rec.get("node")
 
                 if ev_type == "transport_order_added":
-                    edge_issued[node] = edge_issued.get(node, 0) + 1
+                    _inc(node, edge_issued_cnt)
+                    _inc(node, edge_issued_pallets, rec.get("pallets", 0))
+
                 elif ev_type == "transport_started":
-                    edge_started[node] = edge_started.get(node, 0) + 1
+                    _inc(node, edge_started_cnt)
+                    _inc(node, edge_started_pallets, rec.get("pallets", 0))
+
                 elif ev_type == "production_started":
-                    prod_started[node] = prod_started.get(node, 0) + 1
+                    _inc(node, prod_started_cnt)
+                    _inc(node, prod_started_qty, rec.get("quantity", 0))
+
                 elif ev_type == "received":
-                    storage_received[node] = storage_received.get(node, 0) + 1
+                    _inc(node, storage_pallets_in, rec.get("pallets", 0))
+
                 elif ev_type == "debited":
-                    storage_debited[node] = storage_debited.get(node, 0) + 1
+                    _inc(node, storage_pallets_out, rec.get("pallets", 0))
 
     scenario = meta.get("scenario", "")
     mgmt = meta.get("management_type", "")
@@ -247,38 +267,42 @@ def write_text_report(run_dir: str) -> str:
     lines.append("")
 
     # --- Transport edges ---
-    edge_names = sorted(set(edge_issued) | set(edge_started))
+    edge_names = sorted(set(edge_issued_cnt) | set(edge_started_cnt))
     lines.append(f"{'=== Transport Edges ===':<80}")
-    lines.append(f"{'edge':<50} {'issued':>8} {'started':>8}")
-    lines.append("-" * 80)
+    lines.append(f"{'edge':<50} {'issued':>8} {'started':>8}  {'pallets_issued':>14} {'pallets_started':>15}")
+    lines.append("-" * 100)
     for name in edge_names:
-        i = edge_issued.get(name, 0)
-        s = edge_started.get(name, 0)
-        lines.append(f"{name:<50} {i:>8} {s:>8}")
+        ic = edge_issued_cnt.get(name, 0)
+        sc = edge_started_cnt.get(name, 0)
+        ip = edge_issued_pallets.get(name, 0)
+        sp = edge_started_pallets.get(name, 0)
+        lines.append(f"{name:<50} {ic:>8} {sc:>8}  {ip:>14} {sp:>15}")
     lines.append("")
 
     # --- Production nodes ---
-    prod_names = sorted(set(prod_issued) | set(prod_started))
+    prod_names = sorted(set(prod_issued_cnt) | set(prod_started_cnt))
     if prod_names:
         lines.append(f"{'=== Production Nodes ===':<80}")
-        lines.append(f"{'node':<50} {'issued':>8} {'started':>8}")
-        lines.append("-" * 80)
+        lines.append(f"{'node':<50} {'issued':>8} {'started':>8}  {'qty_issued':>12} {'qty_started':>13}")
+        lines.append("-" * 100)
         for name in prod_names:
-            i = prod_issued.get(name, 0)
-            s = prod_started.get(name, 0)
-            lines.append(f"{name:<50} {i:>8} {s:>8}")
+            ic = prod_issued_cnt.get(name, 0)
+            sc = prod_started_cnt.get(name, 0)
+            iq = prod_issued_qty.get(name, 0)
+            sq = prod_started_qty.get(name, 0)
+            lines.append(f"{name:<50} {ic:>8} {sc:>8}  {iq:>12} {sq:>13}")
         lines.append("")
 
     # --- Storage nodes ---
-    storage_names = sorted(set(storage_received) | set(storage_debited))
+    storage_names = sorted(set(storage_pallets_in) | set(storage_pallets_out))
     if storage_names:
-        lines.append(f"{'=== Storage Nodes ===':<80}")
-        lines.append(f"{'node':<50} {'received':>10} {'debited':>10}")
+        lines.append(f"{'=== Storage Nodes (pallets) ===':<80}")
+        lines.append(f"{'node':<50} {'pallets_in':>12} {'pallets_out':>13}")
         lines.append("-" * 80)
         for name in storage_names:
-            r = storage_received.get(name, 0)
-            d = storage_debited.get(name, 0)
-            lines.append(f"{name:<50} {r:>10} {d:>10}")
+            pi = storage_pallets_in.get(name, 0)
+            po = storage_pallets_out.get(name, 0)
+            lines.append(f"{name:<50} {pi:>12} {po:>13}")
         lines.append("")
 
     report_txt = "\n".join(lines)

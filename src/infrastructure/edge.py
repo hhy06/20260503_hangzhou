@@ -120,12 +120,16 @@ class Edge(sim.Component):
         else:
             self.pending_queue.append(order)
 
+        items_per_pallet = self.from_node.conversion_factors.get(order.sku, 1)
+        num_pallets = math.ceil(order.quantity / items_per_pallet)
+
         self.log.append({
             "time": self.env.now(),
             "type": "transport_order_added",
             "order_id": order.order_id,
             "sku": order.sku,
             "quantity": order.quantity,
+            "pallets": num_pallets,
             "from": order.from_node,
             "to": order.to_node,
             "start_time": order.start_time,
