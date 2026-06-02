@@ -43,7 +43,12 @@ def _sku_keys(cfg) -> set[str]:
     """Return the set of SKU identifiers regardless of list/dict format."""
     skus = cfg.SKUS
     if isinstance(skus, dict):
-        return set(skus.keys())
+        # Handle both str values and SKU objects
+        first_val = next(iter(skus.values()))
+        if isinstance(first_val, str):
+            return set(skus.keys())
+        else:
+            return set(skus.keys())  # SKU objects are stored with id as key
     return set(skus)
 
 

@@ -1,4 +1,5 @@
 # proj
+.marscode/
 _obsolete
 *.jsonl
 *.html

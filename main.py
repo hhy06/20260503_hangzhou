@@ -254,12 +254,23 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("=" * 70)
     print(f"SIMULATION: {scenario_name}")
     print("=" * 70)
-    if isinstance(config.SKUS, dict):
-        print("SKUs:")
-        for sid, sname in config.SKUS.items():
-            print(f"  {sid}: {sname}")
+    # Handle both SKU objects and string mappings for SKUS display
+    if hasattr(config, "SKUS_KEYS"):
+        sku_items = [(sid, config.SKUS[sid].name if hasattr(config.SKUS.get(sid), "name") else sid) 
+                     for sid in config.SKUS_KEYS]
+    elif isinstance(config.SKUS, dict):
+        first_val = next(iter(config.SKUS.values())) if config.SKUS else None
+        if hasattr(first_val, "name"):
+            sku_items = [(sid, sku.name) for sid, sku in config.SKUS.items()]
+        else:
+            sku_items = list(config.SKUS.items())
     else:
-        print(f"SKUs: {config.SKUS}")
+        sku_items = [(s, s) for s in config.SKUS]
+    print("SKUs:")
+    for sid, sname in sku_items[:10]:  # limit output
+        print(f"  {sid}: {sname}")
+    if len(sku_items) > 10:
+        print(f"  ... +{len(sku_items) - 10} more")
     print(f"Pallet sizes: {config.PALLET_SIZE}")
     print()
     print("Nodes:")

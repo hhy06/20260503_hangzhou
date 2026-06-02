@@ -90,6 +90,9 @@ class ProductionNode(sim.Component):
         self.edges_in: list = []
         self.log: list[dict] = []
 
+        # Placeholder: future SKU registry for bom_speed lookup
+        # self.sku_registry: dict[str, SKU] | None = None
+
     # ------------------------------------------------------------------
     # properties
     # ------------------------------------------------------------------
@@ -165,6 +168,23 @@ class ProductionNode(sim.Component):
         """
         bom_entry = self.bom[job.sku]
 
+        # --- speed / lead_time resolution ---
+        # For now speed & lead_time always come from the node's BOM config.
+        # Future: when node omits speed/lead_time, fall back to SKU default:
+        #
+        #   sku_reg = getattr(self, 'sku_registry', None)
+        #   if sku_reg:
+        #       sku_obj = sku_reg.get(job.sku)
+        #       if "speed" not in bom_entry and sku_obj and sku_obj.bom_speed > 0:
+        #           speed = sku_obj.bom_speed
+        #       if "lead_time" not in bom_entry:
+        #           lead = sku_obj.lead_time if sku_obj else 0
+        if False:
+            pass  # placeholder for node-level override logic above
+
+        speed: float = bom_entry["speed"]
+        lead = bom_entry["lead_time"]
+
         # --- 1. material check ---
         required: dict[str, int] = {}
         for input_sku, qty_per in bom_entry["inputs"].items():
@@ -208,12 +228,10 @@ class ProductionNode(sim.Component):
         })
 
         # --- 3. lead time ---
-        lead = bom_entry["lead_time"]
         if lead > 0:
             yield self.hold(lead)
 
         # --- 4. batch loop ---
-        speed: float = bom_entry["speed"]
         remaining: int = job.quantity
 
         if speed <= 0:

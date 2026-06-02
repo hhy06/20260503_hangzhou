@@ -23,6 +23,12 @@ def create_simulation() -> SimulationContext:
     management = create_management(config, orders_module, nodes, edges, env)
 
     sku_map = getattr(config, "SKUS", {})
+    if isinstance(sku_map, dict):
+        first_val = next(iter(sku_map.values())) if sku_map else None
+        if hasattr(first_val, "name"):
+            sku_map = {sid: sku.name for sid, sku in sku_map.items()}
+        elif isinstance(first_val, str):
+            sku_map = dict(sku_map)
     if isinstance(sku_map, (list, tuple)):
         sku_map = {s: s for s in sku_map}
 

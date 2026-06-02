@@ -19,6 +19,9 @@ from .sku import (
     PALLET_SIZE,
 )
 
+# Backward compatibility: SKUS keys for validation
+SKUS_KEYS: set[str] = set(SKUS.keys()) if isinstance(SKUS, dict) else set(SKUS)
+
 # ---------------------------------------------------------------------------
 # Bill-of-materials  (ingredient maps, FG BOM helper, line→SKU assignment)
 # ---------------------------------------------------------------------------
