@@ -224,6 +224,7 @@ class ProductionNode(sim.Component):
             "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
+            "bom_speed": speed,
         })
 
         # --- 3. lead time ---
