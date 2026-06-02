@@ -1530,10 +1530,32 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 </body>
 </html>"""
 
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _strip_raw(obj):
+    """Recursively remove ``raw`` keys from all dicts in a nested structure.
+
+    This dramatically reduces the serialised data volume because each
+    merged event currently carries a copy of its first raw event dict.
+    The ``raw`` field is only used by the frontend for a "show original"
+    toggle, which is a minor debugging feature not worth the memory cost.
+    """
+    if isinstance(obj, dict):
+        obj.pop("raw", None)
+        for v in obj.values():
+            _strip_raw(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            _strip_raw(v)
+
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def render_report(data: dict, output_path: str) -> str:
     """Generate the HTML report and write to *output_path*.  Returns *output_path*.
@@ -1550,7 +1572,13 @@ def render_report(data: dict, output_path: str) -> str:
     str
         The same *output_path* that was passed in (for convenience in chaining).
     """
-    json_data = json.dumps(data, indent=1, ensure_ascii=False)
+    # Strip raw event copies before serialisation — they are the dominant
+    # contributor to the embedded JSON size (each carries a full raw dict).
+    _strip_raw(data)
+
+    # Compact JSON: no indent.  The output is parsed by JavaScript, not
+    # read by humans, so indentation is pure overhead.
+    json_data = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     # Safeguard: escape any </script> that might appear inside the JSON data
     json_data = json_data.replace("</script>", "<\\/script>")
 
@@ -1566,14 +1594,15 @@ def render_report(data: dict, output_path: str) -> str:
     except FileNotFoundError:
         pass
 
-    output = (
-        _TEMPLATE.replace("{{SIM_DATA}}", json_data)
-        .replace("{{SCENARIO}}", scenario_safe)
-        .replace("{{CHART_JS}}", chart_js)
-    )
+    # Split template at the data placeholder and write in chunks to avoid
+    # holding the full HTML string in memory (which was the primary OOM cause).
+    template_head, template_tail = _TEMPLATE.split("{{SIM_DATA}}", 1)
+    template_head = template_head.replace("{{SCENARIO}}", scenario_safe).replace("{{CHART_JS}}", chart_js)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(output)
+        f.write(template_head)
+        f.write(json_data)
+        f.write(template_tail)
 
     return output_path

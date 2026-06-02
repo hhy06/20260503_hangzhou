@@ -94,7 +94,7 @@ else:
     # -- Raw materials for sauce production --
     for i in range(1, N + 1):
         sku_id = f"smallpack_s_{i}"
-        SKUS[sku_id] = SKU(id=sku_id, name=f"酱包小包{i}", pallet_size=100)
+        SKUS[sku_id] = SKU(id=sku_id, name=f"酱包小包装{i}", pallet_size=100)
         PALLET_SIZE[sku_id] = 100
     for l in range(1, 5):
         sku_id = f"meat_{l}"
@@ -112,7 +112,7 @@ else:
     # -- Raw materials for powder production --
     for i in range(1, N + 1):
         sku_id = f"smallpack_p_{i}"
-        SKUS[sku_id] = SKU(id=sku_id, name=f"粉包小包{i}", pallet_size=100)
+        SKUS[sku_id] = SKU(id=sku_id, name=f"粉包小包装{i}", pallet_size=100)
         PALLET_SIZE[sku_id] = 100
     for k in range(1, 6):
         sku_id = f"original_powder_{k}"
@@ -122,7 +122,7 @@ else:
     # -- Raw materials for veg production --
     for i in range(1, N + 1):
         sku_id = f"smallpack_v_{i}"
-        SKUS[sku_id] = SKU(id=sku_id, name=f"菜包小包{i}", pallet_size=100)
+        SKUS[sku_id] = SKU(id=sku_id, name=f"菜包小包装{i}", pallet_size=100)
         PALLET_SIZE[sku_id] = 100
     for k in range(1, 5):
         sku_id = f"dry_veg_{k}"
@@ -201,15 +201,15 @@ else:
     # -- FG SKUs --
     for i in range(1, N + 1):
         sku_id = f"SKU_{i}"
-        inputs = {f"sauce_{i}": 1, f"powder_{i}": 1, f"veg_{i}": 1}
+        inputs = {f"sauce_{i}": 20, f"powder_{i}": 20, f"veg_{i}": 20}
         if i % 2 == 0:
-            inputs["bow"] = 1
-            inputs["cap"] = 1
+            inputs["bow"] = 20
+            inputs["cap"] = 20
         else:
-            inputs["pack"] = 1
+            inputs["pack"] = 20
         SKUS[sku_id] = SKU(
             id=sku_id,
-            name=f"成品{i}",
+            name=f"成品面{i}",
             bom=inputs,
             bom_speed=5,
             pallet_size=50,
