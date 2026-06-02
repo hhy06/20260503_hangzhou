@@ -54,7 +54,6 @@ for i in range(1, N + 1):
         "bom": {
             f"sauce_{i}": {
                 "inputs": dict(SAUCE_INGREDIENTS[i]),
-                "speed": 10.0,
                 "lead_time": 0,
             },
         },
@@ -78,7 +77,6 @@ for i in range(1, NUM_POWDER_LINES + 1):
     for pi in range(1, N + 1):
         bom[f"powder_{pi}"] = {
             "inputs": dict(POWDER_INGREDIENTS[pi]),
-            "speed": 10.0,
             "lead_time": 0,
         }
         conv[f"powder_{pi}"] = 100
@@ -125,7 +123,6 @@ for i in range(1, NUM_NOODLE_LINES + 1):
         sku_name = f"SKU_{sku_idx}"
         bom[sku_name] = {
             "inputs": sku_bom_inputs(sku_idx),
-            "speed": 5.0,
             "lead_time": 0,
         }
         conv[sku_name] = 50
@@ -155,7 +152,6 @@ _veg_conv = {}
 for vi in range(1, N + 1):
     _veg_bom[f"veg_{vi}"] = {
         "inputs": dict(VEG_INGREDIENTS[vi]),
-        "speed": 100.0,
         "lead_time": 0,
     }
     _veg_conv[f"veg_{vi}"] = 100

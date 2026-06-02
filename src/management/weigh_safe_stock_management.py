@@ -115,6 +115,13 @@ class WeighSafeStockManagement(Management):
             cap = {}
             for sku, bom_entry in pnode.bom.items():
                 speed = bom_entry.get("speed", 0)
+                if speed == 0:
+                    sku_obj = getattr(pnode, 'sku_registry', None) or {}
+                    sku_obj = sku_obj.get(sku) if isinstance(sku_obj, dict) else None
+                    if sku_obj and sku_obj.bom_speed > 0:
+                        speed = sku_obj.bom_speed
+                    else:
+                        speed = 1.0
                 cap[sku] = max(1, int(speed * self._shift_duration))
             self._line_capacity[name] = cap
 

@@ -81,6 +81,7 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
                 env=env,
                 global_time_step=cfg.get("global_time_step", 10.0),
                 display_name=cfg.get("display_name", node_name),
+                sku_registry=getattr(config, "SKUS", None),
             )
             nodes[node_name] = node
 

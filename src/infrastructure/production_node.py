@@ -72,6 +72,7 @@ class ProductionNode(sim.Component):
         global_time_step: float = 10.0,
         retry_delay: float = 10.0,
         display_name: str | None = None,
+        sku_registry: dict | None = None,
         **kwargs,
     ):
         self._node_name = name
@@ -84,6 +85,7 @@ class ProductionNode(sim.Component):
         self.downstream_node = downstream_node
         self.global_time_step: float = global_time_step
         self.retry_delay: float = retry_delay
+        self.sku_registry: dict | None = sku_registry
 
         self.production_queue: list[ProductionOrder] = []
         self.edges_out: list = []
@@ -169,21 +171,18 @@ class ProductionNode(sim.Component):
         bom_entry = self.bom[job.sku]
 
         # --- speed / lead_time resolution ---
-        # For now speed & lead_time always come from the node's BOM config.
-        # Future: when node omits speed/lead_time, fall back to SKU default:
-        #
-        #   sku_reg = getattr(self, 'sku_registry', None)
-        #   if sku_reg:
-        #       sku_obj = sku_reg.get(job.sku)
-        #       if "speed" not in bom_entry and sku_obj and sku_obj.bom_speed > 0:
-        #           speed = sku_obj.bom_speed
-        #       if "lead_time" not in bom_entry:
-        #           lead = sku_obj.lead_time if sku_obj else 0
-        if False:
-            pass  # placeholder for node-level override logic above
+        # If the node's BOM entry omits speed, fall back to SKU default:
+        speed: float = bom_entry.get("speed", 0)
+        if speed == 0:
+            sku_obj = getattr(self, 'sku_registry', None) or {}
+            sku_obj = sku_obj.get(job.sku) if isinstance(sku_obj, dict) else None
+            if sku_obj and sku_obj.bom_speed > 0:
+                speed = sku_obj.bom_speed
+            else:
+                print(f"[WARN] {self._node_name}: no speed for {job.sku}, defaulting to 1.0")
+                speed = 1.0
 
-        speed: float = bom_entry["speed"]
-        lead = bom_entry["lead_time"]
+        lead = bom_entry.get("lead_time", 0)
 
         # --- 1. material check ---
         required: dict[str, int] = {}

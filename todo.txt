@@ -1,0 +1,11 @@
+This is a human-maintained list of feature/bug todo list
+
+- add capability estimate for topology, and compare it against demand. 
+
+- an all-in-one graph showing all activities of all nodes for seta
+
+- a topology graph for seta.
+
+- let seta automatically get the last event time (not the max simulation time)
+
+
