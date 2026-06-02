@@ -310,20 +310,19 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     print("=" * 70)
     print()
 
-    # -- simulation loop ---------------------------------------------------
+    # -- simulation run ---------------------------------------------------
+    # Run the simulation once to the configured duration.  The original code
+    # called ``env.run(next_t)``, which interprets the argument as a
+    # *duration* (not a *till* time), causing simulated time to overshoot
+    # ``SIM_DURATION`` by a growing geometric progression (2^n−1).
+    # Using ``env.run(till=...)`` fixes the semantics so the simulation
+    # stops exactly at the configured duration.
+    env.run(till=config.SIM_DURATION)
+
+    # -- print all logs & final report -------------------------------------
     seen = set()
-    step = 1
-    last_t = 0
-    while last_t < config.SIM_DURATION:
-        next_t = min(last_t + step, config.SIM_DURATION)
-        env.run(next_t)
-        process_all_logs(last_t, env.now(), nodes, seen, sku_map, edges=edges)
-        last_t = env.now()
+    process_all_logs(0, config.SIM_DURATION, nodes, seen, sku_map, edges=edges)
 
-        if last_t % 20 == 0:
-            print_state_snapshot(last_t, nodes)
-
-    # -- final report ------------------------------------------------------
     print("=" * 70)
     print("SIMULATION COMPLETE")
     print("=" * 70)
