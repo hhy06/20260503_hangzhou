@@ -67,3 +67,4 @@ pnpm-debug.log*
 .pytest_cache/
 .coverage
 htmlcov/
+run_*/
