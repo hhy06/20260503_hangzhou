@@ -201,7 +201,7 @@ def main():
 
     report_path = os.path.join(run_dir, "report.json")
     with open(report_path, "w") as f:
-        json.dump(report, f, indent=2, default=str)
+        json.dump(report, f, indent=2, default=str, ensure_ascii=False)
 
     s = report["summary"]
     print(f"  transport jobs: {s['transport_jobs_total']} ({s['transport_jobs_delayed']} delayed, {s['transport_jobs_incomplete']} incomplete)")

@@ -124,3 +124,8 @@ Run it:
 python3 main.py scenario.w_hangzhou1
 
 
+
+
+python3 -m src.report <run-dir>
+
+

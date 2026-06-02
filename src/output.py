@@ -121,7 +121,7 @@ def write_output(
     jsonl_path = os.path.join(run_dir, "sim.jsonl")
     with open(jsonl_path, "w") as f:
         for rec in records:
-            f.write(json.dumps(rec, default=str) + "\n")
+            f.write(json.dumps(rec, default=str, ensure_ascii=False) + "\n")
 
     # --- 7. Write meta.json ---
     event_count = sum(1 for r in records if r["_type"] == "event")
@@ -139,6 +139,6 @@ def write_output(
     }
     meta_path = os.path.join(run_dir, "meta.json")
     with open(meta_path, "w") as f:
-        json.dump(meta, f, indent=2)
+        json.dump(meta, f, indent=2, ensure_ascii=False)
 
     return run_dir
