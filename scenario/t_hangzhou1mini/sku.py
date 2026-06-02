@@ -1,91 +1,22 @@
 """SKU definitions and pallet sizes for the Hangzhou scenario.
 
-Loads from two Excel files when available:
+Loads from data/skus.xlsx + data/bom.xlsx via :mod:`src._xlsx_loaders`.
 
-    data/skus.xlsx   —  SKU metadata  (sku_id, name, pallet_size, bom_speed, unit)
-    data/bom.xlsx    —  BOM relations  (sku_id, material_id, amount)
-
-Falls back to hardcoded data when the files are absent.
+Falls back to hardcoded data when the xlsx files are absent.
 """
 
-import sys
 from pathlib import Path
-
-import pandas as pd
 
 from src.model.sku import SKU
 
 N = 10  # Number of FG SKUs
 
-
-def _load_from_excel() -> tuple[dict[str, SKU], dict[str, int]]:
-    """Load SKUS / PALLET_SIZE from data/skus.xlsx + data/bom.xlsx.
-
-    Prints a digest to stderr describing the loaded data.
-    """
-    root = Path(__file__).resolve().parents[2]
-    sku_path = root / "data" / "skus.xlsx"
-    bom_path = root / "data" / "bom.xlsx"
-
-    meta = pd.read_excel(sku_path, sheet_name="SKUS")
-    bom = pd.read_excel(bom_path, sheet_name="BOM")
-
-    # --- Build SKU objects from metadata ---
-    skus: dict[str, SKU] = {}
-    pallet_size: dict[str, int] = {}
-
-    for _, row in meta.iterrows():
-        sku_id = str(row["sku_id"])
-        skus[sku_id] = SKU(
-            id=sku_id,
-            name=str(row.get("name", sku_id) or sku_id),
-            bom_speed=float(row.get("bom_speed", 0) or 0),
-            pallet_size=int(row.get("pallet_size", 100) or 100),
-            unit=str(row.get("unit", "") or ""),
-        )
-        pallet_size[sku_id] = skus[sku_id].pallet_size
-
-    # --- Attach BOM data ---
-    bad_refs: list[tuple[str, str]] = []
-    for _, row in bom.iterrows():
-        sku_id = str(row["sku_id"])
-        mat_id = str(row["material_id"])
-        amount = int(row["amount"])
-        if sku_id not in skus:
-            bad_refs.append((sku_id, mat_id))
-            continue
-        if mat_id not in skus:
-            bad_refs.append((sku_id, mat_id))
-            continue
-        skus[sku_id].bom[mat_id] = amount
-
-    # --- Digest ---
-    n_sku = len(skus)
-    n_with_bom = sum(1 for s in skus.values() if s.bom)
-    n_no_bom = n_sku - n_with_bom
-
-    print(f"[SKU] Loaded {n_sku} SKUs from Excel", file=sys.stderr)
-    print(f"[SKU]   {n_with_bom} have BOM (producible)", file=sys.stderr)
-    print(f"[SKU]   {n_no_bom} have no BOM (raw materials)", file=sys.stderr)
-    if bad_refs:
-        print(f"[SKU]   WARNING: {len(bad_refs)} BOM rows reference unknown SKUs:", file=sys.stderr)
-        for sku_id, mat_id in bad_refs:
-            print(f"[SKU]     {sku_id} → {mat_id} (NOT in skus.xlsx)", file=sys.stderr)
-    else:
-        print(f"[SKU]   All BOM material references are valid", file=sys.stderr)
-
-    return skus, pallet_size
-
-
-# ---------------------------------------------------------------------------
-# Load data
-# ---------------------------------------------------------------------------
-
-root = Path(__file__).resolve().parents[2]
-sku_path = root / "data" / "skus.xlsx"
+root = Path(__file__).resolve().parents[2] / "data"
+sku_path = root / "skus.xlsx"
 
 if sku_path.exists():
-    SKUS, PALLET_SIZE = _load_from_excel()
+    from src._xlsx_loaders import load_skus_and_bom
+    SKUS, PALLET_SIZE = load_skus_and_bom(root)
 else:
     # Hardcoded fallback
     SKUS: dict[str, SKU] = {}

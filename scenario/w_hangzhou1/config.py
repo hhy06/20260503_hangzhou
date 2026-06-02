@@ -19,6 +19,8 @@ from .sku import (
     PALLET_SIZE,
 )
 
+SKUS_KEYS: set[str] = set(SKUS.keys()) if isinstance(SKUS, dict) else set(SKUS)
+
 # ---------------------------------------------------------------------------
 # Bill-of-materials  (ingredient maps, FG BOM helper, line→SKU assignment)
 # ---------------------------------------------------------------------------

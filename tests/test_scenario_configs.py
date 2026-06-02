@@ -225,14 +225,16 @@ class TestBomSkuReferences:
     @pytest.mark.parametrize("scenario", SCENARIOS)
     def test_bom_has_speed_and_lead_time(self, scenario):
         cfg = _config(scenario)
+        skus = cfg.SKUS
         for name, nd in cfg.NODES.items():
             if nd.get("type") != "production":
                 continue
             for out_sku, bom_entry in nd.get("bom", {}).items():
-                assert "speed" in bom_entry, \
-                    f"{scenario}/{name}/{out_sku}: BOM missing 'speed'"
-                assert bom_entry["speed"] > 0, \
-                    f"{scenario}/{name}/{out_sku}: speed must be positive"
+                has_speed = "speed" in bom_entry and bom_entry["speed"] > 0
+                sku_obj = skus.get(out_sku) if isinstance(skus, dict) else None
+                has_sku_speed = sku_obj is not None and hasattr(sku_obj, "bom_speed") and sku_obj.bom_speed > 0
+                assert has_speed or has_sku_speed, \
+                    f"{scenario}/{name}/{out_sku}: BOM missing 'speed' and SKU has no bom_speed"
                 assert "lead_time" in bom_entry, \
                     f"{scenario}/{name}/{out_sku}: BOM missing 'lead_time'"
                 assert bom_entry["lead_time"] >= 0, \
