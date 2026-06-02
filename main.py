@@ -238,6 +238,7 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     ctx: SimulationContext = builder.create_simulation()
 
     orders_module = importlib.import_module(f"{scenario_name}.config_static_jobs")
+    demand_module = importlib.import_module(f"{scenario_name}.demand")
 
     config = ctx.config
     env = ctx.env
@@ -339,6 +340,34 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             print(
                 f"  {ndn} (production): completed {len([e for e in node.log if e['type'] == 'production_completed'])} jobs"
             )
+
+    # -- demand fulfillment report -----------------------------------------
+    if hasattr(demand_module, "DEMAND_ORDERS") and demand_module.DEMAND_ORDERS:
+        _demand_total: dict[str, int] = {}
+        for d in demand_module.DEMAND_ORDERS:
+            s = d["sku"]
+            _demand_total[s] = _demand_total.get(s, 0) + d["quantity"]
+
+        _sink_received: dict[str, int] = {}
+        for name, node in nodes.items():
+            if hasattr(node, "role") and node.role == NodeRole.SINK:
+                for sku, qty in node.received.items():
+                    _sink_received[sku] = _sink_received.get(sku, 0) + qty
+
+        print()
+        print("  --- DEMAND FULFILLMENT ---")
+        print(f"  {'SKU':<20} {'Ordered':>10} {'Received':>10} {'Met?':>8}")
+        print(f"  {'-'*48}")
+        all_met = True
+        for sku in sorted(set(list(_demand_total.keys()) + list(_sink_received.keys()))):
+            ordered = _demand_total.get(sku, 0)
+            received = _sink_received.get(sku, 0)
+            met = received >= ordered
+            if not met:
+                all_met = False
+            print(f"  {_sku_display(sku, sku_map):<20} {ordered:>10} {received:>10} {'✓' if met else '✗':>8}")
+        print(f"  {'-'*48}")
+        print(f"  {'All demands met' if all_met else 'Some demands unmet':>48}")
 
     # -- write unified output -----------------------------------------------
     run_dir = write_output(
