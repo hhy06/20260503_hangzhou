@@ -266,31 +266,34 @@ def write_text_report(run_dir: str) -> str:
     lines.append(f"=== {scenario} ({mgmt}, {duration} min) ===")
     lines.append("")
 
+    def _pct(a: int, b: int) -> str:
+        return f"{100.0 * b / a:>6.1f}%" if a else "    -"
+
     # --- Transport edges ---
     edge_names = sorted(set(edge_issued_cnt) | set(edge_started_cnt))
     lines.append(f"{'=== Transport Edges ===':<80}")
-    lines.append(f"{'edge':<50} {'issued':>8} {'started':>8}  {'pallets_issued':>14} {'pallets_started':>15}")
-    lines.append("-" * 100)
+    lines.append(f"{'edge':<50} {'issued':>8} {'started':>8} {'started%':>8}  {'pallets_issued':>14} {'pallets_started':>15} {'started%':>8}")
+    lines.append("-" * 120)
     for name in edge_names:
         ic = edge_issued_cnt.get(name, 0)
         sc = edge_started_cnt.get(name, 0)
         ip = edge_issued_pallets.get(name, 0)
         sp = edge_started_pallets.get(name, 0)
-        lines.append(f"{name:<50} {ic:>8} {sc:>8}  {ip:>14} {sp:>15}")
+        lines.append(f"{name:<50} {ic:>8} {sc:>8} {_pct(ic, sc):>8}  {ip:>14} {sp:>15} {_pct(ip, sp):>8}")
     lines.append("")
 
     # --- Production nodes ---
     prod_names = sorted(set(prod_issued_cnt) | set(prod_started_cnt))
     if prod_names:
         lines.append(f"{'=== Production Nodes ===':<80}")
-        lines.append(f"{'node':<50} {'issued':>8} {'started':>8}  {'qty_issued':>12} {'qty_started':>13}")
-        lines.append("-" * 100)
+        lines.append(f"{'node':<50} {'issued':>8} {'started':>8} {'started%':>8}  {'qty_issued':>12} {'qty_started':>13} {'started%':>8}")
+        lines.append("-" * 120)
         for name in prod_names:
             ic = prod_issued_cnt.get(name, 0)
             sc = prod_started_cnt.get(name, 0)
             iq = prod_issued_qty.get(name, 0)
             sq = prod_started_qty.get(name, 0)
-            lines.append(f"{name:<50} {ic:>8} {sc:>8}  {iq:>12} {sq:>13}")
+            lines.append(f"{name:<50} {ic:>8} {sc:>8} {_pct(ic, sc):>8}  {iq:>12} {sq:>13} {_pct(iq, sq):>8}")
         lines.append("")
 
     # --- Storage nodes ---
