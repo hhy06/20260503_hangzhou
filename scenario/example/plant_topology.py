@@ -26,7 +26,6 @@ NODES["prod"] = {
     "retry_delay": 1.0,
     "display_name": "Workstation",
     "bom": dict(FG_BOM),
-    "conversion_factors": {"fg_x": 1, "fg_y": 1},
 }
 
 NODES["fg_wh"] = {

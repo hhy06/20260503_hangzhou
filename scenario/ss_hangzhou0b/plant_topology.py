@@ -57,7 +57,6 @@ for i in range(1, N + 1):
                 "lead_time": 0,
             },
         },
-        "conversion_factors": {f"sauce_{i}": 100},
     }
     NODES[f"output_sauce_{i}"] = {
         "type": "warehouse",
@@ -73,13 +72,11 @@ for i in range(1, NUM_POWDER_LINES + 1):
         "display_name": f"粉包线边仓{i}",
     }
     bom = {}
-    conv = {}
     for pi in range(1, N + 1):
         bom[f"powder_{pi}"] = {
             "inputs": dict(POWDER_INGREDIENTS[pi]),
             "lead_time": 0,
         }
-        conv[f"powder_{pi}"] = 100
     NODES[f"workstation_powder_{i}"] = {
         "type": "production",
         "upstream": f"lineside_powder_{i}",
@@ -87,7 +84,6 @@ for i in range(1, NUM_POWDER_LINES + 1):
         "global_time_step": 5.0,
         "display_name": f"粉包车间{i}",
         "bom": bom,
-        "conversion_factors": conv,
     }
     NODES[f"output_powder_{i}"] = {
         "type": "warehouse",
@@ -118,14 +114,12 @@ for i in range(1, NUM_NOODLE_LINES + 1):
         "display_name": f"面线边仓{i}",
     }
     bom = {}
-    conv = {}
     for sku_idx in LINE_SKU_MAP[i]:
         sku_name = f"SKU_{sku_idx}"
         bom[sku_name] = {
             "inputs": sku_bom_inputs(sku_idx),
             "lead_time": 0,
         }
-        conv[sku_name] = 50
     NODES[f"workstation_noodle_{i}"] = {
         "type": "production",
         "upstream": f"lineside_noodle_{i}",
@@ -133,7 +127,6 @@ for i in range(1, NUM_NOODLE_LINES + 1):
         "global_time_step": 5.0,
         "display_name": f"面线车间{i}",
         "bom": bom,
-        "conversion_factors": conv,
     }
     NODES[f"output_noodle_{i}"] = {
         "type": "warehouse",
@@ -148,13 +141,11 @@ NODES["lineside_veg"] = {
     "display_name": "菜包线边仓",
 }
 _veg_bom = {}
-_veg_conv = {}
 for vi in range(1, N + 1):
     _veg_bom[f"veg_{vi}"] = {
         "inputs": dict(VEG_INGREDIENTS[vi]),
         "lead_time": 0,
     }
-    _veg_conv[f"veg_{vi}"] = 100
 NODES["workstation_veg"] = {
     "type": "production",
     "upstream": "lineside_veg",
@@ -162,7 +153,6 @@ NODES["workstation_veg"] = {
     "global_time_step": 5.0,
     "display_name": "菜包车间",
     "bom": _veg_bom,
-    "conversion_factors": _veg_conv,
 }
 NODES["output_veg"] = {
     "type": "warehouse",

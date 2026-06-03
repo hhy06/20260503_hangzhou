@@ -203,17 +203,6 @@ class TestBomSkuReferences:
                         f"{scenario}/{name}: BOM input '{in_sku}' for '{out_sku}' not in SKUS"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_conversion_factor_skus_exist(self, scenario):
-        cfg = _config(scenario)
-        skus = _sku_keys(cfg)
-        for name, nd in cfg.NODES.items():
-            if nd.get("type") != "production":
-                continue
-            for conv_sku in nd.get("conversion_factors", {}):
-                assert conv_sku in skus, \
-                    f"{scenario}/{name}: conversion_factors key '{conv_sku}' not in SKUS"
-
-    @pytest.mark.parametrize("scenario", SCENARIOS)
     def test_bom_has_speed_and_lead_time(self, scenario):
         cfg = _config(scenario)
         skus = cfg.SKUS
