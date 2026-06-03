@@ -10,6 +10,7 @@ import importlib
 from dataclasses import dataclass
 from typing import Any
 import sys
+import time
 
 import salabim as sim
 
@@ -318,7 +319,10 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     # ``SIM_DURATION`` by a growing geometric progression (2^n−1).
     # Using ``env.run(till=...)`` fixes the semantics so the simulation
     # stops exactly at the configured duration.
+    t0 = time.time()
     env.run(till=config.SIM_DURATION)
+    t1 = time.time()
+    print(f"\nWall clock: start={t0:.3f}s  end={t1:.3f}s  elapsed={t1-t0:.3f}s")
 
     # -- print all logs & final report -------------------------------------
     seen = set()
