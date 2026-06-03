@@ -8,7 +8,7 @@ those whose ``start_time <= current_time`` into the decision output.
 from typing import Any
 import salabim as sim
 
-from src.management.base import Management, Snapshot, Decision
+from src.management.base import Management, Decision, Snapshot
 from src.infrastructure.edge import Edge, TransportOrder
 from src.infrastructure.production_node import ProductionOrder
 
@@ -46,30 +46,19 @@ class StaticOrderManagement(Management):
     ):
         self.transport_orders = list(transport_orders)
         self.production_orders = list(production_orders)
-        self.edges = edges
-        self.nodes = nodes
         self._issued_tx: set[int] = set()
         self._issued_prod: set[int] = set()
         self._next_order_id: int = 1
         self.log: list[dict] = []
 
         super().__init__(
+            nodes=nodes, edges=edges,
             name=name, decision_interval=decision_interval, env=env, **kwargs,
         )
 
     # ------------------------------------------------------------------
     # helpers
     # ------------------------------------------------------------------
-
-    def find_edge(self, from_node_name: str, to_node_name: str) -> Edge | None:
-        """Locate the edge whose endpoints match the given node names."""
-        for e in self.edges:
-            if (
-                e.from_node.node_name == from_node_name
-                and e.to_node.node_name == to_node_name
-            ):
-                return e
-        return None
 
     # ------------------------------------------------------------------
     # decision logic

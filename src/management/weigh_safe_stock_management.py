@@ -5,7 +5,6 @@ import salabim as sim
 from src.management.base import Management, Snapshot, Decision
 from src.infrastructure.edge import Edge, TransportOrder
 from src.infrastructure.production_node import ProductionOrder
-from src.infrastructure.warehouse_node import NodeRole, WarehouseNode
 
 
 class WeighSafeStockManagement(Management):
@@ -70,8 +69,6 @@ class WeighSafeStockManagement(Management):
         env: sim.Environment | None = None,
         **kwargs,
     ):
-        self.nodes = dict(nodes)
-        self.edges = list(edges)
         self._safe_stock_config = list(safe_stock_config)
         self._demand_orders = list(demand_orders or [])
         self._decision_offset = decision_offset
@@ -86,17 +83,10 @@ class WeighSafeStockManagement(Management):
         self.log: list[dict] = []
         self._next_oid_counter: int = 1
 
-        # -- edge lookup ----------------------------------------------------
-        self._edge_map: dict[str, Edge] = {}
-        for e in self.edges:
-            key = f"{e.from_node.node_name}->{e.to_node.node_name}"
-            self._edge_map[key] = e
-
-        # -- production nodes (have a production_queue) ---------------------
-        self._production_nodes: dict[str, Any] = {}
-        for name, node in self.nodes.items():
-            if hasattr(node, "production_queue"):
-                self._production_nodes[name] = node
+        super().__init__(
+            nodes=nodes, edges=edges,
+            name=name, decision_interval=decision_interval, env=env, **kwargs,
+        )
 
         # -- line → SKU mapping (from BOM) ---------------------------------
         self._line_skus: dict[str, list[str]] = {}
@@ -133,13 +123,6 @@ class WeighSafeStockManagement(Management):
                 self._safe_stock_total.get(sku, 0) + entry["safe_stock"]
             )
 
-        # -- lineside suppliers (which storage feeds each lineside) ---------
-        self._lineside_suppliers: dict[str, str] = {}
-        for e in self.edges:
-            to_name = e.to_node.node_name
-            if to_name.startswith("lineside_"):
-                self._lineside_suppliers[to_name] = e.from_node.node_name
-
         # -- demand / tracing state -----------------------------------------
         self._next_demand_idx = 0
         self._issued_demand: set[int] = set()
@@ -148,10 +131,6 @@ class WeighSafeStockManagement(Management):
         # -- round-robin counters per SKU -----------------------------------
         self._rr_counter: dict[str, int] = {}
 
-        super().__init__(
-            name=name, decision_interval=decision_interval, env=env, **kwargs,
-        )
-
     # ------------------------------------------------------------------
     # helpers
     # ------------------------------------------------------------------
@@ -159,9 +138,6 @@ class WeighSafeStockManagement(Management):
     def _next_oid(self) -> int:
         self._next_oid_counter += 1
         return self._next_oid_counter
-
-    def find_edge(self, from_node_name: str, to_node_name: str) -> Edge | None:
-        return self._edge_map.get(f"{from_node_name}->{to_node_name}")
 
     def _is_decision_time(self, now: float) -> bool:
         """Return True if *now* is (within epsilon of) a scheduled decision time."""
@@ -191,29 +167,8 @@ class WeighSafeStockManagement(Management):
         return decision_time + self._decision_offset
 
     # ------------------------------------------------------------------
-    # gather_info
+    # gather_info — inherited from base (full stock/queue snapshot)
     # ------------------------------------------------------------------
-
-    def gather_info(self) -> Snapshot:
-        info = Snapshot(current_time=self.env.now())
-
-        for name, node in self.nodes.items():
-            if not isinstance(node, WarehouseNode):
-                continue
-            if node.role == NodeRole.SOURCE:
-                info.source_nodes.add(name)
-            elif hasattr(node, "inventory"):
-                info.storage_stock[name] = dict(node.inventory)
-
-        for e in self.edges:
-            key = f"{e.from_node.node_name}->{e.to_node.node_name}"
-            info.edge_pending[key] = list(e.pending_queue)
-            info.edge_activated[key] = list(e.activated_queue)
-
-        for name, pnode in self._production_nodes.items():
-            info.production_queues[name] = list(pnode.production_queue)
-
-        return info
 
     # ------------------------------------------------------------------
     # SALABIM process — frequent wake-ups, heavy logic at decision times

@@ -18,7 +18,6 @@ import salabim as sim
 from src.management.base import Management, Snapshot, Decision
 from src.infrastructure.edge import Edge, TransportOrder
 from src.infrastructure.production_node import ProductionOrder
-from src.infrastructure.warehouse_node import NodeRole, WarehouseNode
 
 
 class TraceManagement(Management):
@@ -55,36 +54,12 @@ class TraceManagement(Management):
         pallet_size: dict[str, int] | None = None,
         **kwargs,
     ):
-        self.nodes = dict(nodes)
-        self.edges = list(edges)
         self._demand_orders = list(demand_orders or [])
         self._next_demand_idx = 0
         self._pallet_size = pallet_size or {}
 
-        # edge lookup
-        self._edge_map: dict[str, Edge] = {}
-        for e in self.edges:
-            key = f"{e.from_node.node_name}->{e.to_node.node_name}"
-            self._edge_map[key] = e
-
-        # production nodes (have a production_queue)
-        self._production_nodes: dict[str, Any] = {}
-        for name, node in self.nodes.items():
-            if hasattr(node, "production_queue"):
-                self._production_nodes[name] = node
-
         # sku -> [producer node names] derived from BOMs
         self._producers_of_sku: dict[str, list[str]] = {}
-        for name, pnode in self._production_nodes.items():
-            for out_sku in pnode.bom:
-                self._producers_of_sku.setdefault(out_sku, []).append(name)
-
-        # lineside -> the warehouse that feeds it (from edges)
-        self._lineside_suppliers: dict[str, str] = {}
-        for e in self.edges:
-            to_name = e.to_node.node_name
-            if to_name.startswith("lineside_"):
-                self._lineside_suppliers[to_name] = e.from_node.node_name
 
         # round-robin counters per SKU
         self._rr_counter: dict[str, int] = {}
@@ -92,16 +67,18 @@ class TraceManagement(Management):
         self.log: list[dict] = []
 
         super().__init__(
+            nodes=nodes, edges=edges,
             name=name, decision_interval=decision_interval, env=env, **kwargs,
         )
+
+        # Build producers_of_sku after base sets up _production_nodes
+        for name, pnode in self._production_nodes.items():
+            for out_sku in pnode.bom:
+                self._producers_of_sku.setdefault(out_sku, []).append(name)
 
     # ------------------------------------------------------------------
     # helpers
     # ------------------------------------------------------------------
-
-    def find_edge(self, from_node_name: str, to_node_name: str) -> Edge | None:
-        """Locate the edge between two named nodes."""
-        return self._edge_map.get(f"{from_node_name}->{to_node_name}")
 
     def _pick_producer(self, sku: str, candidates: list[str]) -> str | None:
         """Round-robin selection across candidate production nodes."""
@@ -166,30 +143,8 @@ class TraceManagement(Management):
         ))
 
     # ------------------------------------------------------------------
-    # gather_info
+    # gather_info — inherited from base (full stock/queue snapshot)
     # ------------------------------------------------------------------
-
-    def gather_info(self) -> Snapshot:
-        """Full snapshot of stock levels, edge queues, and production queues."""
-        info = Snapshot(current_time=self.env.now())
-
-        for name, node in self.nodes.items():
-            if not isinstance(node, WarehouseNode):
-                continue
-            if node.role == NodeRole.SOURCE:
-                info.source_nodes.add(name)
-            elif hasattr(node, "inventory"):
-                info.storage_stock[name] = dict(node.inventory)
-
-        for e in self.edges:
-            key = f"{e.from_node.node_name}->{e.to_node.node_name}"
-            info.edge_pending[key] = list(e.pending_queue)
-            info.edge_activated[key] = list(e.activated_queue)
-
-        for name, pnode in self._production_nodes.items():
-            info.production_queues[name] = list(pnode.production_queue)
-
-        return info
 
     # ------------------------------------------------------------------
     # make_decisions — pre-compute all upstream orders on first call
