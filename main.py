@@ -89,144 +89,6 @@ class SimulationResult:
 # ---------------------------------------------------------------------------
 
 
-def print_state_snapshot(t: float, nodes: dict[str, Any]) -> None:
-    """Prints a brief capacity snapshot at the given time."""
-    print(f"  --- SNAPSHOT t={t} ---")
-    for name, node in nodes.items():
-        if hasattr(node, "role") and node.role == NodeRole.WAREHOUSE:
-            pal = node.current_pallets()
-            print(f"    {_dn(node)}: {pal} pallets / {node.node_max_pallets} used")
-    print("  ---")
-
-
-def _lookup_display(nodes: dict[str, Any], internal_name: str) -> str:
-    """Translate an internal node name to its display name via nodes dict."""
-    node = nodes.get(internal_name)
-    return _dn(node) if node else internal_name
-
-
-def process_all_logs(
-    since_t,
-    up_to_t,
-    nodes,
-    seen,
-    sku_map: dict[str, str] | None = None,
-    edges: list[Edge] | None = None,
-):
-    all_new = []
-    for name, node in nodes.items():
-        if not hasattr(node, "log"):
-            continue
-        for i, l in enumerate(node.log):
-            if since_t <= l["time"] <= up_to_t + 1e-9:
-                key = (node.node_name, i)
-                if key not in seen:
-                    seen.add(key)
-                    all_new.append((node, l))
-    if edges:
-        for edge in edges:
-            for i, l in enumerate(edge.log):
-                if since_t <= l["time"] <= up_to_t + 1e-9:
-                    key = (str(edge), i)
-                    if key not in seen:
-                        seen.add(key)
-                        all_new.append((edge, l))
-    all_new.sort(key=lambda x: x[1]["time"])
-    for ent, entry in all_new:
-        ndn = _dn(ent)
-        t = entry["time"]
-        if entry["type"] == "order_added":
-            dest_raw = entry.get("destination")
-            dest_str = f" -> {_lookup_display(nodes, dest_raw)}" if dest_raw else ""
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: order queued"
-                f" -> {sku_name} x{entry['quantity']}"
-                f" (pri={entry['priority']}){dest_str}"
-            )
-        elif entry["type"] == "dispatched":
-            dest_raw = entry.get("destination")
-            dest_str = f" -> {_lookup_display(nodes, dest_raw)}" if dest_raw else ""
-            items_parts = []
-            for sku, qty in entry["items"]:
-                sku_name = _sku_display(sku, sku_map) if sku_map else sku
-                items_parts.append(f"{sku_name}x{qty}")
-            items_str = ", ".join(items_parts)
-            print(f"  [t={t:.1f}] {ndn}: dispatched{dest_str} -> {items_str}")
-        elif entry["type"] == "received":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: received"
-                f" {sku_name} x{entry['quantity']}"
-                f" from {entry['source']}"
-            )
-        # -- production events --
-        elif entry["type"] == "materials_consumed":
-            inputs_parts = []
-            for sku, qty in entry["inputs"].items():
-                sku_name = _sku_display(sku, sku_map) if sku_map else sku
-                inputs_parts.append(f"{sku_name}x{qty}")
-            inputs_str = ", ".join(inputs_parts)
-            print(
-                f"  [t={t:.1f}] {ndn}: consumed {inputs_str} for order #{entry['order_id']}"
-            )
-        elif entry["type"] == "production_started":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: production started order #{entry['order_id']}"
-                f" -> {sku_name} x{entry['quantity']}"
-            )
-        elif entry["type"] == "production_output":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: produced {sku_name} x{entry['quantity']}"
-                f" -> {entry.get('destination', '?')}"
-            )
-        elif entry["type"] == "production_completed":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: production completed order #{entry['order_id']}"
-                f" -> {sku_name} x{entry['quantity']}"
-            )
-        elif entry["type"] == "production_failed":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: ** PRODUCTION FAILED ** order #{entry['order_id']}"
-                f" -> {sku_name} (insufficient material)"
-            )
-        # -- transport events --
-        elif entry["type"] == "transport_order_added":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: transport order queued"
-                f" {sku_name} x{entry['quantity']}"
-                f" {entry['from']} -> {entry['to']}"
-                f" (start={entry['start_time']}, expect={entry['expect_time']})"
-            )
-        elif entry["type"] == "transport_started":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: transport started"
-                f" {sku_name} x{entry['quantity']}"
-                f" {entry['from']} -> {entry['to']}"
-                f" ({entry['pallets']} pallets)"
-            )
-        elif entry["type"] == "transport_completed":
-            sku_name = _sku_display(entry["sku"], sku_map) if sku_map else entry["sku"]
-            print(
-                f"  [t={t:.1f}] {ndn}: transport completed"
-                f" {sku_name} x{entry['quantity']}"
-                f" {entry['from']} -> {entry['to']}"
-            )
-        elif entry["type"] == "job_issued":
-            from_dn = _lookup_display(nodes, entry["from"])
-            to_dn = _lookup_display(nodes, entry["to"])
-            print(f"  [t={t:.1f}] JOB ISSUED: {from_dn} -> {to_dn}:")
-            for sku, qty, pri in entry["orders"]:
-                sku_name = _sku_display(sku, sku_map) if sku_map else sku
-                print(f"    -> Order: {sku_name} x{qty} (priority={pri})")
-
-
 # ---------------------------------------------------------------------------
 # Scenario runner
 # ---------------------------------------------------------------------------
@@ -322,15 +184,15 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     t0 = time.time()
     env.run(till=config.SIM_DURATION)
     t1 = time.time()
-    print(f"\nWall clock: start={t0:.3f}s  end={t1:.3f}s  elapsed={t1-t0:.3f}s")
-
-    # -- print all logs & final report -------------------------------------
-    seen = set()
-    process_all_logs(0, config.SIM_DURATION, nodes, seen, sku_map, edges=edges)
+    
 
     print("=" * 70)
     print("SIMULATION COMPLETE")
+    print(f"\nWall clock: start={t0:.3f}s  end={t1:.3f}s  elapsed={t1-t0:.3f}s")
     print("=" * 70)
+
+    # -- final report -------------------------------------
+
     for name, node in nodes.items():
         ndn = _dn(node)
         if hasattr(node, "role"):
