@@ -21,6 +21,14 @@ import salabim as sim
 from src.infrastructure.edge import Edge, TransferMode, TransportOrder
 from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
 from src.infrastructure.production_node import ProductionNode, ProductionOrder
+from src.model.sku import SKU
+
+
+SKU_REGISTRY = {
+    "SKU_X": SKU(id="SKU_X", pallet_size=10),
+    "raw": SKU(id="raw", pallet_size=100),
+    "fg": SKU(id="fg", pallet_size=30),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -90,18 +98,17 @@ class TestSourceWarehouseSink:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"SKU_X": 10}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         wh = WarehouseNode(
             name="wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=100,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=100,
         )
         sink = WarehouseNode(
             name="sink", role=NodeRole.SINK,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         nodes = {"source": source, "wh": wh, "sink": sink}
 
@@ -160,18 +167,17 @@ class TestSourceWarehouseSinkLeftover:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"SKU_X": 10}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         wh = WarehouseNode(
             name="wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=100,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=100,
         )
         sink = WarehouseNode(
             name="sink", role=NodeRole.SINK,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         nodes = {"source": source, "wh": wh, "sink": sink}
 
@@ -230,29 +236,28 @@ class TestSourceProductionSink:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"raw": 10, "fg": 10}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         lineside = WarehouseNode(
             name="lineside", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=50,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=50,
         )
         sink = WarehouseNode(
             name="sink", role=NodeRole.SINK,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         prod = ProductionNode(
             name="prod",
             bom={
                 "fg": {"inputs": {"raw": 1}, "speed": 5.0, "lead_time": 0},
             },
-            output_conversion_factors={"fg": 10},
             upstream_node=lineside,
             downstream_node=sink,
             env=env,
             global_time_step=1.0,
+            sku_registry=SKU_REGISTRY,
         )
         nodes = {"source": source, "lineside": lineside, "prod": prod, "sink": sink}
 
@@ -262,20 +267,21 @@ class TestSourceProductionSink:
         )
         edges = [e1]
 
-        # Source sends 10 raw to lineside @ 1/tick → delivered t=1..10
+        # Source sends 100 raw to lineside (exactly 1 pallet) @ 1/tick → delivered t=1..100
         e1.add_transport_order(TransportOrder(
-            sku="raw", quantity=10,
+            sku="raw", quantity=100,
             from_node="source", to_node="lineside",
-            start_time=0, expect_time=5,
+            start_time=0, expect_time=10,
         ))
 
-        # Production job starts after all raw has arrived
+        # Production consumes raw → outputs fg to sink (starts after raw arrives at t=100)
+        # 100 fg @ speed 5/min → 20 min production
         prod.add_production_order(ProductionOrder(
-            order_id=1, sku="fg", quantity=10,
-            activate_time=12, expect_time=20, node_name="prod",
+            order_id=1, sku="fg", quantity=100,
+            activate_time=102, expect_time=30, node_name="prod",
         ))
 
-        env.run(20)
+        env.run(130)
         return nodes, edges
 
     def test_lineside_depleted(self, scenario):
@@ -284,8 +290,7 @@ class TestSourceProductionSink:
 
     def test_sink_received_fg(self, scenario):
         nodes, _ = scenario
-        # fg = 10 items from 1:1 BOM
-        assert nodes["sink"].received.get("fg", 0) == 10
+        assert nodes["sink"].received.get("fg", 0) == 100
 
     def test_production_completed(self, scenario):
         nodes, _ = scenario
@@ -303,33 +308,32 @@ class TestSourceProductionWarehouseSink:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"raw": 100, "fg": 30}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         raw_wh = WarehouseNode(
             name="raw_wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=200,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=200,
         )
         fin_wh = WarehouseNode(
             name="fin_wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=200,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=200,
         )
         sink = WarehouseNode(
             name="sink", role=NodeRole.SINK,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         prod = ProductionNode(
             name="prod",
             bom={
                 "fg": {"inputs": {"raw": 1}, "speed": 10.0, "lead_time": 0},
             },
-            output_conversion_factors={"fg": 50},
             upstream_node=raw_wh,
             downstream_node=fin_wh,
             env=env,
             global_time_step=1.0,
+            sku_registry=SKU_REGISTRY,
         )
         nodes = {
             "source": source, "raw_wh": raw_wh,
@@ -400,14 +404,13 @@ class TestMultipleOrdersSameEdge:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"SKU_X": 10}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         wh = WarehouseNode(
             name="wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=500,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=500,
         )
         nodes = {"source": source, "wh": wh}
 
@@ -460,14 +463,13 @@ class TestStartTimeGating:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"SKU_X": 10}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         wh = WarehouseNode(
             name="wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=100,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=100,
         )
         nodes = {"source": source, "wh": wh}
 
@@ -506,14 +508,13 @@ class TestBatchMode:
 
     @pytest.fixture
     def scenario(self, env):
-        cf = {"SKU_X": 10}
         source = WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors=cf, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         wh = WarehouseNode(
             name="wh", role=NodeRole.WAREHOUSE,
-            conversion_factors=cf, env=env, max_pallets=200,
+            sku_registry=SKU_REGISTRY, env=env, max_pallets=200,
         )
         nodes = {"source": source, "wh": wh}
 

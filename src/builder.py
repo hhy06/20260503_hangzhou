@@ -58,11 +58,10 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
     for node_name, cfg in config.NODES.items():
         ntype = cfg["type"]
         if ntype in ("source", "warehouse", "sink"):
-            cf = dict(config.PALLET_SIZE)
             node = WarehouseNode(
                 name=node_name,
                 role=NodeRole(ntype),
-                conversion_factors=cf,
+                sku_registry=getattr(config, "SKUS", None),
                 env=env,
                 max_pallets=cfg.get("max_pallets"),
                 display_name=cfg.get("display_name", node_name),
@@ -75,7 +74,6 @@ def build_nodes(config, env: sim.Environment) -> dict[str, Any]:
             node = ProductionNode(
                 name=node_name,
                 bom=cfg["bom"],
-                output_conversion_factors=cfg.get("conversion_factors", {}),
                 upstream_node=nodes[cfg["upstream"]],
                 downstream_node=nodes[cfg["downstream"]],
                 env=env,
@@ -178,7 +176,6 @@ def create_management(
             demand_orders=demand_orders,
             decision_interval=di,
             env=env,
-            pallet_size=getattr(config, "PALLET_SIZE", None),
         )
 
     if mgmt_type == "weigh_safe_stock":

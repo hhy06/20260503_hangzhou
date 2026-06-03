@@ -17,6 +17,19 @@ from src.management.base import Management, Snapshot, Decision
 from src.management.safe_stock_management import SafeStockManagement
 from src.management.trace_management import TraceManagement
 from src.management.weigh_safe_stock_management import WeighSafeStockManagement
+from src.model.sku import SKU
+
+
+SKU_REGISTRY_X = {"SKU_X": SKU(id="SKU_X", pallet_size=10)}
+SKU_REGISTRY_RAW = {"raw": SKU(id="raw", pallet_size=100)}
+SKU_REGISTRY_WORK = {
+    "raw": SKU(id="raw", pallet_size=100),
+    "sauce_1": SKU(id="sauce_1", pallet_size=100),
+    "SKU_A": SKU(id="SKU_A", pallet_size=50),
+    "SKU_X": SKU(id="SKU_X", pallet_size=50),
+    "WIP_A": SKU(id="WIP_A", pallet_size=100),
+    "X": SKU(id="X", pallet_size=10),
+}
 
 
 @pytest.fixture
@@ -29,7 +42,7 @@ def env():
 def source(env):
     return WarehouseNode(
         name="Source", role=NodeRole.SOURCE,
-        conversion_factors={"SKU_X": 10}, env=env,
+        sku_registry=SKU_REGISTRY_X, env=env,
     )
 
 
@@ -37,7 +50,7 @@ def source(env):
 def wh_a(env):
     return WarehouseNode(
         name="WH_A", role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_X": 10}, env=env, max_pallets=100,
+        sku_registry=SKU_REGISTRY_X, env=env, max_pallets=100,
     )
 
 
@@ -45,7 +58,7 @@ def wh_a(env):
 def wh_b(env):
     return WarehouseNode(
         name="WH_B", role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_X": 10}, env=env, max_pallets=100,
+        sku_registry=SKU_REGISTRY_X, env=env, max_pallets=100,
     )
 
 
@@ -53,7 +66,7 @@ def wh_b(env):
 def sink(env):
     return WarehouseNode(
         name="Sink", role=NodeRole.SINK,
-        conversion_factors={"SKU_X": 10}, env=env,
+        sku_registry=SKU_REGISTRY_X, env=env,
     )
 
 
@@ -205,14 +218,14 @@ class TestManagement:
     def source(self, env):
         return WarehouseNode(
             name="source", role=NodeRole.SOURCE,
-            conversion_factors={"SKU_X": 10}, env=env,
+            sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=10)}, env=env,
         )
 
     @pytest.fixture
     def wh(self, env):
         return WarehouseNode(
             name="wh", role=NodeRole.WAREHOUSE,
-            conversion_factors={"SKU_X": 10}, env=env, max_pallets=100,
+            sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=10)}, env=env, max_pallets=100,
         )
 
     def test_issues_immediate_orders_at_t0(self, env, source, wh):
@@ -314,7 +327,7 @@ def prod_env():
 def ms(prod_env):
     return WarehouseNode(
         name="MS_1", role=NodeRole.WAREHOUSE,
-        conversion_factors={"WIP_A": 100, "SKU_X": 50}, env=prod_env, max_pallets=500,
+        sku_registry={"WIP_A": SKU(id="WIP_A", pallet_size=100), "SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=prod_env, max_pallets=500,
     )
 
 
@@ -322,7 +335,7 @@ def ms(prod_env):
 def lineside(prod_env):
     return WarehouseNode(
         name="lineside_noodle_1", role=NodeRole.WAREHOUSE,
-        conversion_factors={"WIP_A": 100}, env=prod_env, max_pallets=100,
+        sku_registry={"WIP_A": SKU(id="WIP_A", pallet_size=100)}, env=prod_env, max_pallets=100,
     )
 
 
@@ -330,15 +343,15 @@ def lineside(prod_env):
 def prod_node(prod_env, ms, lineside):
     out = WarehouseNode(
         name="output_1", role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_X": 50}, env=prod_env, max_pallets=200,
+        sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=prod_env, max_pallets=200,
     )
     node = ProductionNode(
         name="noodle_1", bom={
             "SKU_X": {"inputs": {"WIP_A": 2}, "speed": 10, "lead_time": 0},
         },
-        output_conversion_factors={"SKU_X": 50},
         upstream_node=lineside, downstream_node=out,
         env=prod_env, global_time_step=5.0,
+        sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50), "WIP_A": SKU(id="WIP_A", pallet_size=100)},
     )
     return node
 
@@ -384,7 +397,7 @@ class TestBaseManagement:
     def test_lineside_suppliers_excludes_non_lineside(self, prod_env, ms, lineside, prod_node):
         """A node that is not upstream of any production node is not in lineside_suppliers."""
         extra = WarehouseNode(name="unrelated", role=NodeRole.WAREHOUSE,
-                              conversion_factors={"X": 10}, env=prod_env, max_pallets=100)
+                              sku_registry={"X": SKU(id="X", pallet_size=10)}, env=prod_env, max_pallets=100)
         nodes = {ms.node_name: ms, lineside.node_name: lineside,
                  prod_node.node_name: prod_node, extra.node_name: extra}
         e1 = Edge(from_node=ms, to_node=lineside,
@@ -404,7 +417,7 @@ class TestBaseManagement:
 
     def test_gather_info_source_nodes(self, prod_env, ms, lineside):
         src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                            conversion_factors={"X": 10}, env=prod_env)
+                            sku_registry={"X": SKU(id="X", pallet_size=10)}, env=prod_env)
         e = Edge(from_node=src, to_node=ms,
                  transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=prod_env)
         mgmt = _make_minimal_mgmt(prod_env,
@@ -415,7 +428,7 @@ class TestBaseManagement:
 
     def test_gather_info_sink_excluded(self, prod_env, ms):
         sink = WarehouseNode(name="sink", role=NodeRole.SINK,
-                             conversion_factors={"X": 10}, env=prod_env)
+                             sku_registry={"X": SKU(id="X", pallet_size=10)}, env=prod_env)
         e = Edge(from_node=ms, to_node=sink,
                  transfer_mode=TransferMode.PER_PALLET, batch_transport_time=1.0, env=prod_env)
         mgmt = _make_minimal_mgmt(prod_env,
@@ -465,9 +478,9 @@ class TestSafeStockManagement:
 
     def test_demand_order_issuance(self, env):
         ms = WarehouseNode(name="fg_storage", role=NodeRole.WAREHOUSE,
-                           conversion_factors={"SKU_X": 50}, env=env, max_pallets=500)
+                           sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env, max_pallets=500)
         sink = WarehouseNode(name="sink", role=NodeRole.SINK,
-                             conversion_factors={"SKU_X": 50}, env=env)
+                              sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env)
         e = Edge(from_node=ms, to_node=sink, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -483,9 +496,9 @@ class TestSafeStockManagement:
 
     def test_demand_order_delayed_not_issued(self, env):
         ms = WarehouseNode(name="fg_storage", role=NodeRole.WAREHOUSE,
-                           conversion_factors={"SKU_X": 50}, env=env, max_pallets=500)
+                           sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env, max_pallets=500)
         sink = WarehouseNode(name="sink", role=NodeRole.SINK,
-                             conversion_factors={"SKU_X": 50}, env=env)
+                              sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env)
         e = Edge(from_node=ms, to_node=sink, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -499,9 +512,9 @@ class TestSafeStockManagement:
 
     def test_demand_order_issued_only_once(self, env):
         ms = WarehouseNode(name="fg_storage", role=NodeRole.WAREHOUSE,
-                           conversion_factors={"SKU_X": 50}, env=env, max_pallets=500)
+                           sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env, max_pallets=500)
         sink = WarehouseNode(name="sink", role=NodeRole.SINK,
-                             conversion_factors={"SKU_X": 50}, env=env)
+                              sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env)
         e = Edge(from_node=ms, to_node=sink, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -517,9 +530,9 @@ class TestSafeStockManagement:
 
     def test_push_fires_when_stock_exists(self, env):
         src = WarehouseNode(name="buffer", role=NodeRole.WAREHOUSE,
-                            conversion_factors={"WIP_A": 100}, env=env, max_pallets=200)
+                            sku_registry={"WIP_A": SKU(id="WIP_A", pallet_size=100)}, env=env, max_pallets=200)
         dst = WarehouseNode(name="storage", role=NodeRole.WAREHOUSE,
-                            conversion_factors={"WIP_A": 100}, env=env, max_pallets=500)
+                            sku_registry={"WIP_A": SKU(id="WIP_A", pallet_size=100)}, env=env, max_pallets=500)
         src.inventory = {"WIP_A": 50}
         e = Edge(from_node=src, to_node=dst, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
@@ -538,9 +551,9 @@ class TestSafeStockManagement:
 
     def test_push_not_fired_when_stock_zero(self, env):
         src = WarehouseNode(name="buffer", role=NodeRole.WAREHOUSE,
-                            conversion_factors={"WIP_A": 100}, env=env, max_pallets=200)
+                            sku_registry={"WIP_A": SKU(id="WIP_A", pallet_size=100)}, env=env, max_pallets=200)
         dst = WarehouseNode(name="storage", role=NodeRole.WAREHOUSE,
-                            conversion_factors={"WIP_A": 100}, env=env, max_pallets=500)
+                            sku_registry={"WIP_A": SKU(id="WIP_A", pallet_size=100)}, env=env, max_pallets=500)
         e = Edge(from_node=src, to_node=dst, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -611,9 +624,9 @@ class TestSafeStockManagement:
 
     def test_replenish_from_fires_below_safe_stock(self, env):
         src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                            conversion_factors={"RAW": 10}, env=env)
+                            sku_registry={"RAW": SKU(id="RAW", pallet_size=10)}, env=env)
         storage = WarehouseNode(name="ms_1", role=NodeRole.WAREHOUSE,
-                                conversion_factors={"RAW": 10}, env=env, max_pallets=500)
+                                sku_registry={"RAW": SKU(id="RAW", pallet_size=10)}, env=env, max_pallets=500)
         e = Edge(from_node=src, to_node=storage, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -630,9 +643,9 @@ class TestSafeStockManagement:
 
     def test_replenish_from_skipped_above_safe_stock(self, env):
         src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                            conversion_factors={"RAW": 10}, env=env)
+                            sku_registry={"RAW": SKU(id="RAW", pallet_size=10)}, env=env)
         storage = WarehouseNode(name="ms_1", role=NodeRole.WAREHOUSE,
-                                conversion_factors={"RAW": 10}, env=env, max_pallets=500)
+                                sku_registry={"RAW": SKU(id="RAW", pallet_size=10)}, env=env, max_pallets=500)
         storage.inventory = {"RAW": 999}
         e = Edge(from_node=src, to_node=storage, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
@@ -649,9 +662,9 @@ class TestSafeStockManagement:
 
     def test_replenish_from_source_node_infinite(self, env):
         src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                            conversion_factors={"RAW": 10}, env=env)
+                            sku_registry={"RAW": SKU(id="RAW", pallet_size=10)}, env=env)
         storage = WarehouseNode(name="ms_1", role=NodeRole.WAREHOUSE,
-                                conversion_factors={"RAW": 10}, env=env, max_pallets=500)
+                                sku_registry={"RAW": SKU(id="RAW", pallet_size=10)}, env=env, max_pallets=500)
         e = Edge(from_node=src, to_node=storage, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -668,9 +681,9 @@ class TestSafeStockManagement:
 
     def test_execute_decision_transport_logs_and_dispatches(self, env):
         src = WarehouseNode(name="fg_storage", role=NodeRole.SOURCE,
-                            conversion_factors={"X": 10}, env=env)
+                            sku_registry={"X": SKU(id="X", pallet_size=10)}, env=env)
         dst = WarehouseNode(name="sink", role=NodeRole.SINK,
-                            conversion_factors={"X": 10}, env=env)
+                            sku_registry={"X": SKU(id="X", pallet_size=10)}, env=env)
         e = Edge(from_node=src, to_node=dst, transfer_mode=TransferMode.BATCH,
                  batch_transport_time=0.01, batch_pallets=999, env=env)
         mgmt = self._make_mgmt(
@@ -691,7 +704,7 @@ class TestSafeStockManagement:
 
     def test_execute_decision_raises_on_missing_edge(self, env):
         src = WarehouseNode(name="nonexistent_src", role=NodeRole.SOURCE,
-                            conversion_factors={"X": 10}, env=env)
+                            sku_registry={"X": SKU(id="X", pallet_size=10)}, env=env)
         mgmt = self._make_mgmt(
             env, safe_stock_config=[],
             nodes={src.node_name: src}, edges=[],
@@ -726,46 +739,50 @@ class TestSafeStockManagement:
 # ===================================================================
 
 
-def _make_trace_env(env, demand_orders=None, pallet_size=None):
+def _make_trace_env(env, demand_orders=None):
     """Build a minimal topology for TraceManagement tests."""
     src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                        conversion_factors={"raw": 100}, env=env)
+                        sku_registry={"raw": SKU(id="raw", pallet_size=100),
+                                      "sauce_1": SKU(id="sauce_1", pallet_size=100),
+                                      "SKU_A": SKU(id="SKU_A", pallet_size=50)}, env=env)
     ms1 = WarehouseNode(name="main_storage_1", role=NodeRole.WAREHOUSE,
-                         conversion_factors={"raw": 100, "sauce_1": 100},
+                         sku_registry={"raw": SKU(id="raw", pallet_size=100),
+                                       "sauce_1": SKU(id="sauce_1", pallet_size=100)},
                          env=env, max_pallets=1000)
     ls = WarehouseNode(name="lineside_noodle_1", role=NodeRole.WAREHOUSE,
-                       conversion_factors={"sauce_1": 100, "raw": 100},
+                       sku_registry={"sauce_1": SKU(id="sauce_1", pallet_size=100),
+                                     "raw": SKU(id="raw", pallet_size=100)},
                        env=env, max_pallets=200)
     wip_out = WarehouseNode(name="output_sauce_1", role=NodeRole.WAREHOUSE,
-                            conversion_factors={"sauce_1": 100},
+                            sku_registry={"sauce_1": SKU(id="sauce_1", pallet_size=100)},
                             env=env, max_pallets=200)
     noodle_out = WarehouseNode(name="output_noodle_1", role=NodeRole.WAREHOUSE,
-                               conversion_factors={"SKU_A": 50},
+                               sku_registry={"SKU_A": SKU(id="SKU_A", pallet_size=50)},
                                env=env, max_pallets=200)
     fg = WarehouseNode(name="fg_storage", role=NodeRole.WAREHOUSE,
-                       conversion_factors={"SKU_A": 50},
+                       sku_registry={"SKU_A": SKU(id="SKU_A", pallet_size=50)},
                        env=env, max_pallets=500)
     sink = WarehouseNode(name="sink", role=NodeRole.SINK,
-                         conversion_factors={"SKU_A": 50}, env=env)
+                        sku_registry={"SKU_A": SKU(id="SKU_A", pallet_size=50)}, env=env)
     wip_storage = WarehouseNode(name="WIP_storage", role=NodeRole.WAREHOUSE,
-                                conversion_factors={"sauce_1": 100},
-                                env=env, max_pallets=500)
+                              sku_registry={"sauce_1": SKU(id="sauce_1", pallet_size=100)},
+                              env=env, max_pallets=500)
 
     wip_prod = ProductionNode(
         name="sauce_prod_1", bom={
             "sauce_1": {"inputs": {"raw": 2}, "speed": 10, "lead_time": 0},
         },
-        output_conversion_factors={"sauce_1": 100},
         upstream_node=ls, downstream_node=wip_out,
         env=env, global_time_step=5.0,
+        sku_registry={"sauce_1": SKU(id="sauce_1", pallet_size=100), "raw": SKU(id="raw", pallet_size=100)},
     )
     noodle_prod = ProductionNode(
         name="noodle_prod_1", bom={
             "SKU_A": {"inputs": {"sauce_1": 3}, "speed": 10, "lead_time": 0},
         },
-        output_conversion_factors={"SKU_A": 50},
         upstream_node=ls, downstream_node=noodle_out,
         env=env, global_time_step=5.0,
+        sku_registry={"SKU_A": SKU(id="SKU_A", pallet_size=50), "sauce_1": SKU(id="sauce_1", pallet_size=100)},
     )
 
     edges = [
@@ -788,7 +805,7 @@ def _make_trace_env(env, demand_orders=None, pallet_size=None):
 
     mgmt = TraceManagement(
         nodes=nodes, edges=edges, demand_orders=demand_orders,
-        decision_interval=10.0, env=env, pallet_size=pallet_size or {},
+        decision_interval=10.0, env=env,
     )
     return mgmt, nodes, edges
 
@@ -810,7 +827,6 @@ class TestTraceManagement:
         decision = Decision()
         mgmt._add_transport(decision, "main_storage_1", "lineside_noodle_1",
                             "raw", 15, 0)
-        # ipp=100, 15/100 = 1 pallet → pallet_qty=100
         assert len(decision.transport_orders) == 1
         assert decision.transport_orders[0].quantity == 100
 
@@ -824,28 +840,26 @@ class TestTraceManagement:
         mgmt, nodes, _ = _make_trace_env(env)
         decision = Decision()
         mgmt._add_production(decision, "noodle_prod_1", "SKU_A", 60, 0)
-        # ipp=50, 60/50 = 2 pallets → pallet_qty=100
         assert len(decision.production_orders) == 1
         assert decision.production_orders[0].quantity == 100
 
-    def test_add_production_no_conversion_factor(self, env):
+    def test_add_production_unknown_node_raises(self, env):
         mgmt, nodes, _ = _make_trace_env(env)
         decision = Decision()
-        mgmt._add_production(decision, "nonexistent", "X", 75, 0)
-        # no conversion factor → ipp=1 → pallet_qty=75
-        assert decision.production_orders[0].quantity == 75
+        with pytest.raises(ValueError, match="not found"):
+            mgmt._add_production(decision, "main_storage_1", "unknown", 75, 0)
 
     def test_pallet_qty_uses_pallet_size(self, env):
-        mgmt, _, _ = _make_trace_env(env, pallet_size={"sauce_1": 200})
-        assert mgmt._pallet_qty("sauce_1", 150) == 200
-
-    def test_pallet_qty_default(self, env):
         mgmt, _, _ = _make_trace_env(env)
-        assert mgmt._pallet_qty("unknown", 50) == 100
+        assert mgmt._pallet_qty("main_storage_1", "sauce_1", 150) == 200
+
+    def test_pallet_qty_missing_sku_raises(self, env):
+        mgmt, _, _ = _make_trace_env(env)
+        with pytest.raises(ValueError, match="not found"):
+            mgmt._pallet_qty("main_storage_1", "unknown", 50)
 
     def test_rounded_qty(self, env):
         mgmt, _, _ = _make_trace_env(env)
-        # ipp=100 (source→ms1 conversion factor for "raw")
         assert mgmt._rounded_qty("source", "main_storage_1", "raw", 150) == 200
 
     def test_rounded_qty_missing_edge_raises(self, env):
@@ -978,9 +992,9 @@ class TestWeighSafeStockManagement:
 
     def test_issue_demand_orders(self, env):
         fg = WarehouseNode(name="fg_storage", role=NodeRole.WAREHOUSE,
-                           conversion_factors={"SKU_X": 50}, env=env, max_pallets=500)
+                           sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env, max_pallets=500)
         sink = WarehouseNode(name="sink", role=NodeRole.SINK,
-                             conversion_factors={"SKU_X": 50}, env=env)
+                             sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50)}, env=env)
         e = Edge(from_node=fg, to_node=sink, transfer_mode=TransferMode.PER_PALLET,
                  batch_transport_time=1.0, env=env)
         mgmt = self._make_mgmt(
@@ -1006,29 +1020,29 @@ class TestWeighSafeStockManagement:
     def test_trace_fg_tree_adds_wip_to_active(self, env):
         """Set up a minimal topology with one FG that requires a WIP input."""
         src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                            conversion_factors={"raw": 10}, env=env)
+                            sku_registry={"raw": SKU(id="raw", pallet_size=10)}, env=env)
         ms = WarehouseNode(name="main_storage_1", role=NodeRole.WAREHOUSE,
-                           conversion_factors={"raw": 10, "wip": 10},
+                           sku_registry={"raw": SKU(id="raw", pallet_size=10), "wip": SKU(id="wip", pallet_size=10)},
                            env=env, max_pallets=500)
         ls = WarehouseNode(name="lineside", role=NodeRole.WAREHOUSE,
-                           conversion_factors={"raw": 10, "wip": 10},
+                           sku_registry={"raw": SKU(id="raw", pallet_size=10), "wip": SKU(id="wip", pallet_size=10)},
                            env=env, max_pallets=200)
         wip_out = WarehouseNode(name="output_wip", role=NodeRole.WAREHOUSE,
-                                conversion_factors={"wip": 10}, env=env, max_pallets=200)
+                                sku_registry={"wip": SKU(id="wip", pallet_size=10)}, env=env, max_pallets=200)
         fg_out = WarehouseNode(name="output_fg", role=NodeRole.WAREHOUSE,
-                               conversion_factors={"FG": 50}, env=env, max_pallets=200)
+                               sku_registry={"FG": SKU(id="FG", pallet_size=50)}, env=env, max_pallets=200)
 
         wip_prod = ProductionNode(
             name="wip_line", bom={"wip": {"inputs": {"raw": 2}, "speed": 10, "lead_time": 0}},
-            output_conversion_factors={"wip": 10},
             upstream_node=ls, downstream_node=wip_out,
             env=env, global_time_step=5.0,
+            sku_registry={"wip": SKU(id="wip", pallet_size=10), "raw": SKU(id="raw", pallet_size=10)},
         )
         fg_prod = ProductionNode(
             name="fg_line", bom={"FG": {"inputs": {"wip": 3}, "speed": 10, "lead_time": 0}},
-            output_conversion_factors={"FG": 50},
             upstream_node=ls, downstream_node=fg_out,
             env=env, global_time_step=5.0,
+            sku_registry={"FG": SKU(id="FG", pallet_size=50), "wip": SKU(id="wip", pallet_size=10)},
         )
 
         edges = [
@@ -1062,9 +1076,9 @@ class TestWeighSafeStockManagement:
 
     def test_execute_decision_transport_logs_and_dispatches(self, env):
         src = WarehouseNode(name="source", role=NodeRole.SOURCE,
-                            conversion_factors={"X": 10}, env=env)
+                            sku_registry={"X": SKU(id="X", pallet_size=10)}, env=env)
         dst = WarehouseNode(name="wh", role=NodeRole.WAREHOUSE,
-                            conversion_factors={"X": 10}, env=env, max_pallets=500)
+                            sku_registry={"X": SKU(id="X", pallet_size=10)}, env=env, max_pallets=500)
         e = Edge(from_node=src, to_node=dst, transfer_mode=TransferMode.BATCH,
                  batch_transport_time=0.01, batch_pallets=999, env=env)
         mgmt = self._make_mgmt(env, nodes={src.node_name: src, dst.node_name: dst}, edges=[e])

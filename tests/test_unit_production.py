@@ -7,11 +7,19 @@ import salabim as sim
 
 from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
 from src.infrastructure.production_node import ProductionNode, ProductionOrder
+from src.model.sku import SKU
 
 
 # ---------------------------------------------------------------------------
 # Factory helpers
 # ---------------------------------------------------------------------------
+
+SKU_REGISTRY = {
+    "wip_X": SKU(id="wip_X", pallet_size=100),
+    "wip_Y": SKU(id="wip_Y", pallet_size=100),
+    "SKU_A": SKU(id="SKU_A", pallet_size=50, bom_speed=10.0),
+}
+
 
 def _make_production_scene(**prod_overrides):
     """Create a minimal production scene with one ProductionNode.
@@ -28,14 +36,14 @@ def _make_production_scene(**prod_overrides):
     upstream = WarehouseNode(
         name="Upstream",
         role=NodeRole.WAREHOUSE,
-        conversion_factors={"wip_X": 100, "wip_Y": 100},
+        sku_registry=SKU_REGISTRY,
         env=env,
         max_pallets=1000,
     )
     downstream = WarehouseNode(
         name="Downstream",
         role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_A": 50},
+        sku_registry=SKU_REGISTRY,
         env=env,
         max_pallets=500,
     )
@@ -51,11 +59,11 @@ def _make_production_scene(**prod_overrides):
     params = dict(
         name="TestProd",
         bom=bom,
-        output_conversion_factors={"SKU_A": 50},
         upstream_node=upstream,
         downstream_node=downstream,
         env=env,
         global_time_step=10.0,
+        sku_registry=SKU_REGISTRY,
     )
     params.update(prod_overrides)
     prod = ProductionNode(**params)

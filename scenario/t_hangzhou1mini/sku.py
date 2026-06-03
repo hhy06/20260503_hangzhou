@@ -16,54 +16,43 @@ sku_path = root / "skus.xlsx"
 
 if sku_path.exists():
     from src._xlsx_loaders import load_skus_and_bom
-    SKUS, PALLET_SIZE = load_skus_and_bom(root)
+    SKUS = load_skus_and_bom(root)
 else:
-    # Hardcoded fallback
     SKUS: dict[str, SKU] = {}
-    PALLET_SIZE: dict[str, int] = {}
 
     # -- Raw materials for sauce production --
     for i in range(1, N + 1):
         sku_id = f"smallpack_s_{i}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"酱包小包装{i}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
     for l in range(1, 5):
         sku_id = f"meat_{l}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"肉{l}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
     for j in range(1, 5):
         sku_id = f"oil_{j}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"油{j}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
     for k in range(1, 5):
         sku_id = f"vegetable_{k}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"蔬菜{k}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
 
     # -- Raw materials for powder production --
     for i in range(1, N + 1):
         sku_id = f"smallpack_p_{i}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"粉包小包装{i}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
     for k in range(1, 6):
         sku_id = f"original_powder_{k}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"原粉{k}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
 
     # -- Raw materials for veg production --
     for i in range(1, N + 1):
         sku_id = f"smallpack_v_{i}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"菜包小包装{i}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
     for k in range(1, 5):
         sku_id = f"dry_veg_{k}"
         SKUS[sku_id] = SKU(id=sku_id, name=f"干菜{k}", pallet_size=100)
-        PALLET_SIZE[sku_id] = 100
 
     # -- Packaging materials --
     for pkg_id, pkg_name in [("bow", "碗"), ("cap", "盖"), ("pack", "外包装")]:
         SKUS[pkg_id] = SKU(id=pkg_id, name=pkg_name, pallet_size=100)
-        PALLET_SIZE[pkg_id] = 100
 
     # -- WIP SKUs (sauce, powder, veg) --
     _sauce_meat = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2]
@@ -85,7 +74,6 @@ else:
             bom_speed=10,
             pallet_size=100,
         )
-        PALLET_SIZE[sku_id] = 100
 
     _powder_picks = [
         (1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 1), (5, 1, 2),
@@ -106,7 +94,6 @@ else:
             bom_speed=10,
             pallet_size=100,
         )
-        PALLET_SIZE[sku_id] = 100
 
     _veg_picks = [
         (1, 2), (2, 3), (3, 4), (4, 1),
@@ -127,7 +114,6 @@ else:
             bom_speed=100,
             pallet_size=100,
         )
-        PALLET_SIZE[sku_id] = 100
 
     # -- FG SKUs --
     for i in range(1, N + 1):
@@ -145,4 +131,3 @@ else:
             bom_speed=5,
             pallet_size=50,
         )
-        PALLET_SIZE[sku_id] = 50

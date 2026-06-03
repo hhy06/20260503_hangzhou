@@ -120,8 +120,7 @@ class Edge(sim.Component):
         else:
             self.pending_queue.append(order)
 
-        items_per_pallet = self.from_node.conversion_factors.get(order.sku, 1)
-        num_pallets = math.ceil(order.quantity / items_per_pallet)
+        num_pallets = self.from_node.calculate_pallet_count(order.sku, order.quantity)
 
         self.log.append({
             "time": self.env.now(),
@@ -145,7 +144,7 @@ class Edge(sim.Component):
 
         Flow
         ----
-        1. Compute pallet count (quantity → ceil to full pallets).
+        1. Round up quantity to full pallets.
         2. Debit the full amount from ``from_node`` via ``debit_whole``.
         3. Load debited items into ``self.edge_stock`` (in-transit buffer).
         4. Drain ``edge_stock`` to ``to_node.receive()`` — one item per
@@ -153,9 +152,9 @@ class Edge(sim.Component):
             ``batch_transport_time`` in BATCH mode.
         """
         sku = order.sku
-        items_per_pallet = self.from_node.conversion_factors.get(sku, 1)
-        num_pallets = math.ceil(order.quantity / items_per_pallet)
-        desired_items = num_pallets * items_per_pallet  # round up to full pallets
+        items_per_pallet = self.from_node.items_per_pallet(sku)
+        pallet_count = self.from_node.calculate_pallet_count(sku, order.quantity)
+        desired_items = pallet_count * items_per_pallet
 
         # -- 1. Debit source node inventory (all-or-nothing) ----------------
         if not self.from_node.debit_whole(sku, desired_items):
@@ -176,7 +175,7 @@ class Edge(sim.Component):
             return
 
         actual_items = desired_items
-        actual_pallets = num_pallets
+        actual_pallets = pallet_count
 
         self.log.append({
             "time": self.env.now(),
@@ -249,9 +248,7 @@ class Edge(sim.Component):
                 executed = False
                 for i in range(len(self.activated_queue)):
                     candidate = self.activated_queue[i]
-                    items_per_pallet = self.from_node.conversion_factors.get(candidate.sku, 1)
-                    num_pallets = math.ceil(candidate.quantity / items_per_pallet)
-                    desired_items = num_pallets * items_per_pallet
+                    desired_items = self.from_node.pallets_for_quantity(candidate.sku, candidate.quantity)
                     if self.from_node.available_qty(candidate.sku) >= desired_items:
                         self.activated_queue.pop(i)
                         yield from self._execute_order(candidate)

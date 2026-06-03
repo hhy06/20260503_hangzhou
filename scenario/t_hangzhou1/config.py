@@ -16,7 +16,6 @@ All consumers access configuration via ``from . import config``.
 from .sku import (
     N,
     SKUS,
-    PALLET_SIZE,
 )
 
 SKUS_KEYS: set[str] = set(SKUS.keys()) if isinstance(SKUS, dict) else set(SKUS)
@@ -66,7 +65,6 @@ def dump_config() -> None:
     items = {
         "N": N,
         "SKUS": SKUS,
-        "PALLET_SIZE": PALLET_SIZE,
         "SAUCE_INGREDIENTS": SAUCE_INGREDIENTS,
         "POWDER_INGREDIENTS": POWDER_INGREDIENTS,
         "VEG_INGREDIENTS": VEG_INGREDIENTS,

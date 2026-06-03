@@ -5,11 +5,15 @@ import salabim as sim
 
 from src.infrastructure.edge import Edge, TransferMode, TransportOrder
 from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.model.sku import SKU
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+SKU_REGISTRY = {"SKU_X": SKU(id="SKU_X", pallet_size=10)}
+
 
 @pytest.fixture
 def env():
@@ -21,7 +25,7 @@ def env():
 def wh_a(env):
     return WarehouseNode(
         name="WH_A", role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_X": 10}, env=env, max_pallets=100,
+        sku_registry=SKU_REGISTRY, env=env, max_pallets=100,
     )
 
 
@@ -29,7 +33,7 @@ def wh_a(env):
 def wh_b(env):
     return WarehouseNode(
         name="WH_B", role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_X": 10}, env=env, max_pallets=100,
+        sku_registry=SKU_REGISTRY, env=env, max_pallets=100,
     )
 
 
@@ -234,7 +238,7 @@ class TestExecuteFromSource:
     def test_source_not_debited(self, env, wh_b):
         src = WarehouseNode(
             name="SRC", role=NodeRole.SOURCE,
-            conversion_factors={"SKU_X": 10}, env=env,
+            sku_registry=SKU_REGISTRY, env=env,
         )
         e = _make_edge(env, src, wh_b, mode=TransferMode.PER_PALLET, time=1.0)
 

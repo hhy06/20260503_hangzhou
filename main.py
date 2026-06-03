@@ -135,7 +135,6 @@ def run_scenario(scenario_name: str) -> SimulationResult:
         print(f"  {sid}: {sname}")
     if len(sku_items) > 10:
         print(f"  ... +{len(sku_items) - 10} more")
-    print(f"Pallet sizes: {config.PALLET_SIZE}")
     print()
     print("Nodes:")
     for name, cfg in config.NODES.items():

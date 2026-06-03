@@ -37,7 +37,6 @@ def generate(scenario_name: str) -> str:
     NODES: dict = mod.NODES
     EDGES: list = getattr(mod, "EDGES", [])
     SKUS: dict = mod.SKUS
-    PALLET_SIZE: dict = mod.PALLET_SIZE
 
     scenario_short = scenario_name.split(".")[-1]
 
@@ -138,7 +137,10 @@ def generate(scenario_name: str) -> str:
                 continue  # capacity too small for even one pallet per SKU
             node_entry: dict[str, int] = {}
             for sku in sorted_skus:
-                node_entry[sku] = even_split * PALLET_SIZE.get(sku, 1)
+                ps = SKUS[sku].pallet_size
+                if ps is None or ps <= 0:
+                    raise ValueError(f"SKU {sku} missing pallet_size for init_stock")
+                node_entry[sku] = even_split * ps
             init_stock[node_name] = node_entry
 
     # ------------------------------------------------------------------

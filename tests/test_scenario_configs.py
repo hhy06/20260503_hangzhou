@@ -1,11 +1,11 @@
 """Structural validation for every scenario configuration.
 
 Checks that each scenario folder has correctly wired config modules:
-  - Required attributes exist (SKUS, PALLET_SIZE, NODES, EDGES, SIM_DURATION)
-  - SKUS ↔ PALLET_SIZE keys align
-  - All edge/node/job references point to existing nodes
-  - All BOM SKU references exist in SKUS
-  - All production-order SKU/node references are valid
+   - Required attributes exist (SKUS, NODES, EDGES, SIM_DURATION)
+   - All SKU pallet_size values are set
+   - All edge/node/job references point to existing nodes
+   - All BOM SKU references exist in SKUS
+   - All production-order SKU/node references are valid
 
 These tests are purely structural — they do NOT run simulations.
 """
@@ -70,7 +70,7 @@ class TestModuleStructure:
     @pytest.mark.parametrize("scenario", SCENARIOS)
     def test_required_config_attrs(self, scenario):
         cfg = _config(scenario)
-        for attr in ("SKUS", "PALLET_SIZE", "NODES", "EDGES", "SIM_DURATION"):
+        for attr in ("SKUS", "NODES", "EDGES", "SIM_DURATION"):
             assert hasattr(cfg, attr), f"{scenario}: config missing '{attr}'"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
@@ -90,31 +90,24 @@ class TestModuleStructure:
 
 
 # ---------------------------------------------------------------------------
-# SKUS ↔ PALLET_SIZE alignment
+# SKU pallet_size validation
 # ---------------------------------------------------------------------------
 
-class TestSkuPalletAlignment:
-    """SKUS and PALLET_SIZE must use exactly the same set of keys."""
+class TestSkuPalletSize:
+    """Each SKU must have pallet_size set and positive."""
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_pallet_size_keys_match_skus(self, scenario):
+    def test_all_skus_have_pallet_size(self, scenario):
         cfg = _config(scenario)
         skus = _sku_keys(cfg)
-        pallet = set(cfg.PALLET_SIZE.keys())
-        missing_in_pallet = skus - pallet
-        extra_in_pallet = pallet - skus
-        msg_parts = []
-        if missing_in_pallet:
-            msg_parts.append(f"SKUs missing from PALLET_SIZE: {missing_in_pallet}")
-        if extra_in_pallet:
-            msg_parts.append(f"extra keys in PALLET_SIZE: {extra_in_pallet}")
-        assert not msg_parts, f"{scenario}: {'; '.join(msg_parts)}"
-
-    @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_pallet_size_values_positive(self, scenario):
-        cfg = _config(scenario)
-        for sku, val in cfg.PALLET_SIZE.items():
-            assert val > 0, f"{scenario}: PALLET_SIZE['{sku}'] = {val}, must be positive"
+        for sku in skus:
+            sku_obj = cfg.SKUS[sku]
+            if hasattr(sku_obj, "pallet_size"):
+                ps = sku_obj.pallet_size
+                assert ps is not None and ps > 0, \
+                    f"{scenario}: SKU '{sku}' pallet_size is None or not positive ({ps})"
+            else:
+                pytest.fail(f"{scenario}: SKU '{sku}' missing pallet_size attribute")
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +126,7 @@ class TestNodeStructure:
                 f"{scenario}/{name}: unknown type '{nd['type']}'"
 
     @pytest.mark.parametrize("scenario", SCENARIOS)
-    def test_production_nodes_have_bom_and_conversion_factors(self, scenario):
+    def test_production_nodes_have_bom(self, scenario):
         cfg = _config(scenario)
         for name, nd in cfg.NODES.items():
             if nd.get("type") != "production":
@@ -141,8 +134,6 @@ class TestNodeStructure:
             assert "upstream" in nd, f"{scenario}/{name}: production node missing 'upstream'"
             assert "downstream" in nd, f"{scenario}/{name}: production node missing 'downstream'"
             assert "bom" in nd, f"{scenario}/{name}: production node missing 'bom'"
-            assert "conversion_factors" in nd, \
-                f"{scenario}/{name}: production node missing 'conversion_factors'"
             assert nd["upstream"] in cfg.NODES, \
                 f"{scenario}/{name}: upstream '{nd['upstream']}' not in NODES"
             assert nd["downstream"] in cfg.NODES, \

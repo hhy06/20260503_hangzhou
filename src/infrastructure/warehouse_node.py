@@ -26,7 +26,6 @@ destination node over time.  The warehouse no longer has a ``process``
 dispatch loop.
 """
 
-import math
 from enum import Enum
 
 import salabim as sim
@@ -46,8 +45,8 @@ class WarehouseNode(sim.Component):
     name : str
         Internal node name (also used as SALABIM component name).
     role : NodeRole
-    conversion_factors : dict[str, int]
-        {sku: items_per_pallet} for pallet math.
+    sku_registry : dict[str, SKU] | None
+        SKU objects keyed by sku_id for pallet_size lookup.
     env : sim.Environment | None
     max_pallets : int | None
         Maximum pallet capacity (required for WAREHOUSE role, ignored for
@@ -61,7 +60,7 @@ class WarehouseNode(sim.Component):
         self,
         name: str,
         role: NodeRole,
-        conversion_factors: dict[str, int],
+        sku_registry: dict | None = None,
         env: sim.Environment | None = None,
         max_pallets: int | None = None,
         display_name: str | None = None,
@@ -72,7 +71,7 @@ class WarehouseNode(sim.Component):
         super().__init__(name=name, env=env, **kwargs)
 
         self.role = role
-        self.conversion_factors: dict[str, int] = dict(conversion_factors)
+        self.sku_registry = sku_registry
 
         if role == NodeRole.WAREHOUSE:
             self.node_max_pallets = max_pallets
@@ -105,19 +104,31 @@ class WarehouseNode(sim.Component):
     # ------------------------------------------------------------------
 
     def items_per_pallet(self, sku: str) -> int:
-        return self.conversion_factors.get(sku, 1)
+        """Get items per pallet for a SKU. Raises if pallet_size not set."""
+        if self.sku_registry is None or sku not in self.sku_registry:
+            raise ValueError(f"SKU {sku} not found in registry")
+        return self.sku_registry[sku].pallet_size
 
     def pallets_for_quantity(self, sku: str, quantity: int) -> int:
+        """Return pallet-rounded item quantity for the given quantity."""
         if quantity <= 0:
             return 0
-        return math.ceil(quantity / self.conversion_factors.get(sku, 1))
+        if self.sku_registry is None or sku not in self.sku_registry:
+            raise ValueError(f"SKU {sku} not found in registry")
+        pallet_count = self.sku_registry[sku].calculate_pallet_num(quantity)
+        return pallet_count * self.sku_registry[sku].pallet_size
 
     def quantity_for_pallets(self, sku: str, pallets: int) -> int:
-        return pallets * self.conversion_factors.get(sku, 1)
+        """Convert pallets back to quantity. Raises if pallet_size not set."""
+        if self.sku_registry is None or sku not in self.sku_registry:
+            raise ValueError(f"SKU {sku} not found in registry")
+        return pallets * self.sku_registry[sku].pallet_size
 
-    # ------------------------------------------------------------------
-    # capacity (soft cap)
-    # ------------------------------------------------------------------
+    def calculate_pallet_count(self, sku: str, quantity: int) -> int:
+        """Return number of pallets (not items) for the given quantity."""
+        if self.sku_registry is None or sku not in self.sku_registry:
+            raise ValueError(f"SKU {sku} not found in registry")
+        return self.sku_registry[sku].calculate_pallet_num(quantity)
 
     def current_pallets(self) -> int:
         """Total pallet slots currently occupied (WAREHOUSE only)."""
@@ -126,7 +137,7 @@ class WarehouseNode(sim.Component):
         total = 0
         for sku, qty in self.inventory.items():
             if qty > 0:
-                total += self.pallets_for_quantity(sku, qty)
+                total += self.calculate_pallet_count(sku, qty)
         return total
 
     def available_pallets(self) -> int | float:
@@ -182,7 +193,7 @@ class WarehouseNode(sim.Component):
         self.inventory[sku] = current - quantity
         if self.inventory[sku] <= 0:
             del self.inventory[sku]
-        pallets = math.ceil(quantity / self.conversion_factors.get(sku, 1))
+        pallets = self.pallets_for_quantity(sku, quantity)
         self.log.append({
             "time": self.env.now(),
             "type": "debited",
@@ -192,11 +203,10 @@ class WarehouseNode(sim.Component):
         })
         return True
 
-    def add_sku(self, sku: str, items_per_pallet: int):
-        """Register a new SKU with its pallet conversion factor."""
-        if sku in self.conversion_factors:
-            raise ValueError(f"SKU {sku} already exists")
-        self.conversion_factors[sku] = items_per_pallet
+    def add_sku(self, sku_id: str) -> None:
+        """Register a new SKU. Validation only — pallet_size comes from registry."""
+        if self.sku_registry is None or sku_id not in self.sku_registry:
+            raise ValueError(f"SKU {sku_id} not found in registry")
 
     # ------------------------------------------------------------------
     # inbound
@@ -215,9 +225,10 @@ class WarehouseNode(sim.Component):
         if self.role == NodeRole.SOURCE:
             return
 
+        pallets = self.pallets_for_quantity(sku, quantity) if self.sku_registry else 0
+
         if self.role == NodeRole.SINK:
             self.received[sku] = self.received.get(sku, 0) + quantity
-            pallets = math.ceil(quantity / self.conversion_factors.get(sku, 1))
             self.log.append({
                 "time": self.env.now(),
                 "type": "received",
@@ -230,7 +241,6 @@ class WarehouseNode(sim.Component):
 
         # WAREHOUSE
         self.inventory[sku] = self.inventory.get(sku, 0) + quantity
-        pallets = math.ceil(quantity / self.conversion_factors.get(sku, 1))
         self.log.append({
             "time": self.env.now(),
             "type": "received",

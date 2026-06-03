@@ -13,11 +13,21 @@ execute as capacity allows, keeping the system statistically static.
 
 import math
 from typing import Any
+
 import salabim as sim
 
 from src.management.base import Management, Snapshot, Decision
 from src.infrastructure.edge import Edge, TransportOrder
 from src.infrastructure.production_node import ProductionOrder
+from src.infrastructure.warehouse_node import WarehouseNode
+
+
+def _pallet_qty(sku_id: str, quantity: int, sku_registry: dict) -> int:
+    """Round quantity up to next full pallet using SKU's pallet_size."""
+    if quantity <= 0:
+        return 0
+    sku = sku_registry[sku_id]
+    return sku.calculate_pallet_num(quantity)
 
 
 class TraceManagement(Management):
@@ -51,12 +61,10 @@ class TraceManagement(Management):
         decision_interval: float = 10.0,
         name: str = "TraceManagement",
         env: sim.Environment | None = None,
-        pallet_size: dict[str, int] | None = None,
         **kwargs,
     ):
         self._demand_orders = list(demand_orders or [])
         self._next_demand_idx = 0
-        self._pallet_size = pallet_size or {}
 
         # sku -> [producer node names] derived from BOMs
         self._producers_of_sku: dict[str, list[str]] = {}
@@ -72,9 +80,9 @@ class TraceManagement(Management):
         )
 
         # Build producers_of_sku after base sets up _production_nodes
-        for name, pnode in self._production_nodes.items():
+        for n, pnode in self._production_nodes.items():
             for out_sku in pnode.bom:
-                self._producers_of_sku.setdefault(out_sku, []).append(name)
+                self._producers_of_sku.setdefault(out_sku, []).append(n)
 
     # ------------------------------------------------------------------
     # helpers
@@ -106,9 +114,7 @@ class TraceManagement(Management):
                 f"No edge from '{from_node}' to '{to_node}' for SKU {sku} "
                 f"(qty {quantity}) — this is a topology/routing configuration bug."
             )
-        ipp = edge.from_node.conversion_factors.get(sku, 1)
-        num_pallets = math.ceil(quantity / ipp)
-        pallet_qty = num_pallets * ipp
+        pallet_qty = self.nodes[from_node].pallets_for_quantity(sku, quantity)
         oid = self._next_order_id
         self._next_order_id += 1
         decision.transport_orders.append(TransportOrder(
@@ -128,11 +134,7 @@ class TraceManagement(Management):
         ``_add_transport`` ordering from the output buffer and the
         actual production output stay in sync.
         """
-        node = self._production_nodes.get(node_name)
-        ipp = 1
-        if node is not None:
-            ipp = node.output_conversion_factors.get(sku, 1)
-        pallet_qty = math.ceil(quantity / ipp) * ipp
+        pallet_qty = self.nodes[node_name].pallets_for_quantity(sku, quantity)
         oid = self._next_order_id
         self._next_order_id += 1
         decision.production_orders.append(ProductionOrder(
@@ -244,8 +246,7 @@ class TraceManagement(Management):
                 f"No edge from '{from_node}' to '{to_node}' for SKU {sku} "
                 f"(qty {qty}) — this is a topology/routing configuration bug."
             )
-        ipp = edge.from_node.conversion_factors.get(sku, 1)
-        return math.ceil(qty / ipp) * ipp
+        return self.nodes[from_node].pallets_for_quantity(sku, qty)
 
     # ------------------------------------------------------------------
     # accumulators (per-decision-cycle batching)
@@ -315,10 +316,9 @@ class TraceManagement(Management):
                 # Raw material / packaging
                 self._accum_tx(tx_acc, "source", ms, input_sku, need)
 
-    def _pallet_qty(self, sku: str, quantity: int) -> int:
-        """Round *quantity* up to the next full pallet for *sku*."""
-        ipp = self._pallet_size.get(sku, 100)
-        return math.ceil(quantity / ipp) * ipp
+    def _pallet_qty(self, node_name: str, sku: str, quantity: int) -> int:
+        """Round *quantity* up to the next full pallet for *sku* at *node*."""
+        return self.pallet_qty(node_name, sku, quantity)
 
     def _accum_wip_tree(
         self,
@@ -341,7 +341,7 @@ class TraceManagement(Management):
 
         # Round the WIP qty to full pallets so production, transport
         # and raw-material computations use the same baseline.
-        pallet_q = self._pallet_qty(wip_sku, qty)
+        pallet_q = self._pallet_qty(producer, wip_sku, qty)
 
         # Production
         self._accum_prod(prod_acc, producer, wip_sku, pallet_q)

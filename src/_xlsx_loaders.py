@@ -22,15 +22,13 @@ def _data_dir() -> Path:
 # ── SKU definitions + BOM ─────────────────────────────────────────────────
 
 def load_skus_and_bom(data_dir: Path | None = None,
-                      ) -> tuple[dict[str, SKU], dict[str, int]]:
+                      ) -> dict[str, SKU]:
     """Load SKU master data + BOM relations from *data_dir*/*.xlsx.
 
     Returns
     -------
     skus : dict[str, SKU]
-        SKU objects with BOM data attached.
-    pallet_size : dict[str, int]
-        Items per pallet for each SKU.
+        SKU objects with BOM data attached. pallet_size is required for each SKU.
     """
     d = data_dir or _data_dir()
     sku_path = d / "skus.xlsx"
@@ -40,18 +38,19 @@ def load_skus_and_bom(data_dir: Path | None = None,
     bom = pd.read_excel(bom_path, sheet_name="BOM")
 
     skus: dict[str, SKU] = {}
-    pallet_size: dict[str, int] = {}
 
     for _, row in meta.iterrows():
         sku_id = str(row["sku_id"])
+        pallet_sz = row.get("pallet_size")
+        if pallet_sz is None or pd.isna(pallet_sz):
+            raise ValueError(f"SKU {sku_id} missing pallet_size in skus.xlsx")
         skus[sku_id] = SKU(
             id=sku_id,
             name=str(row.get("name", sku_id) or sku_id),
             bom_speed=float(row.get("bom_speed", 0) or 0),
-            pallet_size=int(row.get("pallet_size", 100) or 100),
+            pallet_size=int(pallet_sz),
             unit=str(row.get("unit", "") or ""),
         )
-        pallet_size[sku_id] = skus[sku_id].pallet_size
 
     bad_refs: list[tuple[str, str]] = []
     for _, row in bom.iterrows():
@@ -80,7 +79,7 @@ def load_skus_and_bom(data_dir: Path | None = None,
     else:
         print(f"[SKU]   All BOM material references are valid", file=sys.stderr)
 
-    return skus, pallet_size
+    return skus
 
 
 # ── Demand orders ──────────────────────────────────────────────────────────

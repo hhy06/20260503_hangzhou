@@ -468,7 +468,7 @@ def _compute_storage_chart(
     node_id: str,
     event_records: list[dict],
     sim_duration: float,
-    conversion_factors: dict[str, int],
+    pallet_size_fn,
 ) -> list[list[float]]:
     """Compute [t, pallets] step points spanning the full simulation.
 
@@ -513,9 +513,7 @@ def _compute_storage_chart(
         # Compute total pallets across all SKUs after applying all deltas
         pal = 0
         for s, q in sku_qty.items():
-            ipp = conversion_factors.get(s, 1)
-            if ipp < 1:
-                ipp = 1
+            ipp = pallet_size_fn(s)
             pal += int(math.ceil(q / ipp))
 
         if not result or result[-1][1] != pal:
@@ -899,9 +897,18 @@ def process_run(
     # ==================================================================
     # 5.  Compute chart data (storage, traffic, production)
     # ==================================================================
-    conversion_factors: dict[str, int] = {}
+    sku_registry: dict = {}
     if scenario_mod is not None and hasattr(scenario_mod, "config"):
-        conversion_factors = getattr(scenario_mod.config, "PALLET_SIZE", {})
+        sku_registry = getattr(scenario_mod.config, "SKUS", {})
+
+    def _get_pallet_size(sku: str) -> int:
+        """Get pallet_size from SKU registry, raises if not found."""
+        if sku not in sku_registry:
+            raise ValueError(f"SKU {sku} not found in registry for processor")
+        ps = sku_registry[sku].pallet_size
+        if ps is None or ps <= 0:
+            raise ValueError(f"SKU {sku} has invalid pallet_size {ps}")
+        return ps
 
     sim_duration = meta.get("sim_duration", 0.0)
 
@@ -909,7 +916,7 @@ def process_run(
         ntype = ndata.get("type", "")
         if ntype == "warehouse":
             chart = _compute_storage_chart(
-                nid, event_records, sim_duration, conversion_factors,
+                nid, event_records, sim_duration, _get_pallet_size,
             )
             if chart:
                 ndata["chart_storage"] = chart

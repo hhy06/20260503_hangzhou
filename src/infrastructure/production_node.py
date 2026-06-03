@@ -50,8 +50,6 @@ class ProductionNode(sim.Component):
                 "lead_time": float,   # minutes before first output
             }}
 
-    output_conversion_factors : dict[str, int]
-        {output_sku: items_per_pallet} for downstream dispatch.
     upstream_node : WarehouseNode
         The single warehouse this production line draws materials from.
     downstream_node : WarehouseNode
@@ -59,13 +57,14 @@ class ProductionNode(sim.Component):
     env : sim.Environment | None
     global_time_step : float
         Simulation-wide production output cycle (minutes).
+    sku_registry : dict[str, SKU] | None
+        SKU objects keyed by sku_id for pallet_size lookup.
     """
 
     def __init__(
         self,
         name: str,
         bom: dict,
-        output_conversion_factors: dict[str, int],
         upstream_node,
         downstream_node,
         env: sim.Environment | None = None,
@@ -80,7 +79,6 @@ class ProductionNode(sim.Component):
         super().__init__(name=name, env=env, **kwargs)
 
         self.bom: dict = bom
-        self.output_conversion_factors: dict[str, int] = output_conversion_factors
         self.upstream_node = upstream_node
         self.downstream_node = downstream_node
         self.global_time_step: float = global_time_step
@@ -91,9 +89,6 @@ class ProductionNode(sim.Component):
         self.edges_out: list = []
         self.edges_in: list = []
         self.log: list[dict] = []
-
-        # Placeholder: future SKU registry for bom_speed lookup
-        # self.sku_registry: dict[str, SKU] | None = None
 
     # ------------------------------------------------------------------
     # properties
@@ -120,6 +115,17 @@ class ProductionNode(sim.Component):
 
     def add_edge_in(self, edge) -> None:
         self.edges_in.append(edge)
+
+    # ------------------------------------------------------------------
+    # pallet helpers
+    # ------------------------------------------------------------------
+
+    def pallets_for_quantity(self, sku: str, quantity: int) -> int:
+        """Return pallet-rounded item quantity for the given quantity."""
+        if self.sku_registry is None or sku not in self.sku_registry:
+            raise ValueError(f"SKU {sku} not found in registry")
+        pallet_count = self.sku_registry[sku].calculate_pallet_num(quantity)
+        return pallet_count * self.sku_registry[sku].pallet_size
 
     # ------------------------------------------------------------------
     # material helpers
@@ -174,13 +180,11 @@ class ProductionNode(sim.Component):
         # If the node's BOM entry omits speed, fall back to SKU default:
         speed: float = bom_entry.get("speed", 0)
         if speed == 0:
-            sku_obj = getattr(self, 'sku_registry', None) or {}
-            sku_obj = sku_obj.get(job.sku) if isinstance(sku_obj, dict) else None
+            sku_obj = self.sku_registry.get(job.sku) if self.sku_registry else None
             if sku_obj and sku_obj.bom_speed > 0:
                 speed = sku_obj.bom_speed
             else:
-                print(f"[WARN] {self._node_name}: no speed for {job.sku}, defaulting to 1.0")
-                speed = 1.0
+                raise ValueError(f"ProductionNode {self._node_name}: no speed for {job.sku}")
 
         lead = bom_entry.get("lead_time", 0)
 

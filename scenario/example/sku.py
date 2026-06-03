@@ -1,4 +1,6 @@
 """SKU definitions for the simple linear example."""
+from src.model.sku import SKU
+
 N = 2  # Number of FG SKUs
 
 _raw = {
@@ -11,12 +13,8 @@ _fg = {
     "fg_y": "Finished Good Y",
 }
 
-SKUS: dict[str, str] = {}
-SKUS.update(_raw)
-SKUS.update(_fg)
-
-PALLET_SIZE: dict[str, int] = {}
-for sku in _raw:
-    PALLET_SIZE[sku] = 1
-for sku in _fg:
-    PALLET_SIZE[sku] = 1
+SKUS: dict[str, SKU] = {}
+for sku, name in _raw.items():
+    SKUS[sku] = SKU(id=sku, name=name, pallet_size=1)
+for sku, name in _fg.items():
+    SKUS[sku] = SKU(id=sku, name=name, pallet_size=1)

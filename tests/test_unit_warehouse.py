@@ -3,15 +3,23 @@
 import pytest
 import salabim as sim
 from src.infrastructure.warehouse_node import WarehouseNode, NodeRole
+from src.model.sku import SKU
 
 
-def _make_wh(**overrides) -> WarehouseNode:
+def _make_sku_registry(skus_data: dict[str, int]) -> dict[str, SKU]:
+    """Create a sku_registry from a dict of {sku_id: pallet_size}."""
+    return {sid: SKU(id=sid, pallet_size=ps) for sid, ps in skus_data.items()}
+
+
+def _make_wh(sku_registry=None, **overrides) -> WarehouseNode:
     """Helper: create a WarehouseNode with sensible defaults."""
     env = sim.Environment(trace=False)
+    if sku_registry is None:
+        sku_registry = _make_sku_registry({"SKU_A": 10, "SKU_B": 25})
     params = dict(
         name="TestWH",
         role=NodeRole.WAREHOUSE,
-        conversion_factors={"SKU_A": 10, "SKU_B": 25},
+        sku_registry=sku_registry,
         env=env,
         max_pallets=100,
     )
@@ -19,26 +27,30 @@ def _make_wh(**overrides) -> WarehouseNode:
     return WarehouseNode(**params)
 
 
-def _make_source(**overrides) -> WarehouseNode:
+def _make_source(sku_registry=None, **overrides) -> WarehouseNode:
     """Helper: create a Source node."""
     env = sim.Environment(trace=False)
+    if sku_registry is None:
+        sku_registry = _make_sku_registry({"SKU_A": 10})
     params = dict(
         name="TestSource",
         role=NodeRole.SOURCE,
-        conversion_factors={"SKU_A": 10},
+        sku_registry=sku_registry,
         env=env,
     )
     params.update(overrides)
     return WarehouseNode(**params)
 
 
-def _make_sink(**overrides) -> WarehouseNode:
+def _make_sink(sku_registry=None, **overrides) -> WarehouseNode:
     """Helper: create a Sink node."""
     env = sim.Environment(trace=False)
+    if sku_registry is None:
+        sku_registry = _make_sku_registry({"SKU_A": 10})
     params = dict(
         name="TestSink",
         role=NodeRole.SINK,
-        conversion_factors={"SKU_A": 10},
+        sku_registry=sku_registry,
         env=env,
     )
     params.update(overrides)
@@ -56,19 +68,24 @@ class TestPalletsForQuantity:
 
     def test_less_than_one_pallet(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 1) == 1  # ceil(1/10)
+        assert wh.pallets_for_quantity("SKU_A", 1) == 10  # ceil(1/10)*10 = 10
 
     def test_exactly_one_pallet(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 10) == 1
+        assert wh.pallets_for_quantity("SKU_A", 10) == 10
 
     def test_just_over_one_pallet(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 11) == 2
+        assert wh.pallets_for_quantity("SKU_A", 11) == 20
 
     def test_exact_multiple(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 50) == 5
+        assert wh.pallets_for_quantity("SKU_A", 50) == 50
+
+    def test_missing_sku_raises(self):
+        wh = _make_wh()
+        with pytest.raises(ValueError, match="not found in registry"):
+            wh.pallets_for_quantity("UNKNOWN_SKU", 10)
 
 
 class TestQuantityForPallets:
@@ -87,6 +104,11 @@ class TestQuantityForPallets:
     def test_different_sku_factor(self):
         wh = _make_wh()
         assert wh.quantity_for_pallets("SKU_B", 3) == 75
+
+    def test_missing_sku_raises(self):
+        wh = _make_wh()
+        with pytest.raises(ValueError, match="not found in registry"):
+            wh.quantity_for_pallets("UNKNOWN_SKU", 1)
 
 
 # ---------------------------------------------------------------------------
@@ -147,12 +169,8 @@ class TestReceiveAndCapacity:
 # ---------------------------------------------------------------------------
 
 class TestAddSku:
-    def test_add_new_sku(self):
-        wh = _make_wh(conversion_factors={"EXISTING": 10})
-        wh.add_sku("NEW_SKU", 50)
-        assert wh.conversion_factors["NEW_SKU"] == 50
-
-    def test_add_duplicate_sku_raises(self):
-        wh = _make_wh(conversion_factors={"EXISTING": 10})
-        with pytest.raises(ValueError, match="already exists"):
-            wh.add_sku("EXISTING", 20)
+    def test_add_missing_sku_raises(self):
+        registry = _make_sku_registry({"EXISTING": 10})
+        wh = _make_wh(sku_registry=registry)
+        with pytest.raises(ValueError, match="not found in registry"):
+            wh.add_sku("UNKNOWN_SKU")
