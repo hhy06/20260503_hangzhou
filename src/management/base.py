@@ -99,10 +99,10 @@ class Management(sim.Component):
             self._edge_map[key] = e
 
         self._lineside_suppliers: dict[str, str] = {}
+        lineside_nodes = {pnode.upstream_node.node_name for pnode in self._production_nodes.values()}
         for e in self.edges:
-            to_name = e.to_node.node_name
-            if to_name.startswith("lineside_"):
-                self._lineside_suppliers[to_name] = e.from_node.node_name
+            if e.to_node.node_name in lineside_nodes:
+                self._lineside_suppliers[e.to_node.node_name] = e.from_node.node_name
 
     # ------------------------------------------------------------------
     # helpers
