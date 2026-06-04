@@ -130,79 +130,146 @@ flowchart LR
         sink["发货"]:::sink
     end
 
-    source -->|BATCH, t=1.0, bp=999| raw_material_storage
-    source -->|BATCH, t=1.0, bp=999| main_storage_1
-    source -->|BATCH, t=1.0, bp=999| main_storage_2
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_1
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_2
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_3
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_4
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_5
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_6
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_7
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_8
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_9
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_sauce_10
-    output_sauce_1 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_2 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_3 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_4 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_5 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_6 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_7 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_8 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_9 -->|PER_PALLET, t=1.0| WIP_storage
-    output_sauce_10 -->|PER_PALLET, t=1.0| WIP_storage
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_1
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_2
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_3
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_4
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_5
-    raw_material_storage -->|PER_PALLET, t=1.0| lineside_powder_6
-    output_powder_1 -->|PER_PALLET, t=1.0| WIP_storage
-    output_powder_2 -->|PER_PALLET, t=1.0| WIP_storage
-    output_powder_3 -->|PER_PALLET, t=1.0| WIP_storage
-    output_powder_4 -->|PER_PALLET, t=1.0| WIP_storage
-    output_powder_5 -->|PER_PALLET, t=1.0| WIP_storage
-    output_powder_6 -->|PER_PALLET, t=1.0| WIP_storage
+    source -->|BATCH, t=5.0, bp=24| raw_material_storage
+    source -->|BATCH, t=5.0, bp=24| main_storage_1
+    source -->|BATCH, t=5.0, bp=24| main_storage_2
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_1
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_2
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_3
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_4
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_5
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_6
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_7
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_8
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_9
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_sauce_10
+    output_sauce_1 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_2 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_3 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_4 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_5 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_6 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_7 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_8 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_9 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_sauce_10 -->|BATCH, t=10.0, bp=10| WIP_storage
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_powder_1
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_powder_2
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_powder_3
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_powder_4
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_powder_5
+    raw_material_storage -->|BATCH, t=10.0, bp=10| lineside_powder_6
+    output_powder_1 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_powder_2 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_powder_3 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_powder_4 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_powder_5 -->|BATCH, t=10.0, bp=10| WIP_storage
+    output_powder_6 -->|BATCH, t=10.0, bp=10| WIP_storage
     WIP_storage -->|BATCH, t=1.0, bp=24| main_storage_1
     WIP_storage -->|BATCH, t=1.0, bp=24| main_storage_2
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_1
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_2
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_3
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_4
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_5
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_6
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_7
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_noodle_8
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_9
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_10
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_11
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_12
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_13
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_14
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_15
-    main_storage_2 -->|PER_PALLET, t=1.0| lineside_noodle_16
-    output_noodle_1 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_2 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_3 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_4 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_5 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_6 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_7 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_8 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_9 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_10 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_11 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_12 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_13 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_14 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_15 -->|PER_PALLET, t=1.0| fg_storage
-    output_noodle_16 -->|PER_PALLET, t=1.0| fg_storage
-    main_storage_1 -->|PER_PALLET, t=1.0| lineside_veg
-    output_veg -->|PER_PALLET, t=1.0| main_storage_1
-    output_veg -->|PER_PALLET, t=1.0| main_storage_2
-    fg_storage -->|BATCH, t=1.0, bp=999| sink
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_1
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_2
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_3
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_4
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_5
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_6
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_7
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_noodle_8
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_9
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_10
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_11
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_12
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_13
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_14
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_15
+    main_storage_2 -->|BATCH, t=10.0, bp=10| lineside_noodle_16
+    output_noodle_1 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_2 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_3 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_4 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_5 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_6 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_7 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_8 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_9 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_10 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_11 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_12 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_13 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_14 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_15 -->|BATCH, t=10.0, bp=10| fg_storage
+    output_noodle_16 -->|BATCH, t=10.0, bp=10| fg_storage
+    main_storage_1 -->|BATCH, t=10.0, bp=10| lineside_veg
+    output_veg -->|BATCH, t=10.0, bp=10| main_storage_1
+    output_veg -->|BATCH, t=10.0, bp=10| main_storage_2
+    fg_storage -->|BATCH, t=5.0, bp=24| sink
+
+    lineside_sauce_1 --> workstation_sauce_1
+    workstation_sauce_1 --> output_sauce_1
+    lineside_sauce_2 --> workstation_sauce_2
+    workstation_sauce_2 --> output_sauce_2
+    lineside_sauce_3 --> workstation_sauce_3
+    workstation_sauce_3 --> output_sauce_3
+    lineside_sauce_4 --> workstation_sauce_4
+    workstation_sauce_4 --> output_sauce_4
+    lineside_sauce_5 --> workstation_sauce_5
+    workstation_sauce_5 --> output_sauce_5
+    lineside_sauce_6 --> workstation_sauce_6
+    workstation_sauce_6 --> output_sauce_6
+    lineside_sauce_7 --> workstation_sauce_7
+    workstation_sauce_7 --> output_sauce_7
+    lineside_sauce_8 --> workstation_sauce_8
+    workstation_sauce_8 --> output_sauce_8
+    lineside_sauce_9 --> workstation_sauce_9
+    workstation_sauce_9 --> output_sauce_9
+    lineside_sauce_10 --> workstation_sauce_10
+    workstation_sauce_10 --> output_sauce_10
+    lineside_powder_1 --> workstation_powder_1
+    workstation_powder_1 --> output_powder_1
+    lineside_powder_2 --> workstation_powder_2
+    workstation_powder_2 --> output_powder_2
+    lineside_powder_3 --> workstation_powder_3
+    workstation_powder_3 --> output_powder_3
+    lineside_powder_4 --> workstation_powder_4
+    workstation_powder_4 --> output_powder_4
+    lineside_powder_5 --> workstation_powder_5
+    workstation_powder_5 --> output_powder_5
+    lineside_powder_6 --> workstation_powder_6
+    workstation_powder_6 --> output_powder_6
+    lineside_noodle_1 --> workstation_noodle_1
+    workstation_noodle_1 --> output_noodle_1
+    lineside_noodle_2 --> workstation_noodle_2
+    workstation_noodle_2 --> output_noodle_2
+    lineside_noodle_3 --> workstation_noodle_3
+    workstation_noodle_3 --> output_noodle_3
+    lineside_noodle_4 --> workstation_noodle_4
+    workstation_noodle_4 --> output_noodle_4
+    lineside_noodle_5 --> workstation_noodle_5
+    workstation_noodle_5 --> output_noodle_5
+    lineside_noodle_6 --> workstation_noodle_6
+    workstation_noodle_6 --> output_noodle_6
+    lineside_noodle_7 --> workstation_noodle_7
+    workstation_noodle_7 --> output_noodle_7
+    lineside_noodle_8 --> workstation_noodle_8
+    workstation_noodle_8 --> output_noodle_8
+    lineside_noodle_9 --> workstation_noodle_9
+    workstation_noodle_9 --> output_noodle_9
+    lineside_noodle_10 --> workstation_noodle_10
+    workstation_noodle_10 --> output_noodle_10
+    lineside_noodle_11 --> workstation_noodle_11
+    workstation_noodle_11 --> output_noodle_11
+    lineside_noodle_12 --> workstation_noodle_12
+    workstation_noodle_12 --> output_noodle_12
+    lineside_noodle_13 --> workstation_noodle_13
+    workstation_noodle_13 --> output_noodle_13
+    lineside_noodle_14 --> workstation_noodle_14
+    workstation_noodle_14 --> output_noodle_14
+    lineside_noodle_15 --> workstation_noodle_15
+    workstation_noodle_15 --> output_noodle_15
+    lineside_noodle_16 --> workstation_noodle_16
+    workstation_noodle_16 --> output_noodle_16
+    lineside_veg --> workstation_veg
+    workstation_veg --> output_veg
 
     classDef source fill:#90EE90,stroke:#228B22,stroke-width:2px
     classDef sink fill:#FFB6C1,stroke:#DC143C,stroke-width:2px

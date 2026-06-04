@@ -10,7 +10,7 @@ Draws both explicit EDGES and implicit production upstream/downstream links.
 import sys
 import importlib.util
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any
 
 
 def load_topology_module(module_path: str) -> Any:
@@ -61,24 +61,6 @@ def node_style(node_type: str) -> str:
     return styles.get(node_type, "")
 
 
-def get_implicit_production_edges(nodes: dict) -> List[Tuple[str, str, str]]:
-    """
-    Extract implicit edges from production nodes.
-    Returns list of (from_node, to_node, label) tuples.
-    """
-    implicit = []
-    for nid, info in nodes.items():
-        if info.get("type") != "production":
-            continue
-        upstream = info.get("upstream")
-        downstream = info.get("downstream")
-        if upstream and upstream in nodes:
-            implicit.append((upstream, nid, "feed"))
-        if downstream and downstream in nodes:
-            implicit.append((nid, downstream, "output"))
-    return implicit
-
-
 def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
     """Generate a Mermaid flowchart string from a loaded topology module."""
     nodes = getattr(module, "NODES", {})
@@ -90,9 +72,6 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
     lines.append("---")
     lines.append("flowchart LR")
     lines.append("")
-
-    # Collect implicit production edges
-    implicit_edges = get_implicit_production_edges(nodes)
 
     # Group nodes into logical subgraphs
     subgraphs = {
@@ -146,14 +125,47 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
             safe_id = escape_mermaid_id(nid)
             subgraphs.setdefault("其他", []).append((safe_id, name, ntype))
 
+    # Build production chains from implicit edges
+    # Each chain is [upstream_node_id, production_node_id, downstream_node_id]
+    chains = []
+    for nid, info in nodes.items():
+        if info.get("type") != "production":
+            continue
+        upstream = info.get("upstream")
+        downstream = info.get("downstream")
+        if upstream and downstream and upstream in nodes and downstream in nodes:
+            chains.append([upstream, nid, downstream])
+
     # Emit subgraphs
     for sg_name, node_list in subgraphs.items():
         if not node_list:
             continue
         lines.append(f"    subgraph {sg_name}")
+
+        node_map = {safe_id: (name, ntype) for safe_id, name, ntype in node_list}
+        emitted = set()
+
+        # Emit chain triplets that belong to this subgraph as horizontal chains
+        for chain in chains:
+            chain_safe = [escape_mermaid_id(nid) for nid in chain]
+            if not all(sid in node_map for sid in chain_safe):
+                continue
+            parts = []
+            for sid in chain_safe:
+                name, ntype = node_map[sid]
+                style = node_style(ntype)
+                parts.append(f'{sid}["{name}"]{style}')
+            lines.append("        " + " --> ".join(parts))
+            for sid in chain_safe:
+                emitted.add(sid)
+
+        # Emit remaining standalone nodes
         for safe_id, name, ntype in node_list:
-            style = node_style(ntype)
-            lines.append(f'        {safe_id}["{name}"]{style}')
+            if safe_id not in emitted:
+                style = node_style(ntype)
+                lines.append(f'        {safe_id}["{name}"]{style}')
+                emitted.add(safe_id)
+
         lines.append("    end")
         lines.append("")
 
@@ -178,15 +190,6 @@ def generate_mermaid(module: Any, title: str = "Factory Topology") -> str:
 
         edge_label = "|" + ", ".join(label_parts) + "|" if label_parts else ""
         lines.append(f"    {safe_from} -->{edge_label} {safe_to}")
-
-    lines.append("")
-
-    # Emit implicit production edges (upstream -> workstation -> downstream)
-    # These are drawn as plain edges without labels to keep it clean
-    for from_node, to_node, label in implicit_edges:
-        safe_from = escape_mermaid_id(from_node)
-        safe_to = escape_mermaid_id(to_node)
-        lines.append(f"    {safe_from} --> {safe_to}")
 
     lines.append("")
     lines.append("    classDef source fill:#90EE90,stroke:#228B22,stroke-width:2px")
