@@ -38,7 +38,7 @@ SKU_QTY = 100     # per noodle line
 
 def _orders_same_edge(from_node: str, to_node: str,
                        sku_qty_map: dict[str, int],
-                       start_time: float, expect_time: float = 999) -> list[TransportOrder]:
+                       start_time: float, expect_time: float ) -> list[TransportOrder]:
     orders = []
     for sku, qty in sku_qty_map.items():
         orders.append(TransportOrder(
