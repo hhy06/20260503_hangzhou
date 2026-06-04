@@ -919,6 +919,68 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
   }
 
   /* -------------------------------------------------------
+     Event display builder (ported from Python)
+     ------------------------------------------------------- */
+  function buildEventDisplay (ev) {
+    var etype = ev.type;
+    var count = ev.count || 1;
+    var qty = ev.quantity || 0;
+    var total = ev.total || 0;
+    var sku = ev.sku || '';
+    var t0 = ev.time;
+    var tn = ev.end_time;
+    var interval = ev.interval;
+
+    if (count > 1) {
+      var rangeStr = 't=' + t0 + '→' + (tn === Math.floor(tn) ? Math.floor(tn) : tn);
+      var intervalStr = '';
+      if (interval != null) {
+        var iv = (interval === Math.floor(interval) ? Math.floor(interval) : interval);
+        intervalStr = ', every ' + iv + 't';
+      }
+
+      if (etype === 'production_output') {
+        return 'production_output: ' + count + ' steps × ' + qty + ' units = ' + total + ' total, ' + rangeStr + intervalStr + ' → ' + (ev.destination || '');
+      }
+      if (etype === 'received') {
+        return 'received: ' + count + ' arrivals × ' + qty + ' units = ' + total + ' total, ' + rangeStr + intervalStr + ' from ' + (ev.source || '');
+      }
+      if (etype === 'debited') {
+        return 'debited: ' + count + ' departures × ' + qty + ' units = ' + total + ' total, ' + rangeStr + intervalStr;
+      }
+    }
+
+    // Single event
+    if (etype === 'production_output') return 'production_output: ' + sku + ' × ' + qty + ' → ' + (ev.destination || '');
+    if (etype === 'received') return 'received: ' + qty + ' units of ' + sku + ' at t=' + t0 + ' from ' + (ev.source || '');
+    if (etype === 'debited') return 'debited: ' + qty + ' units of ' + sku + ' at t=' + t0;
+    if (etype === 'production_started') return 'production_started: ' + sku + ' × ' + qty;
+    if (etype === 'production_completed') return 'production_completed: ' + sku + ' × ' + qty;
+    
+    if (etype === 'materials_consumed') {
+      var items = [];
+      if (ev.inputs) {
+        for (var k in ev.inputs) items.push(k + ': ' + ev.inputs[k]);
+      }
+      return 'materials_consumed: ' + sku + ' × ' + qty + ' | inputs: {' + items.join(', ') + '}';
+    }
+
+    if (etype === 'production_failed') {
+      var req_s = []; if (ev.required) for (var k in ev.required) req_s.push(k + ': ' + ev.required[k]);
+      var ava_s = []; if (ev.available) for (var k in ev.available) ava_s.push(k + ': ' + ev.available[k]);
+      return 'production_failed: ' + sku + ' — ' + (ev.reason || '') + ' (required: {' + req_s.join(', ') + '}, available: {' + ava_s.join(', ') + '})';
+    }
+
+    if (etype === 'transport_order_added') return 'transport_order_added: #' + (ev.order_id || '') + ' ' + sku + ' × ' + qty + ' from ' + (ev.from_node || '') + ' → ' + (ev.to_node || '');
+    if (etype === 'transport_started') return 'transport_started: #' + (ev.order_id || '') + ' ' + sku + ' × ' + qty + ' from ' + (ev.from_node || '') + ' → ' + (ev.to_node || '') + ' (' + (ev.pallets_count || 0) + ' pallets)';
+    if (etype === 'transport_completed') return 'transport_completed: #' + (ev.order_id || '') + ' ' + sku + ' × ' + qty + ' from ' + (ev.from_node || '') + ' → ' + (ev.to_node || '');
+
+    if (etype === 'capacity_warning') return 'capacity_warning: ' + (ev.pallets || 0) + ' pallets (max ' + (ev.max_pallets || 0) + ')';
+
+    return etype + ': ' + sku + ' × ' + qty + ' at t=' + t0;
+  }
+
+  /* -------------------------------------------------------
      Breadcrumb
      ------------------------------------------------------- */
   function setBreadcrumb (parts) {
@@ -949,7 +1011,7 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     var html = '<div class="event-item" data-time="' + esc(fmtTime(ev.time)) + '">';
     html += '<span class="event-time">[t=' + timeStr + ']</span>';
-    html += '<span class="event-text">' + esc(ev.display) + suffix;
+    html += '<span class="event-text">' + esc(buildEventDisplay(ev)) + suffix;
 
     // Show raw toggle if raw data is non-empty
     if (ev.raw && typeof ev.raw === 'object' && Object.keys(ev.raw).length > 0) {
@@ -1535,21 +1597,32 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 # ---------------------------------------------------------------------------
 
 
-def _strip_raw(obj):
-    """Recursively remove ``raw`` keys from all dicts in a nested structure.
+def _strip_fields(obj, visited=None):
+    """Recursively remove keys from all dicts in a nested structure.
 
-    This dramatically reduces the serialised data volume because each
-    merged event currently carries a copy of its first raw event dict.
-    The ``raw`` field is only used by the frontend for a "show original"
-    toggle, which is a minor debugging feature not worth the memory cost.
+    This dramatically reduces the serialised data volume.
+    We strip:
+    - 'raw': carries a copy of the original event record.
+    - 'display': now generated on-the-fly in the frontend JS.
     """
+    if visited is None:
+        visited = set()
+    
+    obj_id = id(obj)
+    if obj_id in visited:
+        return
+    visited.add(obj_id)
+
     if isinstance(obj, dict):
         obj.pop("raw", None)
+        obj.pop("display", None)
         for v in obj.values():
-            _strip_raw(v)
+            if isinstance(v, (dict, list)):
+                _strip_fields(v, visited)
     elif isinstance(obj, list):
         for v in obj:
-            _strip_raw(v)
+            if isinstance(v, (dict, list)):
+                _strip_fields(v, visited)
 
 
 # ---------------------------------------------------------------------------
@@ -1572,15 +1645,8 @@ def render_report(data: dict, output_path: str) -> str:
     str
         The same *output_path* that was passed in (for convenience in chaining).
     """
-    # Strip raw event copies before serialisation — they are the dominant
-    # contributor to the embedded JSON size (each carries a full raw dict).
-    _strip_raw(data)
-
-    # Compact JSON: no indent.  The output is parsed by JavaScript, not
-    # read by humans, so indentation is pure overhead.
-    json_data = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    # Safeguard: escape any </script> that might appear inside the JSON data
-    json_data = json_data.replace("</script>", "<\\/script>")
+    # Strip fields before serialisation.
+    _strip_fields(data)
 
     scenario = data.get("meta", {}).get("scenario", "SETA 报告")
     scenario_safe = html.escape(str(scenario))
@@ -1602,7 +1668,9 @@ def render_report(data: dict, output_path: str) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(template_head)
-        f.write(json_data)
+        # Use json.dump instead of dumps to stream directly to file,
+        # saving memory for very large reports.
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
         f.write(template_tail)
 
     return output_path

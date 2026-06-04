@@ -54,13 +54,16 @@ def _load_json(path: str) -> Any:
 
 def _load_jsonl(path: str) -> list[dict]:
     """Load a JSON-lines file, returning a list of parsed dicts."""
-    records: list[dict] = []
+    return list(_load_jsonl_iter(path))
+
+
+def _load_jsonl_iter(path: str):
+    """Yield parsed dicts from a JSON-lines file one by one."""
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
-                records.append(json.loads(line))
-    return records
+                yield json.loads(line)
 
 
 # ---------------------------------------------------------------------------
@@ -315,52 +318,52 @@ def _build_merged_event_dict(etype: str, group: list[dict]) -> dict:
     display = _event_display(etype, first, count, t0, tn, interval, qty, total)
 
     # -- Type-specific fields --------------------------------------------------
-    sku = first.get("sku")
-    order_id = first.get("order_id")
-
-    dest = first.get("destination") if etype == "production_output" else None
-    source = first.get("source") if etype == "received" else None
-    inputs = first.get("inputs") if etype == "materials_consumed" else None
-    reason = first.get("reason") if etype == "production_failed" else None
-    required = first.get("required") if etype == "production_failed" else None
-    available = first.get("available") if etype == "production_failed" else None
-    pallets = first.get("pallets") if etype == "capacity_warning" else None
-    max_pallets = first.get("max_pallets") if etype == "capacity_warning" else None
-
-    from_node: str | None = None
-    to_node: str | None = None
-    pallets_count: int | None = None
-    if etype in ("transport_order_added", "transport_started", "transport_completed"):
-        from_node = first.get("from")
-        to_node = first.get("to")
-    if etype == "transport_started":
-        pallets_count = first.get("pallets")
-
-    return {
+    res = {
         "type": etype,
         "time": t0,
-        "end_time": tn if count > 1 else None,
         "count": count,
         "quantity": qty,
         "total": total,
-        "interval": interval,
-        "duration": duration,
         "display": display,
-        "sku": sku,
-        "order_id": order_id,
-        "destination": dest,
-        "source": source,
-        "inputs": inputs,
-        "reason": reason,
-        "required": required,
-        "available": available,
-        "pallets": pallets,
-        "max_pallets": max_pallets,
-        "from_node": from_node,
-        "to_node": to_node,
-        "pallets_count": pallets_count,
-        "raw": first,
     }
+
+    if count > 1:
+        res["end_time"] = tn
+        res["duration"] = duration
+    if interval is not None:
+        res["interval"] = interval
+
+    for k in ("sku", "order_id"):
+        val = first.get(k)
+        if val is not None: res[k] = val
+
+    if etype == "production_output":
+        val = first.get("destination")
+        if val is not None: res["destination"] = val
+    elif etype == "received":
+        val = first.get("source")
+        if val is not None: res["source"] = val
+    elif etype == "materials_consumed":
+        val = first.get("inputs")
+        if val is not None: res["inputs"] = val
+    elif etype == "production_failed":
+        for k in ("reason", "required", "available"):
+            val = first.get(k)
+            if val is not None: res[k] = val
+    elif etype == "capacity_warning":
+        for k in ("pallets", "max_pallets"):
+            val = first.get(k)
+            if val is not None: res[k] = val
+    elif etype in ("transport_order_added", "transport_started", "transport_completed"):
+        for k in ("from", "to"):
+            val = first.get(k)
+            if val is not None: res[f"{k}_node"] = val
+    if etype == "transport_started":
+        val = first.get("pallets")
+        if val is not None: res["pallets_count"] = val
+
+    res["raw"] = first
+    return res
 
 
 def _build_single_event_dict(event: dict) -> dict:
@@ -368,53 +371,48 @@ def _build_single_event_dict(event: dict) -> dict:
     etype = event.get("type", "unknown")
     t = event.get("time", 0.0)
     qty = event.get("quantity", 0)
-    sku = event.get("sku", "")
     display = _event_display(etype, event, 1, t, t, None, qty, qty)
 
-    order_id = event.get("order_id")
-    dest = event.get("destination") if etype == "production_output" else None
-    source = event.get("source") if etype == "received" else None
-    inputs = event.get("inputs") if etype == "materials_consumed" else None
-    reason = event.get("reason") if etype == "production_failed" else None
-    required = event.get("required") if etype == "production_failed" else None
-    available = event.get("available") if etype == "production_failed" else None
-    pallets = event.get("pallets") if etype == "capacity_warning" else None
-    max_pallets = event.get("max_pallets") if etype == "capacity_warning" else None
-
-    from_node: str | None = None
-    to_node: str | None = None
-    pallets_count: int | None = None
-    if etype in ("transport_order_added", "transport_started", "transport_completed"):
-        from_node = event.get("from")
-        to_node = event.get("to")
-    if etype == "transport_started":
-        pallets_count = event.get("pallets")
-
-    return {
+    res = {
         "type": etype,
         "time": t,
-        "end_time": None,
         "count": 1,
         "quantity": qty,
         "total": qty,
-        "interval": None,
-        "duration": None,
         "display": display,
-        "sku": sku,
-        "order_id": order_id,
-        "destination": dest,
-        "source": source,
-        "inputs": inputs,
-        "reason": reason,
-        "required": required,
-        "available": available,
-        "pallets": pallets,
-        "max_pallets": max_pallets,
-        "from_node": from_node,
-        "to_node": to_node,
-        "pallets_count": pallets_count,
-        "raw": event,
     }
+
+    for k in ("sku", "order_id"):
+        val = event.get(k)
+        if val is not None: res[k] = val
+
+    if etype == "production_output":
+        val = event.get("destination")
+        if val is not None: res["destination"] = val
+    elif etype == "received":
+        val = event.get("source")
+        if val is not None: res["source"] = val
+    elif etype == "materials_consumed":
+        val = event.get("inputs")
+        if val is not None: res["inputs"] = val
+    elif etype == "production_failed":
+        for k in ("reason", "required", "available"):
+            val = event.get(k)
+            if val is not None: res[k] = val
+    elif etype == "capacity_warning":
+        for k in ("pallets", "max_pallets"):
+            val = event.get(k)
+            if val is not None: res[k] = val
+    elif etype in ("transport_order_added", "transport_started", "transport_completed"):
+        for k in ("from", "to"):
+            val = event.get(k)
+            if val is not None: res[f"{k}_node"] = val
+    if etype == "transport_started":
+        val = event.get("pallets")
+        if val is not None: res["pallets_count"] = val
+
+    res["raw"] = event
+    return res
 
 
 def _merge_node_events(events: list[dict]) -> list[dict]:
@@ -466,7 +464,7 @@ def _merge_node_events(events: list[dict]) -> list[dict]:
 
 def _compute_storage_chart(
     node_id: str,
-    event_records: list[dict],
+    node_events: list[dict],
     sim_duration: float,
     pallet_size_fn,
 ) -> list[list[float]]:
@@ -474,17 +472,10 @@ def _compute_storage_chart(
 
     Reconstructs pallet level from ``received`` (+pallets) and
     ``debited`` (-pallets) events in chronological order.
-    ``init_state`` records are **not** used because the same data
-    is already present as ``received`` events at t=0.
-
-    A final point at ``sim_duration`` is appended so the step line
-    always extends to the right edge of the chart.
     """
     # Gather inventory-changing events for this node, grouped by time
     changes: dict[float, list[tuple[str, str, int]]] = defaultdict(list)
-    for ev in event_records:
-        if ev.get("node") != node_id:
-            continue
+    for ev in node_events:
         etype = ev.get("type")
         if etype not in ("received", "debited"):
             continue
@@ -508,7 +499,7 @@ def _compute_storage_chart(
             else:
                 sku_qty[sku] -= qty
                 if sku_qty[sku] <= 0:
-                    del sku_qty[sku]
+                    sku_qty.pop(sku, None)
 
         # Compute total pallets across all SKUs after applying all deltas
         pal = 0
@@ -523,12 +514,20 @@ def _compute_storage_chart(
     if result and sim_duration > result[-1][0]:
         result.append([sim_duration, result[-1][1]])
 
+    # Downsample if too many points (e.g. > 1000)
+    if len(result) > 1000:
+        step = len(result) // 1000
+        result = result[::step]
+        # Ensure the last point is always included to keep sim_duration
+        if result[-1][0] < sim_duration:
+            result.append([sim_duration, result[-1][1]])
+
     return result
 
 
 def _compute_rate_chart(
     node_id: str,
-    event_records: list[dict],
+    node_events: list[dict],
     event_type: str,
     sim_duration: float,
 ) -> list[list[float]]:
@@ -537,9 +536,7 @@ def _compute_rate_chart(
     Returns ``[[window_start, total_items], ...]``.
     """
     events: list[tuple[float, int]] = []
-    for ev in event_records:
-        if ev.get("node") != node_id:
-            continue
+    for ev in node_events:
         if ev.get("type") == event_type:
             events.append((ev.get("time", 0.0), ev.get("quantity", 0)))
 
@@ -776,16 +773,15 @@ def process_run(
         If either file is malformed.
     """
     # ==================================================================
-    # 1.  Load raw data
+    # 1.  Load raw data (Iterative)
     # ==================================================================
     meta = _load_json(os.path.join(run_dir, "meta.json"))
-    raw_records = _load_jsonl(os.path.join(run_dir, "sim.jsonl"))
-
+    
     init_state_records: list[dict] = []
     order_records: list[dict] = []
     event_records: list[dict] = []
 
-    for rec in raw_records:
+    for rec in _load_jsonl_iter(os.path.join(run_dir, "sim.jsonl")):
         rec_type = rec.get("_type", "")
         if rec_type == "init_state":
             init_state_records.append(rec)
@@ -816,8 +812,6 @@ def process_run(
     # 3.  Normalise node names & group events by node
     for rec in init_state_records:
         rec["node"] = _norm(rec.get("node", ""))
-    for rec in event_records:
-        rec["node"] = _norm(rec.get("node", ""))
     for rec in order_records:
         if "node_name" in rec:
             rec["node_name"] = _norm(rec.get("node_name", ""))
@@ -825,9 +819,11 @@ def process_run(
             rec["from_node"] = _norm(rec.get("from_node", ""))
         if "to_node" in rec:
             rec["to_node"] = _norm(rec.get("to_node", ""))
+            
     node_events: dict[str, list[dict]] = {}
     for ev in event_records:
-        node_events.setdefault(ev.get("node", ""), []).append(ev)
+        ev["node"] = _norm(ev.get("node", ""))
+        node_events.setdefault(ev["node"], []).append(ev)
 
     for node in node_events:
         node_events[node].sort(key=lambda e: e.get("time", 0.0))
@@ -907,34 +903,41 @@ def process_run(
             raise Exception(f"Failed to import SKU registry from {scenario_name}")
 
     def _get_pallet_size(sku: str) -> int:
-        """Get pallet_size from SKU registry, raises if not found."""
+        """Get pallet_size from SKU registry, fallback to 1 if not found."""
         if sku not in sku_registry:
-            raise ValueError(f"SKU {sku} not found in registry for processor")
-        ps = sku_registry[sku].pallet_size
+            return 1
+        ps = getattr(sku_registry[sku], "pallet_size", 1)
         if ps is None or ps <= 0:
-            raise ValueError(f"SKU {sku} has invalid pallet_size {ps}")
+            return 1
         return ps
 
     sim_duration = meta.get("sim_duration", 0.0)
 
     for nid, ndata in nodes.items():
         ntype = ndata.get("type", "")
+        evs = node_events.get(nid, [])
+        if not evs and not ndata.get("init_inventory"):
+            continue
+
         if ntype == "warehouse":
             chart = _compute_storage_chart(
-                nid, event_records, sim_duration, _get_pallet_size,
+                nid, evs, sim_duration, _get_pallet_size,
             )
             if chart:
                 ndata["chart_storage"] = chart
         elif ntype == "production":
             chart = _compute_rate_chart(
-                nid, event_records, "production_output", sim_duration,
+                nid, evs, "production_output", sim_duration,
             )
             if chart:
                 ndata["chart_production"] = chart
 
     for eid, edata in edges.items():
+        evs = node_events.get(eid, [])
+        if not evs:
+            continue
         chart = _compute_rate_chart(
-            eid, event_records, "transport_started", sim_duration,
+            eid, evs, "transport_started", sim_duration,
         )
         if chart:
             edata["chart_traffic"] = chart
