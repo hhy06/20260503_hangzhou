@@ -182,8 +182,8 @@ EDGES.append({
     "from_node": "source",
     "to_node": "raw_material_storage",
     "transfer_mode": TransferMode.BATCH,
-    "batch_transport_time": 1.0,
-    "batch_pallets": 999,
+    "batch_transport_time": 5.0,
+    "batch_pallets": 24,
 })
 
 # Source -> main_storage_1 (veg ingredients + packaging)
@@ -191,8 +191,8 @@ EDGES.append({
     "from_node": "source",
     "to_node": "main_storage_1",
     "transfer_mode": TransferMode.BATCH,
-    "batch_transport_time": 1.0,
-    "batch_pallets": 999,
+    "batch_transport_time": 5.0,
+    "batch_pallets": 24,
 })
 
 # Source -> main_storage_2 (packaging)
@@ -200,8 +200,8 @@ EDGES.append({
     "from_node": "source",
     "to_node": "main_storage_2",
     "transfer_mode": TransferMode.BATCH,
-    "batch_transport_time": 1.0,
-    "batch_pallets": 999,
+    "batch_transport_time": 5.0,
+    "batch_pallets": 24,
 })
 
 # raw_material_storage -> lineside_sauce_i
@@ -299,6 +299,6 @@ EDGES.append({
     "from_node": "fg_storage",
     "to_node": "sink",
     "transfer_mode": TransferMode.BATCH,
-    "batch_transport_time": 1.0,
-    "batch_pallets": 999,
+    "batch_transport_time": 5.0,
+    "batch_pallets": 24,
 })

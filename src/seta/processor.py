@@ -898,8 +898,13 @@ def process_run(
     # 5.  Compute chart data (storage, traffic, production)
     # ==================================================================
     sku_registry: dict = {}
-    if scenario_mod is not None and hasattr(scenario_mod, "config"):
-        sku_registry = getattr(scenario_mod.config, "SKUS", {})
+    scenario_name: str = meta.get("scenario", "")
+    if scenario_name:
+        try:
+            config_mod = importlib.import_module(f"{scenario_name}.config")
+            sku_registry = getattr(config_mod, "SKUS", {})
+        except (ImportError, AttributeError):
+            raise Exception(f"Failed to import SKU registry from {scenario_name}")
 
     def _get_pallet_size(sku: str) -> int:
         """Get pallet_size from SKU registry, raises if not found."""
