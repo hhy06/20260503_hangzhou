@@ -109,8 +109,8 @@ class WarehouseNode(sim.Component):
             raise ValueError(f"SKU {sku} not found in registry")
         return self.sku_registry[sku].pallet_size
 
-    def pallets_for_quantity(self, sku: str, quantity: int) -> int:
-        """Return pallet-rounded item quantity for the given quantity."""
+    def rounded_up_full_pallets_qty(self, sku: str, quantity: int) -> int:
+        """Return item quantity rounded up to the next full pallet."""
         if quantity <= 0:
             return 0
         if self.sku_registry is None or sku not in self.sku_registry:
@@ -118,8 +118,8 @@ class WarehouseNode(sim.Component):
         pallet_count = self.sku_registry[sku].calculate_pallet_num(quantity)
         return pallet_count * self.sku_registry[sku].pallet_size
 
-    def quantity_for_pallets(self, sku: str, pallets: int) -> int:
-        """Convert pallets back to quantity. Raises if pallet_size not set."""
+    def quantity_of_full_pallets(self, sku: str, pallets: int) -> int:
+        """Return total item quantity for *pallets* full pallets."""
         if self.sku_registry is None or sku not in self.sku_registry:
             raise ValueError(f"SKU {sku} not found in registry")
         return pallets * self.sku_registry[sku].pallet_size
@@ -193,7 +193,7 @@ class WarehouseNode(sim.Component):
         self.inventory[sku] = current - quantity
         if self.inventory[sku] <= 0:
             del self.inventory[sku]
-        pallets = self.pallets_for_quantity(sku, quantity)
+        pallets = self.calculate_pallet_count(sku, quantity)
         self.log.append({
             "time": self.env.now(),
             "type": "debited",
@@ -225,7 +225,7 @@ class WarehouseNode(sim.Component):
         if self.role == NodeRole.SOURCE:
             return
 
-        pallets = self.pallets_for_quantity(sku, quantity) if self.sku_registry else 0
+        pallets = self.calculate_pallet_count(sku, quantity) if self.sku_registry else 0
 
         if self.role == NodeRole.SINK:
             self.received[sku] = self.received.get(sku, 0) + quantity

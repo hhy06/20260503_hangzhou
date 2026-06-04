@@ -120,7 +120,7 @@ class ProductionNode(sim.Component):
     # pallet helpers
     # ------------------------------------------------------------------
 
-    def pallets_for_quantity(self, sku: str, quantity: int) -> int:
+    def rounded_up_full_pallets_qty(self, sku: str, quantity: int) -> int:
         """Return pallet-rounded item quantity for the given quantity."""
         if self.sku_registry is None or sku not in self.sku_registry:
             raise ValueError(f"SKU {sku} not found in registry")

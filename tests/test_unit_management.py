@@ -851,12 +851,12 @@ class TestTraceManagement:
 
     def test_pallet_qty_uses_pallet_size(self, env):
         mgmt, _, _ = _make_trace_env(env)
-        assert mgmt._pallet_qty("main_storage_1", "sauce_1", 150) == 200
+        assert mgmt._rounded_up_full_pallets_qty("main_storage_1", "sauce_1", 150) == 200
 
     def test_pallet_qty_missing_sku_raises(self, env):
         mgmt, _, _ = _make_trace_env(env)
         with pytest.raises(ValueError, match="not found"):
-            mgmt._pallet_qty("main_storage_1", "unknown", 50)
+            mgmt._rounded_up_full_pallets_qty("main_storage_1", "unknown", 50)
 
     def test_rounded_qty(self, env):
         mgmt, _, _ = _make_trace_env(env)

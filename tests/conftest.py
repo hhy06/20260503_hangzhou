@@ -46,7 +46,7 @@ def compute_warehouse_trajectory(
             qty: int = entry["quantity"]
             inventory[sku] = inventory.get(sku, 0) + qty
             total_pallets = sum(
-                node.pallets_for_quantity(s, q) for s, q in inventory.items()
+                node.rounded_up_full_pallets_qty(s, q) for s, q in inventory.items()
             )
             trajectory.append({
                 "time": entry["time"],

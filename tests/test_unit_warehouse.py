@@ -61,54 +61,54 @@ def _make_sink(sku_registry=None, **overrides) -> WarehouseNode:
 # Pallet math
 # ---------------------------------------------------------------------------
 
-class TestPalletsForQuantity:
+class TestRoundedUpFullPalletsQty:
     def test_zero_quantity(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 0) == 0
+        assert wh.rounded_up_full_pallets_qty("SKU_A", 0) == 0
 
     def test_less_than_one_pallet(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 1) == 10  # ceil(1/10)*10 = 10
+        assert wh.rounded_up_full_pallets_qty("SKU_A", 1) == 10  # ceil(1/10)*10 = 10
 
     def test_exactly_one_pallet(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 10) == 10
+        assert wh.rounded_up_full_pallets_qty("SKU_A", 10) == 10
 
     def test_just_over_one_pallet(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 11) == 20
+        assert wh.rounded_up_full_pallets_qty("SKU_A", 11) == 20
 
     def test_exact_multiple(self):
         wh = _make_wh()
-        assert wh.pallets_for_quantity("SKU_A", 50) == 50
+        assert wh.rounded_up_full_pallets_qty("SKU_A", 50) == 50
 
     def test_missing_sku_raises(self):
         wh = _make_wh()
         with pytest.raises(ValueError, match="not found in registry"):
-            wh.pallets_for_quantity("UNKNOWN_SKU", 10)
+            wh.rounded_up_full_pallets_qty("UNKNOWN_SKU", 10)
 
 
-class TestQuantityForPallets:
+class TestQuantityOfFullPallets:
     def test_zero_pallets(self):
         wh = _make_wh()
-        assert wh.quantity_for_pallets("SKU_A", 0) == 0
+        assert wh.quantity_of_full_pallets("SKU_A", 0) == 0
 
     def test_one_pallet(self):
         wh = _make_wh()
-        assert wh.quantity_for_pallets("SKU_A", 1) == 10
+        assert wh.quantity_of_full_pallets("SKU_A", 1) == 10
 
     def test_multiple_pallets(self):
         wh = _make_wh()
-        assert wh.quantity_for_pallets("SKU_A", 5) == 50
+        assert wh.quantity_of_full_pallets("SKU_A", 5) == 50
 
     def test_different_sku_factor(self):
         wh = _make_wh()
-        assert wh.quantity_for_pallets("SKU_B", 3) == 75
+        assert wh.quantity_of_full_pallets("SKU_B", 3) == 75
 
     def test_missing_sku_raises(self):
         wh = _make_wh()
         with pytest.raises(ValueError, match="not found in registry"):
-            wh.quantity_for_pallets("UNKNOWN_SKU", 1)
+            wh.quantity_of_full_pallets("UNKNOWN_SKU", 1)
 
 
 # ---------------------------------------------------------------------------

@@ -114,12 +114,12 @@ class TraceManagement(Management):
                 f"No edge from '{from_node}' to '{to_node}' for SKU {sku} "
                 f"(qty {quantity}) — this is a topology/routing configuration bug."
             )
-        pallet_qty = self.nodes[from_node].pallets_for_quantity(sku, quantity)
+        pallet_rounded_qty = self.nodes[from_node].rounded_up_full_pallets_qty(sku, quantity)
         oid = self._next_order_id
         self._next_order_id += 1
         decision.transport_orders.append(TransportOrder(
             order_id=oid,
-            sku=sku, quantity=pallet_qty,
+            sku=sku, quantity=pallet_rounded_qty,
             from_node=from_node, to_node=to_node,
             start_time=now, expect_time=now,
         ))
@@ -134,12 +134,12 @@ class TraceManagement(Management):
         ``_add_transport`` ordering from the output buffer and the
         actual production output stay in sync.
         """
-        pallet_qty = self.nodes[node_name].pallets_for_quantity(sku, quantity)
+        pallet_rounded_qty = self.nodes[node_name].rounded_up_full_pallets_qty(sku, quantity)
         oid = self._next_order_id
         self._next_order_id += 1
         decision.production_orders.append(ProductionOrder(
             order_id=oid,
-            sku=sku, quantity=pallet_qty,
+            sku=sku, quantity=pallet_rounded_qty,
             activate_time=now, expect_time=now,
             node_name=node_name,
         ))
@@ -246,7 +246,7 @@ class TraceManagement(Management):
                 f"No edge from '{from_node}' to '{to_node}' for SKU {sku} "
                 f"(qty {qty}) — this is a topology/routing configuration bug."
             )
-        return self.nodes[from_node].pallets_for_quantity(sku, qty)
+        return self.nodes[from_node].rounded_up_full_pallets_qty(sku, qty)
 
     # ------------------------------------------------------------------
     # accumulators (per-decision-cycle batching)
@@ -316,9 +316,9 @@ class TraceManagement(Management):
                 # Raw material / packaging
                 self._accum_tx(tx_acc, "source", ms, input_sku, need)
 
-    def _pallet_qty(self, node_name: str, sku: str, quantity: int) -> int:
+    def _rounded_up_full_pallets_qty(self, node_name: str, sku: str, quantity: int) -> int:
         """Round *quantity* up to the next full pallet for *sku* at *node*."""
-        return self.pallet_qty(node_name, sku, quantity)
+        return self.rounded_up_full_pallets_qty(node_name, sku, quantity)
 
     def _accum_wip_tree(
         self,
@@ -341,17 +341,17 @@ class TraceManagement(Management):
 
         # Round the WIP qty to full pallets so production, transport
         # and raw-material computations use the same baseline.
-        pallet_q = self._pallet_qty(producer, wip_sku, qty)
+        pallet_rounded_q = self._rounded_up_full_pallets_qty(producer, wip_sku, qty)
 
         # Production
-        self._accum_prod(prod_acc, producer, wip_sku, pallet_q)
+        self._accum_prod(prod_acc, producer, wip_sku, pallet_rounded_q)
 
         # Route WIP from output buffer to target main storage
         if wip_sku.startswith("veg_"):
-            self._accum_tx(tx_acc, out_node, target_ms, wip_sku, pallet_q)
+            self._accum_tx(tx_acc, out_node, target_ms, wip_sku, pallet_rounded_q)
         else:
-            self._accum_tx(tx_acc, out_node, "WIP_storage", wip_sku, pallet_q)
-            self._accum_tx(tx_acc, "WIP_storage", target_ms, wip_sku, pallet_q)
+            self._accum_tx(tx_acc, out_node, "WIP_storage", wip_sku, pallet_rounded_q)
+            self._accum_tx(tx_acc, "WIP_storage", target_ms, wip_sku, pallet_rounded_q)
 
         # Raw materials — compute need from the pallet-rounded WIP qty
         if supplier is None:
@@ -360,7 +360,7 @@ class TraceManagement(Management):
         if bom_entry is None:
             return
         for raw_sku, raw_qty_per in bom_entry["inputs"].items():
-            raw_need = pallet_q * raw_qty_per
+            raw_need = pallet_rounded_q * raw_qty_per
             self._accum_tx(tx_acc, supplier, lineside, raw_sku, raw_need)
             self._accum_tx(tx_acc, "source", supplier, raw_sku, raw_need)
 

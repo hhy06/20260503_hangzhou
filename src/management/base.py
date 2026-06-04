@@ -111,12 +111,12 @@ class Management(sim.Component):
     def find_edge(self, from_node_name: str, to_node_name: str) -> Any | None:
         return self._edge_map.get(f"{from_node_name}->{to_node_name}")
 
-    def pallet_qty(self, node_name: str, sku: str, qty: int) -> int:
-        """Get pallet-rounded quantity using node's sku_registry."""
+    def rounded_up_full_pallets_qty(self, node_name: str, sku: str, qty: int) -> int:
+        """Get item quantity rounded up to next full pallet via node's sku_registry."""
         node = self.nodes.get(node_name)
         if node is None:
             raise ValueError(f"Node {node_name} not found")
-        return node.pallets_for_quantity(sku, qty)
+        return node.rounded_up_full_pallets_qty(sku, qty)
 
     # ------------------------------------------------------------------
     # gather_info — snapshot current simulation state

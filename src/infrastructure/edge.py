@@ -248,7 +248,7 @@ class Edge(sim.Component):
                 executed = False
                 for i in range(len(self.activated_queue)):
                     candidate = self.activated_queue[i]
-                    desired_items = self.from_node.pallets_for_quantity(candidate.sku, candidate.quantity)
+                    desired_items = self.from_node.rounded_up_full_pallets_qty(candidate.sku, candidate.quantity)
                     if self.from_node.available_qty(candidate.sku) >= desired_items:
                         self.activated_queue.pop(i)
                         yield from self._execute_order(candidate)
