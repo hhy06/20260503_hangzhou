@@ -473,42 +473,39 @@ def _compute_storage_chart(
     Reconstructs pallet level from ``received`` (+pallets) and
     ``debited`` (-pallets) events in chronological order.
     """
-    # Gather inventory-changing events for this node, grouped by time
-    changes: dict[float, list[tuple[str, str, int]]] = defaultdict(list)
+    # Gather pallet changes for this node, grouped by time
+    changes: dict[float, float] = defaultdict(float)
     for ev in node_events:
         etype = ev.get("type")
         if etype not in ("received", "debited"):
             continue
-        changes[ev.get("time", 0.0)].append((
-            etype,
-            ev.get("sku", ""),
-            ev.get("quantity", 0),
-        ))
+
+        # Prefer the 'pallets' field directly from the event record
+        p = ev.get("pallets")
+        if p is None:
+            # Fallback to quantity-based calculation if field is missing
+            qty = ev.get("quantity", 0)
+            sku = ev.get("sku", "")
+            ipp = pallet_size_fn(sku)
+            p = qty / ipp
+
+        t = ev.get("time", 0.0)
+        if etype == "received":
+            changes[t] += float(p)
+        else:
+            changes[t] -= float(p)
 
     if not changes:
         return []
 
     result: list[list[float]] = []
-    sku_qty: dict[str, int] = defaultdict(int)
-
+    curr = 0.0
     for t in sorted(changes):
-        # Apply all deltas at this timestamp
-        for etype, sku, qty in changes[t]:
-            if etype == "received":
-                sku_qty[sku] += qty
-            else:
-                sku_qty[sku] -= qty
-                if sku_qty[sku] <= 0:
-                    sku_qty.pop(sku, None)
-
-        # Compute total pallets across all SKUs after applying all deltas
-        pal = 0
-        for s, q in sku_qty.items():
-            ipp = pallet_size_fn(s)
-            pal += int(math.ceil(q / ipp))
-
-        if not result or result[-1][1] != pal:
-            result.append([t, float(pal)])
+        curr += changes[t]
+        # Use round to handle potential float inaccuracy, though pallets are often ints
+        val = round(curr, 2)
+        if not result or result[-1][1] != val:
+            result.append([t, val])
 
     # Extend the line to the right edge of the chart
     if result and sim_duration > result[-1][0]:
