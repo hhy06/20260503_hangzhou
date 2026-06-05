@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import json
+import sys
 from collections import Counter
+from pathlib import Path
 import pandas as pd
 
-jsonl_file = "sim.jsonl"
+jsonl_file = sys.argv[1] if len(sys.argv) > 1 else "sim.jsonl"
 
 # Count occurrences of (node, type)
 counts = Counter()
@@ -60,5 +62,5 @@ table.loc["TOTAL"] = total_row
 print(table)
 
 
-# Optional export
-table.to_csv("node_type_counts.csv")
+out_csv = Path(jsonl_file).parent / "node_type_counts.csv"
+table.to_csv(out_csv)
