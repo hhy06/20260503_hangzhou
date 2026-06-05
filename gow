@@ -6,5 +6,6 @@ run_dir=$(grep 'Unified output written to:' /tmp/.run_output.txt | sed 's/^.*: /
 if [ -n "$run_dir" ]; then
   python3 -m src.seta "$run_dir"
   python3 -m src.report "$run_dir"
+  python3 -m src.sseta "$run_dir"
 fi
 rm -f /tmp/.run_output.txt

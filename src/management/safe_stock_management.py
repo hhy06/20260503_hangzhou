@@ -177,6 +177,7 @@ class SafeStockManagement(Management):
                     "order_id": order.order_id,
                     "sku": order.sku,
                     "quantity": order.quantity,
+                    "node": order.node_name,
                     "node_name": order.node_name,
                     "activate_time": order.activate_time,
                     "expect_time": order.expect_time,
@@ -200,6 +201,7 @@ class SafeStockManagement(Management):
                     "quantity": order.quantity,
                     "from_node": order.from_node,
                     "to_node": order.to_node,
+                    "edge": edge.edge_name,
                     "start_time": order.start_time,
                     "expect_time": order.expect_time,
                 })
