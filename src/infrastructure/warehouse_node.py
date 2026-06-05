@@ -158,7 +158,8 @@ class WarehouseNode(sim.Component):
                     self.log.append({
                         "time": self.env.now(),
                         "type": "capacity_warning",
-                        "node": self.display_name,
+                        "node": self.node_name,
+                        "subject": self.node_name,
                         "pallets": pal,
                         "max_pallets": self.node_max_pallets,
                     })
@@ -198,6 +199,7 @@ class WarehouseNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "debited",
+            "subject": self.node_name,
             "sku": sku,
             "quantity": quantity,
             "pallets": pallets,
@@ -234,6 +236,7 @@ class WarehouseNode(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "received",
+                "subject": self.node_name,
                 "sku": sku,
                 "quantity": quantity,
                 "pallets": pallets,
@@ -247,6 +250,7 @@ class WarehouseNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "received",
+            "subject": self.node_name,
             "sku": sku,
             "quantity": quantity,
             "pallets": pallets,

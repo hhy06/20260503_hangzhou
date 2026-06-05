@@ -125,6 +125,7 @@ class Edge(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "transport_order_added",
+            "subject": self.edge_name,
             "order_id": order.order_id,
             "sku": order.sku,
             "quantity": order.quantity,
@@ -161,6 +162,7 @@ class Edge(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "transport_order_skipped",
+                "subject": self.edge_name,
                 "order_id": order.order_id,
                 "sku": sku,
                 "quantity": desired_items,
@@ -180,6 +182,7 @@ class Edge(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "transport_started",
+            "subject": self.edge_name,
             "order_id": order.order_id,
             "sku": sku,
             "quantity": actual_items,
@@ -217,6 +220,7 @@ class Edge(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "transport_completed",
+            "subject": self.edge_name,
             "order_id": order.order_id,
             "sku": sku,
             "quantity": actual_items,

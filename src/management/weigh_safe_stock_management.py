@@ -80,7 +80,6 @@ class WeighSafeStockManagement(Management):
             production_start_times or [480, 1200]
         )
 
-        self.log: list[dict] = []
         self._next_oid_counter: int = 1
 
         super().__init__(
@@ -482,22 +481,9 @@ class WeighSafeStockManagement(Management):
     # ------------------------------------------------------------------
 
     def _execute_decision(self, decision: Decision) -> None:
-        now = self.env.now()
         for order in decision.production_orders:
             node = self._production_nodes.get(order.node_name)
             if node is not None:
-                self.log.append({
-                    "time": now,
-                    "type": "order_issued",
-                    "order_type": "production",
-                    "order_id": order.order_id,
-                    "sku": order.sku,
-                    "quantity": order.quantity,
-                    "node": order.node_name,
-                    "node_name": order.node_name,
-                    "activate_time": order.activate_time,
-                    "expect_time": order.expect_time,
-                })
                 node.add_production_order(order)
             else:
                 raise RuntimeError(
@@ -508,19 +494,6 @@ class WeighSafeStockManagement(Management):
         for order in decision.transport_orders:
             edge = self.find_edge(order.from_node, order.to_node)
             if edge is not None:
-                self.log.append({
-                    "time": now,
-                    "type": "order_issued",
-                    "order_type": "transport",
-                    "order_id": order.order_id,
-                    "sku": order.sku,
-                    "quantity": order.quantity,
-                    "from_node": order.from_node,
-                    "to_node": order.to_node,
-                    "edge": edge.edge_name,
-                    "start_time": order.start_time,
-                    "expect_time": order.expect_time,
-                })
                 edge.add_transport_order(order)
             else:
                 raise RuntimeError(

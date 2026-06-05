@@ -109,6 +109,16 @@ class ProductionNode(sim.Component):
         """Queue a production order (sorted by activate_time, then order_id)."""
         self.production_queue.append(order)
         self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
+        self.log.append({
+            "time": self.env.now(),
+            "type": "production_job_added",
+            "subject": self.node_name,
+            "order_id": order.order_id,
+            "sku": order.sku,
+            "quantity": order.quantity,
+            "activate_time": order.activate_time,
+            "expect_time": order.expect_time,
+        })
 
     def add_edge_out(self, edge) -> None:
         self.edges_out.append(edge)
@@ -155,6 +165,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "production_output",
+            "subject": self.node_name,
             "order_id": job.order_id,
             "sku": sku,
             "quantity": quantity,
@@ -199,6 +210,7 @@ class ProductionNode(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "production_failed",
+                "subject": self.node_name,
                 "order_id": job.order_id,
                 "sku": job.sku,
                 "reason": "insufficient_material",
@@ -219,6 +231,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "materials_consumed",
+            "subject": self.node_name,
             "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
@@ -231,6 +244,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "production_started",
+            "subject": self.node_name,
             "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
@@ -248,6 +262,7 @@ class ProductionNode(sim.Component):
             self.log.append({
                 "time": self.env.now(),
                 "type": "production_failed",
+                "subject": self.node_name,
                 "order_id": job.order_id,
                 "sku": job.sku,
                 "reason": "speed_zero",
@@ -271,6 +286,7 @@ class ProductionNode(sim.Component):
         self.log.append({
             "time": self.env.now(),
             "type": "production_completed",
+            "subject": self.node_name,
             "order_id": job.order_id,
             "sku": job.sku,
             "quantity": job.quantity,
