@@ -51,10 +51,8 @@ MANAGEMENT = {
     # Alternative: trace_mode="split" traces FG→WIP via FG demand, and WIP→raw via WIP demand
     "transport_mode": "full_tree",
     # Alternative: transport_mode="separate" lets transports be handled independently
-    "production_start_times": [480, 1200],  # 08:00, 20:00 in minutes
-    "decision_offset": 240,  # 4 hours before production start
-    "shift_duration": 675,   # 11.25 hours per shift
-    "day_start": 0,
+    # Shift parameters (production_start_times, decision_offset, shift_duration)
+    # are now defined per production node in plant_topology.py.
 }
 
 # ---------------------------------------------------------------------------

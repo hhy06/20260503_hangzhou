@@ -57,6 +57,9 @@ for i in range(1, N + 1):
                 "lead_time": 0,
             },
         },
+        "shift_duration": 690,
+        "decision_offset": 360,
+        "production_start_times": [480, 1200],
     }
     NODES[f"output_sauce_{i}"] = {
         "type": "warehouse",
@@ -84,6 +87,9 @@ for i in range(1, NUM_POWDER_LINES + 1):
         "global_time_step": 5.0,
         "display_name": f"粉包车间{i}",
         "bom": bom,
+        "shift_duration": 60,
+        "decision_offset": 5,
+        "production_start_times": list(range(0, 1440, 60)),
     }
     NODES[f"output_powder_{i}"] = {
         "type": "warehouse",
@@ -127,6 +133,9 @@ for i in range(1, NUM_NOODLE_LINES + 1):
         "global_time_step": 5.0,
         "display_name": f"面线车间{i}",
         "bom": bom,
+        "shift_duration": 690,
+        "decision_offset": 360,
+        "production_start_times": [480, 1200],
     }
     NODES[f"output_noodle_{i}"] = {
         "type": "warehouse",
@@ -153,6 +162,9 @@ NODES["workstation_veg"] = {
     "global_time_step": 5.0,
     "display_name": "菜包车间",
     "bom": _veg_bom,
+    "shift_duration": 60,
+    "decision_offset": 5,
+    "production_start_times": list(range(0, 1440, 60)),
 }
 NODES["output_veg"] = {
     "type": "warehouse",

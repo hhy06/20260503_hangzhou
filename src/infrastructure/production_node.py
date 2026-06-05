@@ -72,6 +72,9 @@ class ProductionNode(sim.Component):
         retry_delay: float = 10.0,
         display_name: str | None = None,
         sku_registry: dict | None = None,
+        shift_duration: float | None = None,
+        decision_offset: float | None = None,
+        production_start_times: list[float] | None = None,
         **kwargs,
     ):
         self._node_name = name
@@ -84,6 +87,10 @@ class ProductionNode(sim.Component):
         self.global_time_step: float = global_time_step
         self.retry_delay: float = retry_delay
         self.sku_registry: dict | None = sku_registry
+
+        self.shift_duration: float | None = shift_duration
+        self.decision_offset: float | None = decision_offset
+        self.production_start_times: list[float] | None = production_start_times
 
         self.production_queue: list[ProductionOrder] = []
         self.edges_out: list = []
