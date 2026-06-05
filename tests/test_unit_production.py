@@ -1,8 +1,5 @@
 """Unit tests for ProductionNode — material consumption, timing, queue order."""
 
-import math
-
-import pytest
 import salabim as sim
 
 from src.infrastructure.warehouse_node import WarehouseNode, NodeRole

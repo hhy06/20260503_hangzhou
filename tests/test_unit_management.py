@@ -5,7 +5,6 @@ The old ``JobManager`` has been removed; transport orders are managed by
 onto the correct edge at the right time.
 """
 
-import math
 import pytest
 import salabim as sim
 
@@ -21,15 +20,6 @@ from src.model.sku import SKU
 
 
 SKU_REGISTRY_X = {"SKU_X": SKU(id="SKU_X", pallet_size=10)}
-SKU_REGISTRY_RAW = {"raw": SKU(id="raw", pallet_size=100)}
-SKU_REGISTRY_WORK = {
-    "raw": SKU(id="raw", pallet_size=100),
-    "sauce_1": SKU(id="sauce_1", pallet_size=100),
-    "SKU_A": SKU(id="SKU_A", pallet_size=50),
-    "SKU_X": SKU(id="SKU_X", pallet_size=50),
-    "WIP_A": SKU(id="WIP_A", pallet_size=100),
-    "X": SKU(id="X", pallet_size=10),
-}
 
 
 @pytest.fixture
@@ -240,7 +230,7 @@ class TestManagement:
             from_node="source", to_node="wh",
             start_time=0, expect_time=10,
         )
-        mgmt = StaticOrderManagement(
+        _mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
             production_orders=[], nodes={},
             decision_interval=10.0, env=env,
@@ -261,7 +251,7 @@ class TestManagement:
             from_node="source", to_node="wh",
             start_time=50, expect_time=60,
         )
-        mgmt = StaticOrderManagement(
+        _mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
             production_orders=[], nodes={},
             decision_interval=10.0, env=env,
@@ -283,7 +273,7 @@ class TestManagement:
             from_node="source", to_node="wh",
             start_time=15, expect_time=30,
         )
-        mgmt = StaticOrderManagement(
+        _mgmt = StaticOrderManagement(
             transport_orders=[order], edges=[e],
             production_orders=[], nodes={},
             decision_interval=10.0, env=env,
