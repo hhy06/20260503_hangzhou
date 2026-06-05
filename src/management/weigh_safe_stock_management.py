@@ -448,8 +448,9 @@ class WeighSafeStockManagement(Management):
             if sku.startswith("SKU_"):
                 self._add_transport(decision, out_node, "fg_storage", sku, qty, prod_end)
             elif sku.startswith("veg_"):
-                self._add_transport(decision, out_node, "main_storage_1", sku, qty, prod_end)
-                self._add_transport(decision, out_node, "main_storage_2", sku, qty, prod_end)
+                half = qty // 2
+                self._add_transport(decision, out_node, "main_storage_1", sku, half, prod_end)
+                self._add_transport(decision, out_node, "main_storage_2", sku, qty - half, prod_end)
             else:
                 self._add_transport(decision, out_node, "WIP_storage", sku, qty, prod_end)
 
