@@ -352,6 +352,9 @@ def prod_node(prod_env, ms, lineside):
         upstream_node=lineside, downstream_node=out,
         env=prod_env, global_time_step=5.0,
         sku_registry={"SKU_X": SKU(id="SKU_X", pallet_size=50), "WIP_A": SKU(id="WIP_A", pallet_size=100)},
+        shift_duration=675.0,
+        decision_offset=240.0,
+        production_start_times=[480.0, 1200.0],
     )
     return node
 
@@ -698,8 +701,8 @@ class TestSafeStockManagement:
         mgmt._execute_decision(decision)
         assert len(e.activated_queue) >= 1 or len(e.pending_queue) >= 0
         assert any(
-            entry["type"] == "order_issued" and entry["order_type"] == "transport"
-            for entry in mgmt.log
+            entry["type"] == "transport_order_added"
+            for entry in e.log
         )
 
     def test_execute_decision_raises_on_missing_edge(self, env):
@@ -929,12 +932,57 @@ class TestWeighSafeStockManagement:
             nodes = {}
         if edges is None:
             edges = []
+        # 如果没有传入生产节点，创建一个默认的用于测试决策时间逻辑
+        has_prod_node = any(isinstance(node, ProductionNode) for node in nodes.values())
+        if not has_prod_node:
+            # 创建一个最小的生产节点来支持决策时间测试
+            ms = WarehouseNode(
+                name="test_ms", role=NodeRole.WAREHOUSE,
+                sku_registry={"SKU_TEST": SKU(id="SKU_TEST", pallet_size=100)},
+                env=env,
+            )
+            lineside = WarehouseNode(
+                name="test_lineside", role=NodeRole.WAREHOUSE,
+                sku_registry={"SKU_TEST": SKU(id="SKU_TEST", pallet_size=100)},
+                env=env,
+            )
+            out = WarehouseNode(
+                name="test_out", role=NodeRole.WAREHOUSE,
+                sku_registry={"SKU_TEST": SKU(id="SKU_TEST", pallet_size=100)},
+                env=env,
+            )
+            prod_node = ProductionNode(
+                name="test_prod",
+                bom={"SKU_TEST": {"inputs": {}, "speed": 1.0, "lead_time": 0}},
+                upstream_node=lineside,
+                downstream_node=out,
+                env=env,
+                global_time_step=5.0,
+                sku_registry={"SKU_TEST": SKU(id="SKU_TEST", pallet_size=100)},
+                shift_duration=675.0,
+                decision_offset=240.0,
+                production_start_times=[480.0, 1200.0],
+            )
+            nodes.update({
+                ms.node_name: ms,
+                lineside.node_name: lineside,
+                out.node_name: out,
+                prod_node.node_name: prod_node,
+            })
+        else:
+            # 设置默认的 shift 参数到所有 ProductionNode
+            for node in nodes.values():
+                if isinstance(node, ProductionNode):
+                    if node.shift_duration is None:
+                        node.shift_duration = 675.0
+                    if node.decision_offset is None:
+                        node.decision_offset = 240.0
+                    if node.production_start_times is None:
+                        node.production_start_times = [480.0, 1200.0]
         params = dict(
             safe_stock_config=safe_stock_config or [],
             nodes=nodes, edges=edges,
             demand_orders=demand_orders or [],
-            production_start_times=[480, 1200],
-            decision_offset=240, shift_duration=675,
             decision_interval=10.0, env=env,
         )
         params.update(kwargs)
@@ -957,7 +1005,9 @@ class TestWeighSafeStockManagement:
 
     def test_next_production_start(self, env):
         mgmt = self._make_mgmt(env)
-        assert mgmt._next_production_start(240) == 480
+        # 获取创建的生产节点名称
+        line_name = next(iter(mgmt._production_nodes.keys()))
+        assert mgmt._line_production_start(line_name, 240) == 480
 
     def test_pick_line_round_robin_sorted(self, env):
         mgmt = self._make_mgmt(env)
@@ -1037,12 +1087,18 @@ class TestWeighSafeStockManagement:
             upstream_node=ls, downstream_node=wip_out,
             env=env, global_time_step=5.0,
             sku_registry={"wip": SKU(id="wip", pallet_size=10), "raw": SKU(id="raw", pallet_size=10)},
+            shift_duration=675.0,
+            decision_offset=240.0,
+            production_start_times=[480.0, 1200.0],
         )
         fg_prod = ProductionNode(
             name="fg_line", bom={"FG": {"inputs": {"wip": 3}, "speed": 10, "lead_time": 0}},
             upstream_node=ls, downstream_node=fg_out,
             env=env, global_time_step=5.0,
             sku_registry={"FG": SKU(id="FG", pallet_size=50), "wip": SKU(id="wip", pallet_size=10)},
+            shift_duration=675.0,
+            decision_offset=240.0,
+            production_start_times=[480.0, 1200.0],
         )
 
         edges = [
@@ -1070,8 +1126,8 @@ class TestWeighSafeStockManagement:
         ))
         mgmt._execute_decision(decision)
         assert any(
-            entry["type"] == "order_issued" and entry["order_type"] == "production"
-            for entry in mgmt.log
+            entry["type"] == "production_job_added"
+            for entry in prod_node.log
         )
 
     def test_execute_decision_transport_logs_and_dispatches(self, env):
@@ -1090,8 +1146,8 @@ class TestWeighSafeStockManagement:
         ))
         mgmt._execute_decision(decision)
         assert any(
-            entry["type"] == "order_issued" and entry["order_type"] == "transport"
-            for entry in mgmt.log
+            entry["type"] == "transport_order_added"
+            for entry in e.log
         )
 
     def test_execute_decision_raises_on_missing_edge(self, env):
