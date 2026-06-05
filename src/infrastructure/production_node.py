@@ -151,6 +151,7 @@ class ProductionNode(sim.Component):
     def _output_to_downstream(self, sku: str, quantity: int, job: ProductionOrder) -> None:
         """Push finished goods to downstream warehouse (always accepted)."""
         self.downstream_node.receive(sku, quantity, source=self)
+        stock_after = self.downstream_node.available_qty(sku)
         self.log.append({
             "time": self.env.now(),
             "type": "production_output",
@@ -158,6 +159,7 @@ class ProductionNode(sim.Component):
             "sku": sku,
             "quantity": quantity,
             "destination": self.downstream_node.display_name,
+            "stock_after": stock_after,
         })
 
     # ------------------------------------------------------------------
@@ -221,6 +223,10 @@ class ProductionNode(sim.Component):
             "sku": job.sku,
             "quantity": job.quantity,
             "inputs": dict(required),
+            "upstream_stock_after": {
+                sku: self.upstream_node.available_qty(sku)
+                for sku in required
+            },
         })
         self.log.append({
             "time": self.env.now(),

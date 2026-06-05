@@ -186,6 +186,7 @@ class Edge(sim.Component):
             "from": order.from_node,
             "to": order.to_node,
             "pallets": actual_pallets,
+            "edge_stock_after": self.edge_stock.get(sku, 0),
         })
 
         # -- 2. Load into edge stock (in-transit buffer) --------------------
@@ -221,6 +222,7 @@ class Edge(sim.Component):
             "quantity": actual_items,
             "from": order.from_node,
             "to": order.to_node,
+            "edge_stock_after": 0,
         })
 
     # ------------------------------------------------------------------

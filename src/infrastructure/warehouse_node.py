@@ -194,12 +194,14 @@ class WarehouseNode(sim.Component):
         if self.inventory[sku] <= 0:
             del self.inventory[sku]
         pallets = self.calculate_pallet_count(sku, quantity)
+        stock_after = self.inventory.get(sku, 0)
         self.log.append({
             "time": self.env.now(),
             "type": "debited",
             "sku": sku,
             "quantity": quantity,
             "pallets": pallets,
+            "stock_after": stock_after,
         })
         return True
 
@@ -236,6 +238,7 @@ class WarehouseNode(sim.Component):
                 "quantity": quantity,
                 "pallets": pallets,
                 "source": self._source_name(source),
+                "stock_after": self.received[sku],
             })
             return
 
@@ -248,6 +251,7 @@ class WarehouseNode(sim.Component):
             "quantity": quantity,
             "pallets": pallets,
             "source": self._source_name(source),
+            "stock_after": self.inventory[sku],
         })
         self.check_capacity()
 
