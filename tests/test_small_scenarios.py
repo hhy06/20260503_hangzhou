@@ -13,8 +13,6 @@ Scenarios covered:
   6. Start-time gating on transport orders  (order delayed)
 """
 
-from dataclasses import dataclass
-
 import pytest
 import salabim as sim
 
@@ -35,33 +33,6 @@ SKU_REGISTRY = {
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _run_and_check(
-    nodes: dict[str, WarehouseNode | ProductionNode],
-    edges: list[Edge],
-    duration: float,
-) -> dict[str, dict[str, int]]:
-    """Run the simulation and return final warehouse inventories."""
-    sim.yieldless(False)
-    # Add a dummy process to drive the simulation — edges and nodes all
-    # have their own process() loops, so env.run() advances all of them.
-    dummy_env: sim.Environment | None = None
-    for n in nodes.values():
-        if hasattr(n, "env") and n.env is not None:
-            dummy_env = n.env
-            break
-    if dummy_env is None and edges:
-        dummy_env = edges[0].env
-
-    if dummy_env is not None:
-        dummy_env.run(duration)
-
-    inventories: dict[str, dict[str, int]] = {}
-    for name, node in nodes.items():
-        if isinstance(node, WarehouseNode) and node.role == NodeRole.WAREHOUSE:
-            inventories[name] = dict(node.inventory)
-    return inventories
-
-
 def _sink_received(nodes: dict[str, WarehouseNode]) -> dict[str, int]:
     """Accumulate received goods across all SINK nodes."""
     total: dict[str, int] = {}
@@ -70,13 +41,6 @@ def _sink_received(nodes: dict[str, WarehouseNode]) -> dict[str, int]:
             for sku, qty in node.received.items():
                 total[sku] = total.get(sku, 0) + qty
     return total
-
-
-def _find_edge(edges: list[Edge], from_node: str, to_node: str) -> Edge | None:
-    for e in edges:
-        if e.from_node.node_name == from_node and e.to_node.node_name == to_node:
-            return e
-    return None
 
 
 # ===================================================================
