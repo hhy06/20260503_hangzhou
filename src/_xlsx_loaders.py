@@ -95,6 +95,7 @@ def load_demand(data_dir: Path | None = None) -> list[dict]:
 
     orders: list[dict] = []
     total = 0
+    prev_time: float = float("-inf")
     for _, row in df.iterrows():
         o = dict(
             sku=str(row["sku"]),
@@ -103,8 +104,16 @@ def load_demand(data_dir: Path | None = None) -> list[dict]:
             to_node=str(row["to_node"]),
             start_time=float(row["start_time"]),
         )
+        if o["start_time"] < prev_time:
+            raise ValueError(
+                f"demand.xlsx: start_time is not in weakly increasing order. "
+                f"Row with sku={o['sku']} start_time={o['start_time']} "
+                f"comes after start_time={prev_time}. "
+                f"Sort the data by start_time (break ties consistently)."
+            )
         orders.append(o)
         total += o["quantity"]
+        prev_time = o["start_time"]
 
     print(f"[DEMAND] Loaded {len(orders)} orders, total {total} units", file=sys.stderr)
     return orders
