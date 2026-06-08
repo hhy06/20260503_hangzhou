@@ -447,12 +447,23 @@ class WeighSafeStockManagement(Management):
             out_node = pnode.downstream_node.node_name
             if sku.startswith("SKU_"):
                 self._add_transport(decision, out_node, "fg_storage", sku, qty, prod_end)
-            elif sku.startswith("veg_"):
-                half = qty // 2
-                self._add_transport(decision, out_node, "main_storage_1", sku, half, prod_end)
-                self._add_transport(decision, out_node, "main_storage_2", sku, qty - half, prod_end)
-            else:
+            elif sku in self._wip_in_central_storage:
                 self._add_transport(decision, out_node, "WIP_storage", sku, qty, prod_end)
+            else:
+                # WIP that bypasses WIP_storage (e.g. veg).  Distribute
+                # evenly across the downstream node's main-storage targets.
+                targets = [
+                    e.to_node.node_name for e in self.edges
+                    if e.from_node.node_name == out_node
+                    and e.to_node.node_name.startswith("main_storage")
+                ]
+                if not targets:
+                    targets = [out_node]
+                for i, tgt in enumerate(targets):
+                    share = qty // len(targets)
+                    if i == len(targets) - 1:
+                        share = qty - share * (len(targets) - 1)
+                    self._add_transport(decision, out_node, tgt, sku, share, prod_end)
 
             # Input transport: BOM inputs → lineside (at production start)
             bom_entry = pnode.bom.get(sku)
@@ -472,9 +483,18 @@ class WeighSafeStockManagement(Management):
                 if input_sku in self._sku_lines and supplier in (
                     "main_storage_1", "main_storage_2",
                 ):
-                    self._add_transport(
-                        decision, "WIP_storage", supplier, input_sku, need, time,
-                    )
+                    # Pre-hop: move WIP from its accumulation point to the
+                    # supplier storage serving the noodle line.  Only needed
+                    # when WIP flows through WIP_storage (sauce/powder).
+                    # Veg bypasses WIP_storage — output_veg delivers directly
+                    # to main storages, so no pre-hop is needed.
+                    if input_sku in self._wip_in_central_storage:
+                        self._add_transport(
+                            decision, "WIP_storage", supplier,
+                            input_sku, need, time,
+                        )
+
+                    # Raw materials for the WIP producer (replenishment)
                     wip_node = self._production_nodes.get(
                         self._sku_lines[input_sku][0]
                     )

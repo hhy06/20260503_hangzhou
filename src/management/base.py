@@ -104,6 +104,21 @@ class Management(sim.Component):
             if e.to_node.node_name in lineside_nodes:
                 self._lineside_suppliers[e.to_node.node_name] = e.from_node.node_name
 
+        # WIP SKUs whose output flows through WIP_storage (as opposed to
+        # being delivered directly to main storages, e.g. veg).
+        self._wip_in_central_storage: set[str] = set()
+        for pnode in self._production_nodes.values():
+            for sku in pnode.bom:
+                if sku.startswith("SKU_"):
+                    continue
+                dnode = pnode.downstream_node.node_name
+                if any(
+                    e.from_node.node_name == dnode
+                    and e.to_node.node_name == "WIP_storage"
+                    for e in self.edges
+                ):
+                    self._wip_in_central_storage.add(sku)
+
     # ------------------------------------------------------------------
     # helpers
     # ------------------------------------------------------------------

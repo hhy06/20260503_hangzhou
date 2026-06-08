@@ -346,11 +346,12 @@ class TraceManagement(Management):
         self._accum_prod(prod_acc, producer, wip_sku, pallet_rounded_q)
 
         # Route WIP from output buffer to target main storage
-        if wip_sku.startswith("veg_"):
-            self._accum_tx(tx_acc, out_node, target_ms, wip_sku, pallet_rounded_q)
-        else:
+        if wip_sku in self._wip_in_central_storage:
             self._accum_tx(tx_acc, out_node, "WIP_storage", wip_sku, pallet_rounded_q)
             self._accum_tx(tx_acc, "WIP_storage", target_ms, wip_sku, pallet_rounded_q)
+        else:
+            # WIP that bypasses WIP_storage (e.g. veg) — route directly
+            self._accum_tx(tx_acc, out_node, target_ms, wip_sku, pallet_rounded_q)
 
         # Raw materials — compute need from the pallet-rounded WIP qty
         if supplier is None:
