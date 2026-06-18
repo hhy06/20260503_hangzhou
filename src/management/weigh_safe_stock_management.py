@@ -491,12 +491,13 @@ class WeighSafeStockManagement(Management):
                         # lineside's supplier node so this job can consume it.
                         wip_pool = self._wip_pool.get(input_sku)
                         if wip_pool:
-                            wip_lead = self.transport_lead_time(wip_pool, supplier)
-                            wip_start = max(0.0, inp_start - wip_lead)
-                            self._add_transport(
-                                decision, wip_pool, supplier,
-                                input_sku, need, wip_start,
-                            )
+                            if supplier != wip_pool:
+                                wip_lead = self.transport_lead_time(wip_pool, supplier)
+                                wip_start = max(0.0, inp_start - wip_lead)
+                                self._add_transport(
+                                    decision, wip_pool, supplier,
+                                    input_sku, need, wip_start,
+                                )
 
                     # Raw materials for the WIP producer (replenishment)
                     wip_node = self._production_nodes.get(
@@ -526,7 +527,7 @@ class WeighSafeStockManagement(Management):
                                 )
                 else:
                     # Raw material — replenish from source to the supplier
-                    # node (typically raw_material_storage).
+                    # node (typically raw_material_storage or veg_raw_storage).
                     src_lead = self.transport_lead_time("source", supplier)
                     src_start = max(0.0, inp_start - src_lead)
                     self._add_transport(

@@ -1,4 +1,4 @@
-"""Generate data/demand.xlsx for scenario rw_hangzhou1.
+"""Generate demand.xlsx for scenario srw_hangzhou1.
 
 Sources (from outside the repo):
     ~/transf/temp/masterkong_large_康师傅/key_sku_share_2025H2.csv
@@ -19,7 +19,7 @@ Rules:
       start_time, as required by the demand loader).
 
 Output:
-    data/demand.xlsx, sheet=DEMAND, columns:
+    demand.xlsx, sheet=DEMAND, columns:
         sku | quantity | from_node | to_node | start_time
 """
 
@@ -38,7 +38,7 @@ SRC_DIR = Path.home() / "transf" / "temp" / "masterkong_large_康师傅"
 SHARE_CSV = SRC_DIR / "key_sku_share_2025H2.csv"
 FORECAST_CSV = SRC_DIR / "daily_forecast_2026_2027.csv"
 
-OUT_PATH = Path(__file__).resolve().parents[2] / "data" / "demand.xlsx"
+OUT_PATH = Path(__file__).resolve().parents[0] / "demand.xlsx"
 
 FROM_NODE = "fg_storage"
 TO_NODE = "sink"
@@ -127,7 +127,7 @@ def build_demand(shares: pd.DataFrame, forecast: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Generate demand.xlsx")
-    parser.add_argument("--days", type=int, default=0, 
+    parser.add_argument("--days", type=int, default=30,
                        help="Generate only first N days (0 = all days)")
     parser.add_argument("--start-date", type=str, default="",
                        help="Skip days before this date (YYYY-MM-DD)")

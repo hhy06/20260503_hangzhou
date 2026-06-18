@@ -1,53 +1,72 @@
-"""Generate data/init_stock.xlsx and data/safe_stock.xlsx for rw_hangzhou1.
+"""Generate daily_demand.xlsx, init_stock.xlsx, and safe_stock.xlsx for srw_hangzhou1.
 
-Algorithm:
-    1. Compute FERT average daily demand from demand.xlsx.
-    2. Explode through BOM (multi-level) to get HALB, ROH, VERP daily demand.
-    3. Multiply by STOCK_DAY to get init_stock and safe_stock levels.
-    4. Assign each SKU to its storage node and determine replenishment action.
+Design:
+    daily_demand.xlsx  =  objective truth: per-FERT-SKU daily demand
+                          (derived from 2-year forecast, independent of short-term simulation)
+    init_stock.xlsx    =  allocation strategy: where to place initial stock at t=0
+    safe_stock.xlsx    =  global safety thresholds per SKU (used by management for shortage
+                          ratio, node-agnostic)
 
-Stock levels:
-    init_stock  = ceil(daily_demand * STOCK_DAY)
-    safe_stock  = ceil(daily_demand * STOCK_DAY)
-    replenish_qty = ceil(daily_demand * STOCK_DAY)
+Data flow:
+    daily_forecast_2026_2027.csv (730 days)
+    key_sku_share_2025H2.csv (260 FG SKUs)
+           |
+           v
+    stable_daily_total = sum(daily_forecast) / 730
+    FERT_sku_daily = stable_daily_total * share_norm
+           |
+           v
+    daily_demand.xlsx  (FERT only, 260 rows)
+           |
+    BOM explosion (bom.xlsx) -> all SKUs' daily demand
+           |
+           +---> init_stock.xlsx   = daily * INIT_DAYS(8),  allocated to nodes
+           +---> safe_stock.xlsx   = daily * SAFE_DAYS(14), global per SKU
 
-Storage assignment (based on SKU type):
-    FERT (17xxx)               -> fg_storage         -> produce_at workstation_X{xx}
-    熟酱 HALB (15N prefix)      -> soup_storage       -> produce_at workstation_J{xx}
-    酱包 HALB (1502/1507/1509)  -> sauce_wip_storage  -> produce_at workstation_{0xx}
-    粉包 HALB (1501)             -> powder_wip_storage -> produce_at workstation_{F/FB/H/DF/ZL}
-    菜包 HALB (1505)             -> veg_wip_storage    -> produce_at workstation_{C/DC/XC}
-    ROH / VERP                  -> raw_material_storage -> replenish_from source
-    lineside inputs             -> lineside_{line}    -> replenish_from appropriate pool
+Stock levels / node assignment for init_stock:
+    FERT (17xxx)               -> fg_storage
+    酱包/粉包 (1502/1507/1509/1501) -> prep_storage_1, prep_storage_2, or both
+                                    (decided by which X lines consume them:
+                                     X00-X08 -> prep_1; X09-X15/X18 -> prep_2;
+                                     both groups -> split 50/50)
+    菜包 (1505)                -> prep_storage_1, prep_storage_2 (same logic)
+    ROH / VERP                 -> raw_material_storage (if only used by C lines -> veg_raw_storage)
+    lineside inputs            -> lineside_{line}
+
+safe_stock.xlsx columns:
+    sku | safe_stock_level
+    Node-agnostic, used by weigh_safe_stock_management to compute shortage ratio
+    = sum(all node stock) / sum(all safe_stock entries for this SKU)
 """
 
 from __future__ import annotations
 
 import math
 import sys
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-DEMAND_PATH = DATA_DIR / "demand.xlsx"
+DATA_DIR = Path(__file__).resolve().parents[0]
+FORECAST_CSV = Path.home() / "transf" / "temp" / "masterkong_large_康师傅" / "daily_forecast_2026_2027.csv"
+SHARE_CSV = Path.home() / "transf" / "temp" / "masterkong_large_康师傅" / "key_sku_share_2025H2.csv"
 BOM_PATH = DATA_DIR / "bom.xlsx"
 SKUS_PATH = DATA_DIR / "skus.xlsx"
-TOPO_PATH = DATA_DIR / ".." / "scenario" / "rw_hangzhou1" / "plant_topology.py"
 
+DAILY_OUT = DATA_DIR / "daily_demand.xlsx"
 INIT_OUT = DATA_DIR / "init_stock.xlsx"
 SAFE_STOCK_OUT = DATA_DIR / "safe_stock.xlsx"
 
 # ---------------------------------------------------------------------------
 # Parameters
 # ---------------------------------------------------------------------------
-STOCK_DAY = 14  # days of stock buffer
-
-SIM_DAYS = 730
+FORECAST_DAYS = 730
+INIT_DAYS = 8
+SAFE_DAYS = 14
 
 
 def ceil_or_zero(v: float) -> int:
@@ -55,22 +74,49 @@ def ceil_or_zero(v: float) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Loaders
+# Step 1: Compute stable FERT daily demand
 # ---------------------------------------------------------------------------
 
-def load_demand() -> dict[str, float]:
-    """Compute average daily demand per FERT SKU from demand.xlsx."""
-    df = pd.read_excel(DEMAND_PATH)
-    total = df.groupby("sku")["quantity"].sum()
-    daily = {str(sku): float(q) / SIM_DAYS for sku, q in total.items()}
-    nonzero = sum(1 for q in daily.values() if q > 0)
-    print(f"[DEMAND] {len(daily)} FERT SKUs, {nonzero} with non-zero daily demand",
-          file=sys.stderr)
+def load_stable_daily_total() -> float:
+    """Compute stable daily demand (CS/day) from the 2-year forecast."""
+    fc = pd.read_csv(FORECAST_CSV, thousands=",", encoding="utf-8-sig")
+    col = [c for c in fc.columns if "当日分配" in c]
+    if not col:
+        raise KeyError("daily_forecast.csv missing '当日分配(CS)' column")
+    fc[col[0]] = pd.to_numeric(fc[col[0]].astype(str).str.replace(",", ""), errors="coerce").fillna(0).astype(int)
+    total_cs = int(fc[col[0]].sum())
+    daily = total_cs / FORECAST_DAYS
+    print(f"[FORECAST] Total CS over {FORECAST_DAYS} days = {total_cs:,}", file=sys.stderr)
+    print(f"[FORECAST] Stable daily total = {daily:,.0f} CS/day", file=sys.stderr)
     return daily
 
 
+def load_sku_shares() -> dict[str, float]:
+    """Return {sku: share_norm} from key_sku_share CSV."""
+    df = pd.read_csv(SHARE_CSV)
+    df = df.rename(columns={"物料": "sku", "占比%": "share_pct"})
+    df["sku"] = df["sku"].astype(str)
+    df["share_pct"] = pd.to_numeric(df["share_pct"], errors="coerce").fillna(0.0)
+    total = df["share_pct"].sum()
+    if total <= 0:
+        raise ValueError(f"Sum of share_pct is non-positive: {total}")
+    df["share_norm"] = df["share_pct"] / total
+    result = {str(r["sku"]): float(r["share_norm"]) for _, r in df.iterrows() if r["share_norm"] > 0}
+    print(f"[SHARE] {len(result)} SKUs with positive share", file=sys.stderr)
+    return result
+
+
+def compute_fert_daily(stable_daily: float, shares: dict[str, float]) -> dict[str, float]:
+    """Return {fert_sku: daily_demand}."""
+    return {sku: stable_daily * norm for sku, norm in shares.items()}
+
+
+# ---------------------------------------------------------------------------
+# Step 2: BOM explosion
+# ---------------------------------------------------------------------------
+
 def load_bom() -> tuple[dict[str, dict[str, float]], set[str]]:
-    """Load BOM and return (bom_dict, all_sku_ids_in_bom)."""
+    """Load BOM and return (bom_dict, all_sku_ids)."""
     df = pd.read_excel(BOM_PATH)
     bom: dict[str, dict[str, float]] = {}
     all_ids: set[str] = set()
@@ -92,51 +138,54 @@ def load_sku_set() -> set[str]:
     return ids
 
 
-def load_topology():
-    """Load plant_topology.py by importing it."""
-    import importlib
-    sys.path.insert(0, str(DATA_DIR / ".."))
-    mod = importlib.import_module("scenario.rw_hangzhou1.plant_topology")
-    return mod.NODES, mod.EDGES
-
-
-# ---------------------------------------------------------------------------
-# BOM explosion
-# ---------------------------------------------------------------------------
-
-def explode_demand(fert_daily: dict[str, float], bombom, sku_set: set,
+def explode_demand(fert_daily: dict[str, float], bom: dict, sku_set: set,
                    max_depth: int = 10) -> dict[str, float]:
-    """Propagate FERT demand through BOM to get HALB, ROH, VERP demand.
-
-    Generation-by-generation expansion: each generation multiplies parent
-    demand by child BOM amounts. Handles multi-level HALB chains.
-    """
+    """Propagate FERT demand through BOM tree."""
     demand: dict[str, float] = dict(fert_daily)
-    current_gen: dict[str, float] = dict(fert_daily)
+    current: dict[str, float] = dict(fert_daily)
 
-    for depth in range(max_depth):
-        if not current_gen:
+    for _ in range(max_depth):
+        if not current:
             break
-        next_gen: dict[str, float] = {}
-        for parent, parent_daily in current_gen.items():
+        nxt: dict[str, float] = {}
+        for parent, parent_daily in current.items():
             if parent_daily <= 0:
                 continue
-            children = bom.get(parent, {})
-            for child, amt in children.items():
+            for child, amt in bom.get(parent, {}).items():
                 if child not in sku_set:
                     continue
-                child_added = parent_daily * amt
-                demand[child] = demand.get(child, 0) + child_added
+                demand[child] = demand.get(child, 0) + parent_daily * amt
                 if child in bom:
-                    next_gen[child] = next_gen.get(child, 0) + child_added
-        current_gen = next_gen
+                    nxt[child] = nxt.get(child, 0) + parent_daily * amt
+        current = nxt
 
+    nonzero = sum(1 for v in demand.values() if v > 0)
+    print(f"[EXPLODE] {nonzero} SKUs with daily demand", file=sys.stderr)
     return demand
 
 
 # ---------------------------------------------------------------------------
-# SKU classification
+# Step 3: Load topology (for lineside allocation and X line mapping)
 # ---------------------------------------------------------------------------
+
+def load_topology() -> tuple[dict, list]:
+    """Load plant_topology.py."""
+    import importlib
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    try:
+        mod = importlib.import_module("scenario.srw_hangzhou1.plant_topology")
+        return mod.NODES, mod.EDGES
+    except ModuleNotFoundError:
+        print("[STOCKS] Warning: plant_topology.py not found, falling back", file=sys.stderr)
+        return {}, []
+
+
+# ---------------------------------------------------------------------------
+# Step 4: Determine X-line group (prep_1 or prep_2) for each X line
+# ---------------------------------------------------------------------------
+
+X_LINES_PREP_1 = {"X00", "X01", "X02", "X03", "X04", "X05", "X06", "X07", "X08"}
+X_LINES_PREP_2 = {"X09", "X10", "X11", "X12", "X13", "X14", "X15", "X18"}
 
 def classify_sku(sku_id: str, bom: dict) -> str:
     """Return 'fg', 'wip', or 'raw'."""
@@ -147,26 +196,53 @@ def classify_sku(sku_id: str, bom: dict) -> str:
     return "raw"
 
 
-def source_type_for(sku_id: str, bom: dict) -> str:
-    """Return source_type string for safe_stock."""
-    if sku_id.startswith("17"):
-        return "fg"
-    if sku_id in bom:
-        return "wip"
-    return "raw_material"
+def veg_raw_skus(nodes: dict, bom: dict) -> dict[str, set[str]]:
+    """Build {wip_sku: set of FERT SKUs that consume it}, by tracing FERT BOM."""
+    consumers: dict[str, set[str]] = defaultdict(set)
+    for name, cfg in nodes.items():
+        if cfg.get("type") != "production":
+            continue
+        lid = name.replace("workstation_", "")
+        if not lid.startswith("X"):
+            continue
+        for fert_sku, entry in cfg.get("bom", {}).items():
+            for inp_sku in entry.get("inputs", {}):
+                consumers[inp_sku].add(fert_sku)
+    return consumers
 
 
-def pool_for_wip(sku_id: str) -> str:
-    """Determine WIP pool storage node for a HALB SKU."""
-    if sku_id.startswith("15N"):
-        return "soup_storage"
-    if sku_id.startswith("1502") or sku_id.startswith("1507") or sku_id.startswith("1509"):
-        return "sauce_wip_storage"
-    if sku_id.startswith("1501"):
-        return "powder_wip_storage"
-    if sku_id.startswith("1505"):
-        return "veg_wip_storage"
-    return "raw_material_storage"
+def determine_x_consumer_groups(wip_sku: str, consumers: dict[str, set[str]],
+                                 fert_bom: dict[str, dict[str, float]]) -> tuple[bool, bool]:
+    """For a WIP SKU, return (used_by_prep_1_groups, used_by_prep_2_groups).
+
+    Traces through FERT SKUs to see which X-lines consume the WIP.
+    """
+    # Find which FERT SKUs need this WIP SKU (from the consumer map built from X line BOM)
+    fert_consumers = consumers.get(wip_sku, set())
+    # Also trace: other FERT SKUs that have this WIP in their BOM entry
+    for fert_sku, inputs in fert_bom.items():
+        if wip_sku in inputs:
+            fert_consumers.add(fert_sku)
+
+    if not fert_consumers:
+        return False, False
+
+    in_group_1 = any(fid in X_LINES_PREP_1 or
+                     any(fid == fert for fid in fert_consumers)
+                     for fid in fert_consumers)
+    # Actually we need to know which X LINES produce which FERT SKUs
+    # But simpler: just check if the FERT SKU is produced by an X line in prep_1 or prep_2 group
+    # We don't have that mapping directly here, so use a heuristic:
+    # all FERT SKUs can be produced by lines in either group.
+    # The real question is: which WIP items are consumed by which FERT?
+    # We already have that in fert_consumers.
+    # But we don't know which X-line those FERT are assigned to.
+    # Fall back: if consumed by any FERT (which all are produced by X lines),
+    # split between both based on whether it's a universal WIP or not.
+
+    # Simpler approach: we just always return (True, True) - split evenly.
+    # User can hand-tune per SKU later.
+    return True, True
 
 
 # ---------------------------------------------------------------------------
@@ -174,46 +250,81 @@ def pool_for_wip(sku_id: str) -> str:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    global bom
-    fert_daily = load_demand()
+    stable_daily = load_stable_daily_total()
+    shares = load_sku_shares()
+    fert_daily = compute_fert_daily(stable_daily, shares)
+    print(f"[FERT] {len(fert_daily)} FERT SKUs with daily demand", file=sys.stderr)
+
     bom, bom_ids = load_bom()
     sku_set = load_sku_set()
+    all_daily = explode_demand(fert_daily, bom, sku_set)
+
     nodes, edges = load_topology()
 
-    all_daily = explode_demand(fert_daily, bom, sku_set)
-    print(f"[EXPLODE] {len(all_daily)} SKUs with daily demand", file=sys.stderr)
-
-    # Build producing-line mapping: output_sku -> workstation_name
-    sku_to_line: dict[str, str] = {}
-    for name, cfg in nodes.items():
-        if cfg["type"] == "production":
-            for out_sku in cfg.get("bom", {}):
-                sku_to_line[out_sku] = name
-
-    # Build lineside input mapping: lineside_node -> set of input SKUs
+    # Build lineside input mapping: {lineside_node: set of input SKUs}
     lineside_inputs: dict[str, dict[str, set[str]]] = {}
     for name, cfg in nodes.items():
-        if cfg["type"] == "production":
+        if cfg.get("type") == "production":
             lid = name.replace("workstation_", "")
             lineside_node = f"lineside_{lid}"
-            inputs = {}
             for out_sku, entry in cfg.get("bom", {}).items():
                 for inp_sku in entry.get("inputs", {}):
-                    inputs.setdefault(inp_sku, set()).add(out_sku)
-            if lineside_node not in lineside_inputs:
-                lineside_inputs[lineside_node] = {}
-            for inp_sku in inputs:
-                lineside_inputs[lineside_node].setdefault(inp_sku, set()).update(inputs[inp_sku])
+                    lineside_inputs.setdefault(lineside_node, {}).setdefault(inp_sku, set()).add(out_sku)
+
+    # Build line category mapping for storage assignment
+    line_categories: dict[str, str] = {}
+    for name, cfg in nodes.items():
+        if cfg.get("type") == "production":
+            lid = name.replace("workstation_", "")
+            if lid.startswith("J") or lid == "ZJ1":
+                line_categories[lid] = "J_sauce"
+            elif lid.startswith("X"):
+                line_categories[lid] = "X_fert"
+            elif lid.startswith("C") or lid.startswith("DC") or lid in ("XC1", "XC2"):
+                line_categories[lid] = "C_veg"
+            elif lid.startswith("F") or lid.startswith("FB") or lid.startswith("H") or lid in ("DF1", "ZL1"):
+                line_categories[lid] = "F_powder"
+
+    # Build wip_sku -> {FERT_SKUs consuming it} from X-line workstation BOMs
+    wip_consumers: dict[str, set[str]] = defaultdict(set)
+    fert_bom_all: dict[str, dict[str, float]] = {}
+    for name, cfg in nodes.items():
+        if cfg.get("type") == "production":
+            lid = name.replace("workstation_", "")
+            if lid.startswith("X"):
+                grp = "prep_1" if lid in X_LINES_PREP_1 else "prep_2"
+                for fert_sku, entry in cfg.get("bom", {}).items():
+                    for inp_sku in entry.get("inputs", {}):
+                        wip_consumers[inp_sku].add((fert_sku, grp))
+                        fert_bom_all.setdefault(fert_sku, {})[inp_sku] = entry["inputs"][inp_sku]
 
     # -------------------------------------------------------------------
-    # init_stock.xlsx: (node, sku, quantity)
+    # File 1: daily_demand.xlsx  (FERT only)
+    # -------------------------------------------------------------------
+    daily_rows = [
+        {"sku": sku, "daily_demand": round(val, 2)}
+        for sku, val in sorted(fert_daily.items())
+        if val > 0
+    ]
+    daily_df = pd.DataFrame(daily_rows, columns=["sku", "daily_demand"])
+
+    # -------------------------------------------------------------------
+    # File 2: init_stock.xlsx  (daily_demand * INIT_DAYS, allocated to nodes)
     # -------------------------------------------------------------------
     init_rows: list[dict] = []
+
+    # (a) FERT + WIP + raw: assign to primary storage
+    c_line_skus: set[str] = set()
+    for lid, cat in line_categories.items():
+        if cat == "C_veg":
+            ls = f"lineside_{lid}"
+            for inp_sku in lineside_inputs.get(ls, {}):
+                c_line_skus.add(inp_sku)
 
     for sku_id, daily in all_daily.items():
         if daily <= 0:
             continue
-        stock = ceil_or_zero(daily * STOCK_DAY)
+        stock = ceil_or_zero(daily * INIT_DAYS)
         if stock == 0:
             continue
 
@@ -221,18 +332,55 @@ def main() -> None:
 
         if cls == "fg":
             init_rows.append({"node": "fg_storage", "sku": sku_id, "quantity": stock})
-        elif cls == "wip":
-            pool = pool_for_wip(sku_id)
-            init_rows.append({"node": pool, "sku": sku_id, "quantity": stock})
-        else:
-            init_rows.append({"node": "raw_material_storage", "sku": sku_id, "quantity": stock})
 
+        elif cls == "wip":
+            # WIP: assign to prep_storage based on which X-line groups consume it
+            grp_1_consumers = {fs for fs, g in wip_consumers.get(sku_id, set()) if g == "prep_1"}
+            grp_2_consumers = {fs for fs, g in wip_consumers.get(sku_id, set()) if g == "prep_2"}
+            has_g1 = bool(grp_1_consumers)
+            has_g2 = bool(grp_2_consumers)
+
+            if has_g1 and has_g2:
+                # split 50/50
+                half = max(1, stock // 2)
+                init_rows.append({"node": "prep_storage_1", "sku": sku_id, "quantity": half})
+                init_rows.append({"node": "prep_storage_2", "sku": sku_id, "quantity": stock - half})
+            elif has_g2:
+                init_rows.append({"node": "prep_storage_2", "sku": sku_id, "quantity": stock})
+            else:
+                # default to prep_1 (includes FERT SKUs without clear X-line mapping)
+                init_rows.append({"node": "prep_storage_1", "sku": sku_id, "quantity": stock})
+
+        else:
+            # ROH/VERP: raw storage. Veg-only -> veg_raw_storage
+            if sku_id in c_line_skus:
+                # check if used ONLY by C lines
+                used_by_other = False
+                for lid, cat in line_categories.items():
+                    if cat == "C_veg":
+                        continue
+                    ls = f"lineside_{lid}"
+                    if sku_id in lineside_inputs.get(ls, {}):
+                        used_by_other = True
+                        break
+                if used_by_other:
+                    storage = "raw_material_storage"
+                else:
+                    storage = "veg_raw_storage"
+            else:
+                storage = "raw_material_storage"
+            init_rows.append({"node": storage, "sku": sku_id, "quantity": stock})
+
+    # (b) lineside: allocate per-line per-input
     for lineside_node, inp_map in lineside_inputs.items():
+        lid = lineside_node.replace("lineside_", "")
+        cat = line_categories.get(lid, "")
+
         for inp_sku in inp_map:
             daily = all_daily.get(inp_sku, 0)
             if daily <= 0:
                 continue
-            stock = ceil_or_zero(daily * STOCK_DAY)
+            stock = ceil_or_zero(daily * INIT_DAYS)
             if stock == 0:
                 continue
             existing = any(
@@ -246,107 +394,31 @@ def main() -> None:
     init_df = pd.DataFrame(init_rows, columns=["node", "sku", "quantity"])
 
     # -------------------------------------------------------------------
-    # safe_stock.xlsx: (sku, safe_stock, replenish_qty, storage, source_type,
-    #                    action_key, action_value)
+    # File 3: safe_stock.xlsx  (global per SKU, daily * SAFE_DAYS)
     # -------------------------------------------------------------------
     safe_rows: list[dict] = []
-
     for sku_id, daily in all_daily.items():
         if daily <= 0:
             continue
-        ss = ceil_or_zero(daily * STOCK_DAY)
+        ss = ceil_or_zero(daily * SAFE_DAYS)
         if ss == 0:
             continue
-        rq = ss
-        cls = classify_sku(sku_id, bom)
-        src_type = source_type_for(sku_id, bom)
+        safe_rows.append({"sku": sku_id, "safe_stock": ss})
 
-        if cls == "fg":
-            line = sku_to_line.get(sku_id)
-            if line:
-                safe_rows.append({
-                    "sku": sku_id,
-                    "safe_stock": ss,
-                    "replenish_qty": rq,
-                    "storage": "fg_storage",
-                    "source_type": src_type,
-                    "action_key": "produce_at",
-                    "action_value": line,
-                })
-            else:
-                print(f"[WARN] FERT {sku_id} has no producing line, skipping safe_stock",
-                      file=sys.stderr)
-        elif cls == "wip":
-            pool = pool_for_wip(sku_id)
-            line = sku_to_line.get(sku_id)
-            if line:
-                safe_rows.append({
-                    "sku": sku_id,
-                    "safe_stock": ss,
-                    "replenish_qty": rq,
-                    "storage": pool,
-                    "source_type": src_type,
-                    "action_key": "produce_at",
-                    "action_value": line,
-                })
-            else:
-                print(f"[WARN] WIP {sku_id} has no producing line, skipping safe_stock",
-                      file=sys.stderr)
-        else:
-            safe_rows.append({
-                "sku": sku_id,
-                "safe_stock": ss,
-                "replenish_qty": rq,
-                "storage": "raw_material_storage",
-                "source_type": src_type,
-                "action_key": "replenish_from",
-                "action_value": "source",
-            })
+    safe_df = pd.DataFrame(safe_rows, columns=["sku", "safe_stock"])
 
-    for lineside_node, inp_map in lineside_inputs.items():
-        for inp_sku in inp_map:
-            daily = all_daily.get(inp_sku, 0)
-            if daily <= 0:
-                continue
-            ss = ceil_or_zero(daily * STOCK_DAY)
-            if ss == 0:
-                continue
-            rq = ss
-            src_type = source_type_for(inp_sku, bom)
-            cls = classify_sku(inp_sku, bom)
+    # -------------------------------------------------------------------
+    # Write outputs
+    # -------------------------------------------------------------------
+    DAILY_OUT.parent.mkdir(parents=True, exist_ok=True)
 
-            if cls == "wip":
-                upstream_pool = pool_for_wip(inp_sku)
-            else:
-                upstream_pool = "raw_material_storage"
+    with pd.ExcelWriter(DAILY_OUT, engine="openpyxl") as writer:
+        daily_df.to_excel(writer, sheet_name="DAILY_DEMAND", index=False)
+    print(f"\n[DAILY_DEMAND] Wrote {DAILY_OUT}", file=sys.stderr)
+    print(f"[DAILY_DEMAND]   {len(daily_df)} FERT SKUs", file=sys.stderr)
 
-            existing = any(
-                r["sku"] == inp_sku and r["storage"] == lineside_node
-                for r in safe_rows
-            )
-            if not existing:
-                safe_rows.append({
-                    "sku": inp_sku,
-                    "safe_stock": ss,
-                    "replenish_qty": rq,
-                    "storage": lineside_node,
-                    "source_type": src_type,
-                    "action_key": "replenish_from",
-                    "action_value": upstream_pool,
-                })
-
-    safe_df = pd.DataFrame(safe_rows, columns=[
-        "sku", "safe_stock", "replenish_qty", "storage",
-        "source_type", "action_key", "action_value",
-    ])
-
-    INIT_OUT.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(INIT_OUT, engine="openpyxl") as writer:
         init_df.to_excel(writer, sheet_name="INIT_STOCK", index=False)
-
-    with pd.ExcelWriter(SAFE_STOCK_OUT, engine="openpyxl") as writer:
-        safe_df.to_excel(writer, sheet_name="SAFE_STOCK", index=False)
-
     print(f"\n[INIT_STOCK] Wrote {INIT_OUT}", file=sys.stderr)
     print(f"[INIT_STOCK]   {len(init_df)} rows", file=sys.stderr)
     by_node = init_df.groupby("node").size()
@@ -355,16 +427,10 @@ def main() -> None:
     if len(by_node) > 10:
         print(f"[INIT_STOCK]   ... +{len(by_node) - 10} more nodes", file=sys.stderr)
 
+    with pd.ExcelWriter(SAFE_STOCK_OUT, engine="openpyxl") as writer:
+        safe_df.to_excel(writer, sheet_name="SAFE_STOCK", index=False)
     print(f"\n[SAFE_STOCK] Wrote {SAFE_STOCK_OUT}", file=sys.stderr)
-    print(f"[SAFE_STOCK]   {len(safe_df)} rows", file=sys.stderr)
-    by_storage = safe_df.groupby("storage").size()
-    for st, n in sorted(by_storage.items(), key=lambda x: -x[1])[:10]:
-        print(f"[SAFE_STOCK]   {st}: {n}", file=sys.stderr)
-    if len(by_storage) > 10:
-        print(f"[SAFE_STOCK]   ... +{len(by_storage) - 10} more storages", file=sys.stderr)
-    by_action = safe_df.groupby("action_key").size()
-    for act, n in sorted(by_action.items(), key=lambda x: -x[1]):
-        print(f"[SAFE_STOCK]   {act}: {n}", file=sys.stderr)
+    print(f"[SAFE_STOCK]   {len(safe_df)} rows (global per SKU)", file=sys.stderr)
 
 
 if __name__ == "__main__":

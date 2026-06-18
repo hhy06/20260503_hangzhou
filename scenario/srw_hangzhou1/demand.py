@@ -1,13 +1,13 @@
-"""Demand orders for scenario.rw_hangzhou1.
+"""Demand orders for scenario.srw_hangzhou1.
 
-Loads from data/demand.xlsx via :mod:`src._xlsx_loaders`.
+Loads from demand.xlsx (local to this scenario) via :mod:`src._xlsx_loaders`.
 """
 
 from pathlib import Path
 
 DEMAND_ORDERS: list[dict] = []
 
-_root = Path(__file__).resolve().parents[2] / "data"
+_root = Path(__file__).resolve().parents[0]
 _demand_path = _root / "demand.xlsx"
 
 if _demand_path.exists():

@@ -121,29 +121,51 @@ def load_demand(data_dir: Path | None = None) -> list[dict]:
 
 # ── Safe-stock thresholds ──────────────────────────────────────────────────
 
+
 def load_safe_stock(data_dir: Path | None = None) -> list[dict]:
     """Load safe-stock config from *data_dir*/safe_stock.xlsx.
 
-    Returns a list of dicts with keys ``sku``, ``safe_stock``,
-    ``replenish_qty``, ``storage``, ``source_type``, plus one of
-    ``replenish_from`` / ``push_to`` / ``produce_at``.
+    Supports two formats:
+      Old: sku | safe_stock | replenish_qty | storage | source_type | action_key | action_value
+           (used by rw_hangzhou1 and other scenarios)
+      New: sku | safe_stock
+           (used by srw_hangzhou1, global per-SKU safety thresholds)
+
+    Detected by presence of "storage" column in the Excel sheet.
+
+    Returns
+    -------
+    list[dict]
+        Always contains keys ``sku`` and ``safe_stock``.  Old-format rows also
+        carry ``replenish_qty``, ``storage``, ``source_type``, and the dynamic
+        action key (``replenish_from`` / ``push_to`` / ``produce_at``).
     """
     d = data_dir or _data_dir()
     df = pd.read_excel(d / "safe_stock.xlsx", sheet_name="SAFE_STOCK")
 
+    is_new_format = "storage" not in df.columns
+
     entries: list[dict] = []
-    for _, row in df.iterrows():
-        entry = dict(
-            sku=str(row["sku"]),
-            safe_stock=int(row["safe_stock"]),
-            replenish_qty=int(row["replenish_qty"]),
-            storage=str(row["storage"]),
-            source_type=str(row["source_type"]),
-        )
-        action_key = str(row["action_key"])
-        action_value = str(row["action_value"])
-        entry[action_key] = action_value
-        entries.append(entry)
+
+    if is_new_format:
+        for _, row in df.iterrows():
+            entries.append(dict(
+                sku=str(row["sku"]),
+                safe_stock=int(row["safe_stock"]),
+            ))
+    else:
+        for _, row in df.iterrows():
+            entry = dict(
+                sku=str(row["sku"]),
+                safe_stock=int(row["safe_stock"]),
+                replenish_qty=int(row["replenish_qty"]),
+                storage=str(row["storage"]),
+                source_type=str(row["source_type"]),
+            )
+            action_key = str(row["action_key"])
+            action_value = str(row["action_value"])
+            entry[action_key] = action_value
+            entries.append(entry)
 
     print(f"[SAFE_STOCK] Loaded {len(entries)} entries from Excel", file=sys.stderr)
     return entries

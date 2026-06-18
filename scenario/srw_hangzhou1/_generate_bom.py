@@ -1,21 +1,18 @@
-"""Generate data/bom.xlsx for scenario rw_hangzhou1.
+"""Generate bom.xlsx for scenario srw_hangzhou1.
 
 Sources:
-    ~/transf/temp/masterkong_large_康师傅/bom_by_product.csv
+    ~/transf/temp/masterkong_large_康师傅/simple_bom_by_product.csv
     ~/transf/temp/masterkong_large_康师傅/key_sku_share_2025H2.csv  (to seed FG set)
 
 Logic:
     1. Compute the same 2-layer SKU universe as _generate_skus.py.
-    2. For every BOM row in bom_by_product.csv where BOTH product and material
+    2. For every BOM row in simple_bom_by_product.csv where BOTH product and material
        are in our SKU universe, emit a row into bom.xlsx.
     3. Validate all sku_id and material_id references against skus.xlsx.
 
-BOM has 2 layers:
-    Layer 1: FG -> direct inputs (HALB + direct ROH/VERP/packaging)
-    Layer 2: HALB -> direct inputs (sub-HALBs + ROH + VERP)
-Sub-HALB chains are NOT flattened in BOM (they're kept as-is for simulation
-to model multi-stage production). Flattening in _generate_skus.py just ensures
-all intermediate and leaf SKUs are registered.
+Simple BOM is flatter than the original: sauce packets (酱包) are now produced
+directly from ROH+VERP (no intermediate 熟酱 step). The FERT BOM remains
+2-layer: FG → HALB(sauce/powder/veg packets + packaging) → ROH/VERP.
 """
 
 from __future__ import annotations
@@ -30,10 +27,10 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 SRC_DIR = Path.home() / "transf" / "temp" / "masterkong_large_康师傅"
 SHARE_CSV = SRC_DIR / "key_sku_share_2025H2.csv"
-BOM_CSV = SRC_DIR / "bom_by_product.csv"
+BOM_CSV = SRC_DIR / "simple_bom_by_product.csv"
 
-OUT_PATH = Path(__file__).resolve().parents[2] / "data" / "bom.xlsx"
-SKUS_PATH = Path(__file__).resolve().parents[2] / "data" / "skus.xlsx"
+OUT_PATH = Path(__file__).resolve().parents[0] / "bom.xlsx"
+SKUS_PATH = Path(__file__).resolve().parents[0] / "skus.xlsx"
 
 
 def load_fg_ids() -> set[str]:
@@ -44,7 +41,7 @@ def load_fg_ids() -> set[str]:
 
 
 def load_bom() -> pd.DataFrame:
-    df = pd.read_csv(BOM_CSV)
+    df = pd.read_csv(BOM_CSV, encoding='utf-8-sig')
     df = df.rename(columns={
         "产品物料号": "prod_id",
         "投入物料号": "mat_id",

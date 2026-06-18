@@ -230,7 +230,8 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             met = received >= ordered
             if not met:
                 all_met = False
-            print(f"  {_sku_display(sku, sku_map):<20} {ordered:>10} {received:>10} {'✓' if met else '✗':>8}")
+            ratio = 100.0 * received / ordered if ordered else float('nan')
+            print(f"  {_sku_display(sku, sku_map):<20} {ordered:>10} {received:>10} {'✓' if met else '✗':>8} {ratio:.2f}%")
         print(f"  {'-'*48}")
         print(f"  {'All demands met' if all_met else 'Some demands unmet':>48}")
 

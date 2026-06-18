@@ -119,10 +119,16 @@ class Management(sim.Component):
 
         # -- FG SKU detection ----------------------------------------------
         # A SKU is "finished goods" if at least one of its producers drains
-        # output into fg_storage.  More robust than SKU-id-prefix heuristics.
+        # output (directly or via a buffer) into fg_storage.
         self._fg_skus: set[str] = set()
+        fg_drains: set[str] = set()
+        if "fg_storage" in self.nodes:
+            fg_drains.add("fg_storage")
+            for e in self.edges:
+                if e.to_node.node_name == "fg_storage":
+                    fg_drains.add(e.from_node.node_name)
         for pnode in self._production_nodes.values():
-            if pnode.downstream_node.node_name == "fg_storage":
+            if pnode.downstream_node.node_name in fg_drains:
                 for sku in pnode.bom:
                     self._fg_skus.add(sku)
 
@@ -149,6 +155,21 @@ class Management(sim.Component):
 
         # Legacy alias — retained for callers that still test membership.
         self._wip_in_central_storage: set[str] = set(self._wip_pool.keys())
+
+        # -- FERT prep-storage mapping -------------------------------------
+        # Maps FERT-producing line name -> which prep_storage it drains from
+        # (the storage that feeds this line's upstream/lineside).  Needed
+        # for transport replenishment of prep_storage nodes.
+        prep_nodes = {n for n in self.nodes if n.startswith("prep_storage")}
+        self._fert_prep: dict[str, str] = {}
+        if prep_nodes:
+            for pnode in self._production_nodes.values():
+                if pnode.downstream_node.node_name in fg_drains:
+                    lineside = pnode.upstream_node.node_name
+                    for e in self.edges:
+                        if e.to_node.node_name == lineside and e.from_node.node_name in prep_nodes:
+                            self._fert_prep[pnode.node_name] = e.from_node.node_name
+                            break
 
     # ------------------------------------------------------------------
     # helpers

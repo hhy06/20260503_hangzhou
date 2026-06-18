@@ -1,7 +1,7 @@
-"""Simulation configuration for rw_hangzhou1.
+"""Simulation configuration for srw_hangzhou1.
 
 Delegates to sub-modules:
-    sku.py             SKU definitions (loaded from data/skus.xlsx)
+    sku.py             SKU definitions (loaded from skus.xlsx)
     bom.py             Empty stubs (BOM data in skus.xlsx + bom.xlsx)
     plant_topology.py  Node and edge definitions (auto-generated)
 """

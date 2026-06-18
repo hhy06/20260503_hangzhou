@@ -1,8 +1,8 @@
-"""Bill-of-materials for rw_hangzhou1.
+"""Bill-of-materials for srw_hangzhou1.
 
 BOM data lives in two places:
-  1. data/skus.xlsx (SKU.bom attribute on each product SKU)
-  2. data/bom.xlsx   (flat sku_id -> material_id + amount table)
+  1. skus.xlsx (SKU.bom attribute on each product SKU)
+  2. bom.xlsx   (flat sku_id -> material_id + amount table)
   3. plant_topology.py (per-workstation BOM dicts, auto-generated)
 
 This module is intentionally minimal — it provides empty stubs for

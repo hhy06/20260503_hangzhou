@@ -1,8 +1,8 @@
-"""Generate data/skus.xlsx for scenario rw_hangzhou1.
+"""Generate skus.xlsx for scenario srw_hangzhou1.
 
 Sources:
     ~/transf/temp/masterkong_large_康师傅/key_sku_share_2025H2.csv   (260 FG SKUs)
-    ~/transf/temp/masterkong_large_康师傅/bom_by_product.csv         (all BOM rows)
+    ~/transf/temp/masterkong_large_康师傅/simple_bom_by_product.csv  (flattened BOM)
     ~/transf/temp/masterkong_large_康师傅/SKU_Classification_20260527_sku分类明细.csv  (pack size)
 
 Logic:
@@ -11,8 +11,8 @@ Logic:
     3. Collect all distinct SKU IDs touched.
     4. Output skus.xlsx sheet SKUS.
 
-BOM structure: 2-layer flattened (FG→HALB, HALB→ROH/VERP).
-HALB→HALB chains are resolved: intermediate HALBs appear as parents in layer 2.
+Simple BOM structure: sauce packets (酱包) are flattened (ROH+VERP→HALB),
+but FERT BOM still has 2 layers (FG→HALB packets→ROH/VERP).
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ SHARE_CSV = SRC_DIR / "key_sku_share_2025H2.csv"
 BOM_CSV = SRC_DIR / "bom_by_product.csv"
 SKU_CLASS_CSV = SRC_DIR / "SKU_Classification_20260527_sku分类明细.csv"
 
-OUT_PATH = Path(__file__).resolve().parents[2] / "data" / "skus.xlsx"
+OUT_PATH = Path(__file__).resolve().parents[0] / "skus.xlsx"
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -52,7 +52,7 @@ def load_fg_skus() -> pd.DataFrame:
 
 
 def load_bom() -> pd.DataFrame:
-    df = pd.read_csv(BOM_CSV)
+    df = pd.read_csv(BOM_CSV, encoding='utf-8-sig')
     df = df.rename(columns={
         "产品物料号": "prod_id",
         "产品描述": "prod_name",
