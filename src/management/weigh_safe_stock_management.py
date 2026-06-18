@@ -445,25 +445,21 @@ class WeighSafeStockManagement(Management):
 
             # Output transport: produced SKU → storage (at production end)
             out_node = pnode.downstream_node.node_name
-            if sku.startswith("SKU_"):
+            if sku in self._fg_skus:
                 self._add_transport(decision, out_node, "fg_storage", sku, qty, prod_end)
-            elif sku in self._wip_in_central_storage:
-                self._add_transport(decision, out_node, "WIP_storage", sku, qty, prod_end)
             else:
-                # WIP that bypasses WIP_storage (e.g. veg).  Distribute
-                # evenly across the downstream node's main-storage targets.
-                targets = [
-                    e.to_node.node_name for e in self.edges
-                    if e.from_node.node_name == out_node
-                    and e.to_node.node_name.startswith("main_storage")
-                ]
-                if not targets:
-                    targets = [out_node]
-                for i, tgt in enumerate(targets):
-                    share = qty // len(targets)
-                    if i == len(targets) - 1:
-                        share = qty - share * (len(targets) - 1)
-                    self._add_transport(decision, out_node, tgt, sku, share, prod_end)
+                # WIP output: route to the pool that the producer drains
+                # into (computed by base._wip_pool).
+                pool = self._wip_pool.get(sku)
+                if pool:
+                    self._add_transport(decision, out_node, pool, sku, qty, prod_end)
+                else:
+                    # No dedicated pool configured for this SKU's producer
+                    # (e.g. lineside-only or degenerate topology).  Deliver
+                    # to the producer's direct downstream (already = out_node)
+                    # so it accumulates locally; this matches a "bypass"
+                    # pattern where WIP skips a central store.
+                    pass
 
             # Input transport: BOM inputs → lineside (at production start)
             bom_entry = pnode.bom.get(sku)
@@ -471,28 +467,36 @@ class WeighSafeStockManagement(Management):
                 continue
 
             lineside = pnode.upstream_node.node_name
-            supplier = self._lineside_suppliers.get(lineside)
 
             for input_sku, qty_per in bom_entry["inputs"].items():
                 need = qty * qty_per
+                supplier = self.find_input_supplier(lineside, input_sku)
                 if supplier is None:
                     continue
 
-                self._add_transport(decision, supplier, lineside, input_sku, need, prod_start)
+                # Schedule input transport BEFORE production starts so
+                # materials arrive in time.  Lead time = edge transport time
+                # + pad buffer (see base.transport_lead_time).
+                inp_lead = self.transport_lead_time(supplier, lineside)
+                inp_start = max(0.0, prod_start - inp_lead)
+                self._add_transport(decision, supplier, lineside,
+                                    input_sku, need, inp_start)
 
-                if input_sku in self._sku_lines and supplier in (
-                    "main_storage_1", "main_storage_2",
-                ):
-                    # Pre-hop: move WIP from its accumulation point to the
-                    # supplier storage serving the noodle line.  Only needed
-                    # when WIP flows through WIP_storage (sauce/powder).
-                    # Veg bypasses WIP_storage — output_veg delivers directly
-                    # to main storages, so no pre-hop is needed.
+                if input_sku in self._sku_lines:
+                    # Input is itself a WIP → trigger replenishment of its
+                    # own upstream supply chain.
+
                     if input_sku in self._wip_in_central_storage:
-                        self._add_transport(
-                            decision, "WIP_storage", supplier,
-                            input_sku, need, time,
-                        )
+                        # Move the WIP from its accumulation pool into the
+                        # lineside's supplier node so this job can consume it.
+                        wip_pool = self._wip_pool.get(input_sku)
+                        if wip_pool:
+                            wip_lead = self.transport_lead_time(wip_pool, supplier)
+                            wip_start = max(0.0, inp_start - wip_lead)
+                            self._add_transport(
+                                decision, wip_pool, supplier,
+                                input_sku, need, wip_start,
+                            )
 
                     # Raw materials for the WIP producer (replenishment)
                     wip_node = self._production_nodes.get(
@@ -501,15 +505,32 @@ class WeighSafeStockManagement(Management):
                     if wip_node is not None:
                         wip_bom = wip_node.bom.get(input_sku)
                         if wip_bom is not None:
+                            wip_lineside = wip_node.upstream_node.node_name
                             for raw_sku, raw_qty_per in wip_bom["inputs"].items():
                                 raw_need = need * raw_qty_per
+                                raw_supplier = self.find_input_supplier(wip_lineside, raw_sku)
+                                if raw_supplier is None:
+                                    continue
+                                # Source -> raw_supplier happens even earlier
+                                raw_in_lead = self.transport_lead_time(raw_supplier, wip_lineside)
+                                raw_src_lead = self.transport_lead_time("source", raw_supplier)
+                                raw_start = max(0.0, inp_start - raw_in_lead - raw_src_lead)
                                 self._add_transport(
-                                    decision, "source", supplier,
-                                    raw_sku, raw_need, time,
+                                    decision, raw_supplier, wip_lineside,
+                                    raw_sku, raw_need,
+                                    max(0.0, inp_start - raw_in_lead),
                                 )
-                elif input_sku not in self._sku_lines:
+                                self._add_transport(
+                                    decision, "source", raw_supplier,
+                                    raw_sku, raw_need, raw_start,
+                                )
+                else:
+                    # Raw material — replenish from source to the supplier
+                    # node (typically raw_material_storage).
+                    src_lead = self.transport_lead_time("source", supplier)
+                    src_start = max(0.0, inp_start - src_lead)
                     self._add_transport(
-                        decision, "source", supplier, input_sku, need, time,
+                        decision, "source", supplier, input_sku, need, src_start,
                     )
 
     def _add_transport(

@@ -287,9 +287,6 @@ class TraceManagement(Management):
             return
         noodle_node = self._production_nodes[noodle]
         lineside = noodle_node.upstream_node.node_name
-        ms = self._lineside_suppliers.get(lineside)
-        if ms is None:
-            return
 
         # FG production
         self._accum_prod(prod_acc, noodle, fg_sku, qty)
@@ -301,19 +298,22 @@ class TraceManagement(Management):
             "fg_storage", fg_sku, qty,
         )
 
-        # For each BOM input of this FG SKU
+        # For each BOM input of this FG SKU — pick supplier per input SKU
         bom = noodle_node.bom[fg_sku]
         for input_sku, qty_per in bom["inputs"].items():
             need = qty * qty_per
+            supplier = self.find_input_supplier(lineside, input_sku)
+            if supplier is None:
+                continue
 
-            # Transport: main_storage -> noodle lineside
-            self._accum_tx(tx_acc, ms, lineside, input_sku, need)
+            # Transport: supplier -> lineside
+            self._accum_tx(tx_acc, supplier, lineside, input_sku, need)
 
             if input_sku in self._producers_of_sku:
-                self._accum_wip_tree(tx_acc, prod_acc, input_sku, need, ms)
+                self._accum_wip_tree(tx_acc, prod_acc, input_sku, need, supplier)
             else:
                 # Raw material / packaging
-                self._accum_tx(tx_acc, "source", ms, input_sku, need)
+                self._accum_tx(tx_acc, "source", supplier, input_sku, need)
 
     def _rounded_up_full_pallets_qty(self, node_name: str, sku: str, quantity: int) -> int:
         """Round *quantity* up to the next full pallet for *sku* at *node*."""
@@ -323,7 +323,7 @@ class TraceManagement(Management):
         self,
         tx_acc: dict[tuple[str, str, str], int],
         prod_acc: dict[tuple[str, str], int],
-        wip_sku: str, qty: int, target_ms: str,
+        wip_sku: str, qty: int, target_pool: str,
     ) -> None:
         """Accumulate WIP production + raw-material orders for one WIP SKU."""
         producers = self._producers_of_sku.get(wip_sku, [])
@@ -336,7 +336,6 @@ class TraceManagement(Management):
         prod_node = self._production_nodes[producer]
         out_node = prod_node.downstream_node.node_name
         lineside = prod_node.upstream_node.node_name
-        supplier = self._lineside_suppliers.get(lineside)
 
         # Round the WIP qty to full pallets so production, transport
         # and raw-material computations use the same baseline.
@@ -345,24 +344,33 @@ class TraceManagement(Management):
         # Production
         self._accum_prod(prod_acc, producer, wip_sku, pallet_rounded_q)
 
-        # Route WIP from output buffer to target main storage
-        if wip_sku in self._wip_in_central_storage:
-            self._accum_tx(tx_acc, out_node, "WIP_storage", wip_sku, pallet_rounded_q)
-            self._accum_tx(tx_acc, "WIP_storage", target_ms, wip_sku, pallet_rounded_q)
+        # Route WIP output: out_node -> producer's dedicated pool -> target_pool
+        wip_pool = self._wip_pool.get(wip_sku)
+        if wip_pool and wip_pool != target_pool:
+            # Two-hop: producer output feeds its pool first, then flows to target
+            self._accum_tx(tx_acc, out_node, wip_pool, wip_sku, pallet_rounded_q)
+            self._accum_tx(tx_acc, wip_pool, target_pool, wip_sku, pallet_rounded_q)
+        elif wip_pool:
+            # Producer's pool *is* the target (or same node)
+            self._accum_tx(tx_acc, out_node, target_pool, wip_sku, pallet_rounded_q)
         else:
-            # WIP that bypasses WIP_storage (e.g. veg) — route directly
-            self._accum_tx(tx_acc, out_node, target_ms, wip_sku, pallet_rounded_q)
+            # No dedicated pool configured — deliver directly
+            self._accum_tx(tx_acc, out_node, target_pool, wip_sku, pallet_rounded_q)
 
         # Raw materials — compute need from the pallet-rounded WIP qty
-        if supplier is None:
+        raw_supplier = self.find_input_supplier(lineside, wip_sku)
+        if raw_supplier is None:
             return
         bom_entry = prod_node.bom.get(wip_sku)
         if bom_entry is None:
             return
         for raw_sku, raw_qty_per in bom_entry["inputs"].items():
             raw_need = pallet_rounded_q * raw_qty_per
-            self._accum_tx(tx_acc, supplier, lineside, raw_sku, raw_need)
-            self._accum_tx(tx_acc, "source", supplier, raw_sku, raw_need)
+            raw_inp_supplier = self.find_input_supplier(lineside, raw_sku)
+            if raw_inp_supplier is None:
+                continue
+            self._accum_tx(tx_acc, raw_inp_supplier, lineside, raw_sku, raw_need)
+            self._accum_tx(tx_acc, "source", raw_inp_supplier, raw_sku, raw_need)
 
     # ------------------------------------------------------------------
     # _execute_decision
