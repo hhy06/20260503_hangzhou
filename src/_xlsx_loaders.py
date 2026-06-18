@@ -56,7 +56,7 @@ def load_skus_and_bom(data_dir: Path | None = None,
     for _, row in bom.iterrows():
         sku_id = str(row["sku_id"])
         mat_id = str(row["material_id"])
-        amount = int(row["amount"])
+        amount = float(row["amount"])
         if sku_id not in skus:
             bad_refs.append((sku_id, mat_id))
             continue

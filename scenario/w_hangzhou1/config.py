@@ -58,8 +58,7 @@ MANAGEMENT = {
 # ---------------------------------------------------------------------------
 # Simulation duration
 # ---------------------------------------------------------------------------
-SIM_DURATION = 50000
-
+SIM_DURATION = 31 * 24 * 60
 
 def dump_config() -> None:
     """Print all configuration data for inspection."""
