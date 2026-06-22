@@ -630,7 +630,12 @@ def _build_job_cards(
 
     for rec in order_records:
         oid: int = rec.get("order_id", 0)
-        otype: str = rec.get("order_type", "production")
+        # Infer order_type from the record type field
+        rec_type_raw = rec.get("type", "")
+        if "transport" in rec_type_raw:
+            otype = "transport"
+        else:
+            otype = rec.get("order_type", "production")
         sku: str = rec.get("sku", "")
         qty: int = rec.get("quantity", 0)
 
@@ -670,7 +675,7 @@ def _build_job_cards(
                 "order_type": otype,
                 "sku": sku,
                 "quantity": qty,
-                "node_name": rec.get("node_name"),
+                "node_name": rec.get("subject") or rec.get("node_name"),
                 "activate_time": rec.get("activate_time"),
                 "expect_time": rec.get("expect_time"),
                 "from_node": None,
@@ -703,8 +708,8 @@ def _build_job_cards(
                 "node_name": None,
                 "activate_time": None,
                 "expect_time": rec.get("expect_time"),
-                "from_node": rec.get("from_node"),
-                "to_node": rec.get("to_node"),
+                "from_node": rec.get("from") or rec.get("from_node"),
+                "to_node": rec.get("to") or rec.get("to_node"),
                 "start_time": rec.get("start_time"),
             }
 
@@ -722,7 +727,7 @@ def _build_job_cards(
         # ---- Nodes involved (unique, in order of first appearance) --------
         nodes_involved: list[str] = []
         for ev in raw_evs:
-            n = ev.get("node", "")
+            n = ev.get("node", "") or ev.get("subject", "")
             if n and n not in nodes_involved:
                 nodes_involved.append(n)
 
@@ -778,13 +783,26 @@ def process_run(
     order_records: list[dict] = []
     event_records: list[dict] = []
 
+    # sim.jsonl uses a flat `type` field (e.g., "set_init",
+    # "transport_started", "production_completed").  Classify records
+    # into init / order / event buckets based on the actual type values.
+    _init_types = {"set_init"}
+    _order_types = {"production_job_added", "transport_order_added"}
+    _event_types = {
+        "transport_order_added", "transport_started", "transport_completed",
+        "production_job_added", "production_started", "production_completed",
+        "production_output", "production_failed",
+        "materials_consumed", "capacity_warning",
+        "received", "debited",
+    }
+
     for rec in _load_jsonl_iter(os.path.join(run_dir, "sim.jsonl")):
-        rec_type = rec.get("_type", "")
-        if rec_type == "init_state":
+        rec_type = rec.get("type", "")
+        if rec_type in _init_types:
             init_state_records.append(rec)
-        elif rec_type == "order_issued":
+        elif rec_type in _order_types:
             order_records.append(rec)
-        elif rec_type == "event":
+        elif rec_type in _event_types:
             event_records.append(rec)
 
     # ==================================================================
@@ -806,21 +824,30 @@ def process_run(
             return name
         return _display_to_id.get(name, name)
 
-    # 3.  Normalise node names & group events by node
+    # 3.  Normalise node names & group events by node/edge
     for rec in init_state_records:
         rec["node"] = _norm(rec.get("node", ""))
     for rec in order_records:
-        if "node_name" in rec:
-            rec["node_name"] = _norm(rec.get("node_name", ""))
+        if "subject" in rec:
+            rec["subject"] = _norm(rec.get("subject", ""))
+        if "node" in rec:
+            rec["node"] = _norm(rec.get("node", ""))
+        if "from" in rec:
+            rec["from"] = _norm(rec.get("from", ""))
+        if "to" in rec:
+            rec["to"] = _norm(rec.get("to", ""))
         if "from_node" in rec:
             rec["from_node"] = _norm(rec.get("from_node", ""))
         if "to_node" in rec:
             rec["to_node"] = _norm(rec.get("to_node", ""))
-            
+
     node_events: dict[str, list[dict]] = {}
     for ev in event_records:
-        ev["node"] = _norm(ev.get("node", ""))
-        node_events.setdefault(ev["node"], []).append(ev)
+        # Use `subject` (node/edge name emitted by infrastructure) as key
+        key = ev.get("subject", "") or ev.get("node", "")
+        key = _norm(key)
+        ev["node"] = key
+        node_events.setdefault(key, []).append(ev)
 
     for node in node_events:
         node_events[node].sort(key=lambda e: e.get("time", 0.0))

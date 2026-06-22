@@ -38,45 +38,42 @@ def build_report(run_dir: str) -> dict:
     production_ends: dict[int, dict] = {}         # order_id → production_completed event
     storage_events: list[dict] = []
 
+    # sim.jsonl uses a flat `type` field (e.g., "transport_started",
+    # "production_completed", "set_init").  No nested `_type` wrapper.
     with open(jsonl_path) as f:
         for line in f:
             rec = json.loads(line)
-            t = rec.get("_type")
+            ev_type = rec.get("type")
+            oid = rec.get("order_id")
 
-            if t == "order_issued":
-                oid = rec.get("order_id")
-                if oid is not None:
-                    order_issued[oid] = rec
+            if ev_type == "transport_order_added" and oid is not None:
+                transport_added[oid] = rec
 
-            elif t == "event":
-                ev_type = rec.get("type")
-                oid = rec.get("order_id")
+            elif ev_type == "transport_started" and oid is not None:
+                transport_starts[oid] = rec
 
-                if ev_type == "transport_order_added" and oid is not None:
-                    transport_added[oid] = rec
+            elif ev_type == "transport_completed" and oid is not None:
+                transport_ends[oid] = rec
 
-                elif ev_type == "transport_started" and oid is not None:
-                    transport_starts[oid] = rec
+            elif ev_type == "production_job_added" and oid is not None:
+                order_issued[oid] = rec
 
-                elif ev_type == "transport_completed" and oid is not None:
-                    transport_ends[oid] = rec
+            elif ev_type == "production_started" and oid is not None:
+                production_starts[oid] = rec
 
-                elif ev_type == "production_started" and oid is not None:
-                    production_starts[oid] = rec
+            elif ev_type == "production_completed" and oid is not None:
+                production_ends[oid] = rec
 
-                elif ev_type == "production_completed" and oid is not None:
-                    production_ends[oid] = rec
-
-                elif ev_type in ("received", "debited"):
-                    storage_events.append(rec)
+            elif ev_type in ("received", "debited"):
+                storage_events.append(rec)
 
     storage_events.sort(key=lambda e: e.get("time", 0.0))
 
     # --- Build transport jobs ---
+    # Union of all transport-related order_ids (transport_order_added is the
+    # primary key since management issues orders via add_transport_order)
     all_transport_order_ids: set[int] = set()
-    for oid_rec in order_issued.values():
-        if oid_rec.get("order_type") == "transport":
-            all_transport_order_ids.add(oid_rec["order_id"])
+    all_transport_order_ids.update(transport_added.keys())
     all_transport_order_ids.update(transport_starts.keys())
     all_transport_order_ids.update(transport_ends.keys())
 
@@ -111,10 +108,10 @@ def build_report(run_dir: str) -> dict:
         transport_jobs.append(job)
 
     # --- Build production jobs ---
+    # Union of all production-related order_ids (production_job_added is the
+    # primary key)
     all_prod_order_ids: set[int] = set()
-    for oid_rec in order_issued.values():
-        if oid_rec.get("order_type") == "production":
-            all_prod_order_ids.add(oid_rec["order_id"])
+    all_prod_order_ids.update(order_issued.keys())
     all_prod_order_ids.update(production_starts.keys())
     all_prod_order_ids.update(production_ends.keys())
 
@@ -126,11 +123,11 @@ def build_report(run_dir: str) -> dict:
 
         job = {"order_id": oid}
 
-        # Fields from order_issued
-        src = issued or {}
+        # Fields from production_job_added (order_issued), fallback to events
+        src = issued or started_ev or {}
         job["sku"] = src.get("sku")
         job["quantity"] = src.get("quantity")
-        job["node"] = src.get("node_name")
+        job["node"] = src.get("node_name") or src.get("subject")
         job["expect_time"] = src.get("expect_time")
         job["activate_time"] = src.get("activate_time")
 
@@ -227,35 +224,34 @@ def write_text_report(run_dir: str) -> str:
     with open(jsonl_path) as f:
         for line in f:
             rec = json.loads(line)
-            t = rec.get("_type")
+            ev_type = rec.get("type")
 
-            if t == "order_issued":
-                if rec.get("order_type") == "production":
-                    node = rec.get("node_name")
-                    if node:
-                        _inc(node, prod_issued_cnt)
-                        _inc(node, prod_issued_qty, rec.get("quantity", 0))
-
-            elif t == "event":
-                ev_type = rec.get("type")
-                node = rec.get("node")
-
-                if ev_type == "transport_order_added":
+            if ev_type == "transport_order_added":
+                node = rec.get("subject")
+                if node:
                     _inc(node, edge_issued_cnt)
                     _inc(node, edge_issued_pallets, rec.get("pallets", 0))
 
-                elif ev_type == "transport_started":
+            elif ev_type == "transport_started":
+                node = rec.get("subject")
+                if node:
                     _inc(node, edge_started_cnt)
                     _inc(node, edge_started_pallets, rec.get("pallets", 0))
 
-                elif ev_type == "production_started":
+            elif ev_type == "production_started":
+                node = rec.get("subject")
+                if node:
                     _inc(node, prod_started_cnt)
                     _inc(node, prod_started_qty, rec.get("quantity", 0))
 
-                elif ev_type == "received":
+            elif ev_type == "received":
+                node = rec.get("subject")
+                if node:
                     _inc(node, storage_pallets_in, rec.get("pallets", 0))
 
-                elif ev_type == "debited":
+            elif ev_type == "debited":
+                node = rec.get("subject")
+                if node:
                     _inc(node, storage_pallets_out, rec.get("pallets", 0))
 
     scenario = meta.get("scenario", "")
