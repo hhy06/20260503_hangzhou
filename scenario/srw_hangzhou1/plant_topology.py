@@ -14,13 +14,11 @@ NODES["source"] = {"type": "source", "display_name": "供应商"}
 
 NODES["raw_material_storage"] = {
     "type": "warehouse", "max_pallets": 50000,
-    "dispatch_interval": 2, "dispatch_max_pallets": 50,
     "display_name": "原物料库",
 }
 
 NODES["veg_raw_storage"] = {
     "type": "warehouse", "max_pallets": 10000,
-    "dispatch_interval": 2, "dispatch_max_pallets": 50,
     "display_name": "菜包原料库",
 }
 

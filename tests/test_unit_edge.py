@@ -170,8 +170,8 @@ class TestExecutePerPallet:
         # WH_A debited 30 items
         assert wh_a.inventory.get("SKU_X", 0) == 70
 
-    def test_partial_pallet_rounds_up(self, env, wh_a, wh_b):
-        """5 items rounds up to 1 pallet (10 items)."""
+    def test_partial_pallet_exact_quantity(self, env, wh_a, wh_b):
+        """5 items delivered exactly (no pallet rounding), last trip carries remainder."""
         wh_a.inventory = {"SKU_X": 100}
         e = _make_edge(env, wh_a, wh_b, mode=TransferMode.PER_PALLET, time=1.0)
 
@@ -183,10 +183,10 @@ class TestExecutePerPallet:
         e.add_transport_order(order)
         env.run(11)
 
-        # 1 pallet debited (= 10 items, rounded up from 5)
-        assert wh_a.inventory.get("SKU_X", 0) == 90
-        # 10 items delivered at 1/tick → done t=10
-        assert wh_b.inventory.get("SKU_X", 0) == 10
+        # 5 items debited exactly (no rounding up to 10)
+        assert wh_a.inventory.get("SKU_X", 0) == 95
+        # 5 items delivered (1 trip with remainder of 5 < pallet_size 10)
+        assert wh_b.inventory.get("SKU_X", 0) == 5
 
 
 # ---------------------------------------------------------------------------

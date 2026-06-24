@@ -346,11 +346,11 @@ class TestSourceProductionWarehouseSink:
         nodes, _ = scenario
         assert nodes["fin_wh"].inventory.get("fg", 0) == 0
 
-    def test_raw_delivered_and_partially_consumed(self, scenario):
+    def test_raw_delivered_and_consumed(self, scenario):
         nodes, _ = scenario
-        # Order of 30 raw rounds to 1 pallet (100 raw). Production consumes
-        # 30 raw (1:1 BOM for 30 fg), leaving 70 in raw_wh.
-        assert nodes["raw_wh"].inventory.get("raw", 0) == 70
+        # Order of 30 raw delivered exactly (no pallet rounding).
+        # Production consumes 30 raw (1:1 BOM for 30 fg), leaving 0 in raw_wh.
+        assert nodes["raw_wh"].inventory.get("raw", 0) == 0
 
     def test_production_completed(self, scenario):
         nodes, _ = scenario
