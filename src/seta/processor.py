@@ -256,6 +256,18 @@ def _event_display(
             f"(required: {{{req_s}}}, available: {{{ava_s}}})"
         )
 
+    if etype == "production_deferred":
+        reason = first.get("reason", "")
+        defer_min = first.get("defer_minutes", 0)
+        req = first.get("required", {})
+        ava = first.get("available", {})
+        req_s = ", ".join(f"{k}: {v}" for k, v in req.items())
+        ava_s = ", ".join(f"{k}: {v}" for k, v in ava.items())
+        return (
+            f"production_deferred: {sku} — {reason} "
+            f"(defer {defer_min} min, required: {{{req_s}}}, available: {{{ava_s}}})"
+        )
+
     if etype == "transport_order_added":
         oid = first.get("order_id", "")
         from_n = first.get("from", "")
@@ -350,6 +362,10 @@ def _build_merged_event_dict(etype: str, group: list[dict]) -> dict:
         for k in ("reason", "required", "available"):
             val = first.get(k)
             if val is not None: res[k] = val
+    elif etype == "production_deferred":
+        for k in ("reason", "required", "available", "defer_minutes"):
+            val = first.get(k)
+            if val is not None: res[k] = val
     elif etype == "capacity_warning":
         for k in ("pallets", "max_pallets"):
             val = first.get(k)
@@ -397,6 +413,10 @@ def _build_single_event_dict(event: dict) -> dict:
         if val is not None: res["inputs"] = val
     elif etype == "production_failed":
         for k in ("reason", "required", "available"):
+            val = event.get(k)
+            if val is not None: res[k] = val
+    elif etype == "production_deferred":
+        for k in ("reason", "required", "available", "defer_minutes"):
             val = event.get(k)
             if val is not None: res[k] = val
     elif etype == "capacity_warning":
@@ -664,10 +684,13 @@ def _build_job_cards(
             has_failed = any(
                 e.get("type") == "production_failed" for e in raw_evs
             )
+            has_deferred = any(
+                e.get("type") == "production_deferred" for e in raw_evs
+            )
             status = (
                 "completed"
                 if has_completed
-                else ("failed" if has_failed else "in_progress")
+                else ("failed" if has_failed else ("deferred" if has_deferred else "in_progress"))
             )
 
             card: dict = {
@@ -791,7 +814,7 @@ def process_run(
     _event_types = {
         "transport_order_added", "transport_started", "transport_completed",
         "production_job_added", "production_started", "production_completed",
-        "production_output", "production_failed",
+        "production_output", "production_failed", "production_deferred",
         "materials_consumed", "capacity_warning",
         "received", "debited",
     }

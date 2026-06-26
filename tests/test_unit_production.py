@@ -195,7 +195,7 @@ class TestExecuteJob:
 
         sim.yieldless(False)
         env.run(100)
-        assert any(e["type"] == "production_failed" for e in prod.log)
+        assert any(e["type"] == "production_deferred" for e in prod.log)
 
     def test_job_not_started_before_start_time(self):
         env, up, prod, _ = _make_production_scene()

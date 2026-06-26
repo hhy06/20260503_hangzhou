@@ -110,8 +110,8 @@ def aggregate_production(events, line_name, sku):
             total_qty += rec.get("quantity", 0)
         elif t == "production_failed":
             stats["failed"] += 1
-        elif t == "production_dropped":
-            stats["dropped"] += 1
+        elif t == "production_deferred":
+            stats["deferred"] += 1
         elif t == "production_output":
             stats["output_batches"] += 1
     stats["total_qty"] = total_qty
@@ -194,7 +194,7 @@ def trace_fg_sku(fg_sku, run_dir):
     prod = aggregate_production(all_rel_events, fg_line, fg_sku)
     print(f"FG PRODUCTION ({fg_line})")
     print(f"  Orders added: {prod['orders_added']} | Started: {prod['started']} | Completed: {prod['completed']}")
-    print(f"  Failed: {prod['failed']} | Dropped: {prod['dropped']}")
+    print(f"  Failed: {prod['failed']} | Deferred: {prod['deferred']}")
     print(f"  Total produced qty: {prod['total_qty']:.0f}")
 
     out_node = fg_pnode.downstream_node.node_name
@@ -271,7 +271,7 @@ def trace_fg_sku(fg_sku, run_dir):
             for wl in wip_line_names:
                 wip_prod = aggregate_production(all_rel_events, wl, input_sku)
                 if wip_prod["orders_added"] > 0 or wip_prod["completed"] > 0 or wip_prod["failed"] > 0:
-                    print(f"  {wl}: added={wip_prod['orders_added']}, completed={wip_prod['completed']}, failed={wip_prod['failed']}, dropped={wip_prod['dropped']}, qty={wip_prod['total_qty']:.0f}")
+                    print(f"  {wl}: added={wip_prod['orders_added']}, completed={wip_prod['completed']}, failed={wip_prod['failed']}, deferred={wip_prod['deferred']}, qty={wip_prod['total_qty']:.0f}")
             print()
 
             wip_pnode = mgmt._production_nodes[wip_line_names[0]]
@@ -335,8 +335,8 @@ def trace_fg_sku(fg_sku, run_dir):
     if out_inv['net'] > 0:
         bottlenecks.append(f"FG output buffer stuck: {out_inv['net']:.0f} units in {out_node}")
 
-    if prod['dropped'] > 0:
-        bottlenecks.append(f"FG production dropped: {prod['dropped']} orders on {fg_line}")
+    if prod['deferred'] > 0:
+        bottlenecks.append(f"FG production deferred: {prod['deferred']} orders on {fg_line}")
 
     if prod['failed'] > 0:
         bottlenecks.append(f"FG production failed: {prod['failed']} times on {fg_line}")

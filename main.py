@@ -237,6 +237,10 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             print(f"  {_sku_display(sku, sku_map):<20} {ordered:>10} {received:>10} {'✓' if met else '✗':>8} {ratio:.2f}%")
         print(f"  {'-'*48}")
         print(f"  {'All demands met' if all_met else 'Some demands unmet':>48}")
+        _total_ordered = sum(_demand_total.values())
+        _total_received = sum(_sink_received.values())
+        _total_ratio = 100.0 * _total_received / _total_ordered if _total_ordered else 0
+        print(f"  {'TOTAL':<20} {_total_ordered:>10} {_total_received:>10} {'✓' if _total_received >= _total_ordered else '✗':>8} {_total_ratio:.2f}%")
 
     # -- write unified output -----------------------------------------------
     run_dir = write_output(

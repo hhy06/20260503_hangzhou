@@ -61,6 +61,10 @@ class ProductionNode(sim.Component):
         SKU objects keyed by sku_id for pallet_size lookup.
     """
 
+    DEFER_HALF_DAY: float = 720.0
+    IDLE_HOLD: float = 30.0
+    WAIT_HOLD: float = 1.0
+
     def __init__(
         self,
         name: str,
@@ -69,7 +73,6 @@ class ProductionNode(sim.Component):
         downstream_node,
         env: sim.Environment | None = None,
         global_time_step: float = 10.0,
-        retry_delay: float = 10.0,
         display_name: str | None = None,
         sku_registry: dict | None = None,
         shift_duration: float | None = None,
@@ -85,7 +88,6 @@ class ProductionNode(sim.Component):
         self.upstream_node = upstream_node
         self.downstream_node = downstream_node
         self.global_time_step: float = global_time_step
-        self.retry_delay: float = retry_delay
         self.sku_registry: dict | None = sku_registry
 
         self.shift_duration: float | None = shift_duration
@@ -97,7 +99,6 @@ class ProductionNode(sim.Component):
         self.edges_in: list = []
         self.log: list[dict] = []
         self.production_excess: dict[str, float] = {}
-        self.max_retries: int = 3
 
     # ------------------------------------------------------------------
     # properties
@@ -191,15 +192,16 @@ class ProductionNode(sim.Component):
 
         Flow
         ----
-        1. Check raw materials availability → fail & return if insufficient.
+        1. Check raw materials availability → defer & return False if insufficient.
         2. Consume all required materials instantly.
         3. Wait ``lead_time``.
         4. Loop: produce in ``global_time_step`` batches, push downstream.
+        5. Return True on success.
+
+        Returns True if the job was executed, False if it was deferred.
         """
         bom_entry = self.bom[job.sku]
 
-        # --- speed / lead_time resolution ---
-        # If the node's BOM entry omits speed, fall back to SKU default:
         speed: float = bom_entry.get("speed", 0)
         if speed == 0:
             sku_obj = self.sku_registry.get(job.sku) if self.sku_registry else None
@@ -210,7 +212,6 @@ class ProductionNode(sim.Component):
 
         lead = bom_entry.get("lead_time", 0)
 
-        # --- 1. material check ---
         required: dict[str, int] = {}
         for input_sku, qty_per in bom_entry["inputs"].items():
             required[input_sku] = qty_per * job.quantity
@@ -218,7 +219,7 @@ class ProductionNode(sim.Component):
         if not self._check_materials(required):
             self.log.append({
                 "time": self.env.now(),
-                "type": "production_failed",
+                "type": "production_deferred",
                 "subject": self.node_name,
                 "order_id": job.order_id,
                 "sku": job.sku,
@@ -228,23 +229,12 @@ class ProductionNode(sim.Component):
                     sku: self.upstream_node.available_qty(sku)
                     for sku in required
                 },
+                "defer_minutes": self.DEFER_HALF_DAY,
             })
-            retries = job.metadata.get("_retries", 0) + 1
-            if retries <= self.max_retries:
-                job.metadata["_retries"] = retries
-                job.activate_time = self.env.now() + self.retry_delay
-                self.production_queue.append(job)
-                self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
-            else:
-                self.log.append({
-                    "time": self.env.now(),
-                    "type": "production_dropped",
-                    "subject": self.node_name,
-                    "order_id": job.order_id,
-                    "sku": job.sku,
-                    "reason": "max_retries_exceeded",
-                })
-            return
+            job.activate_time = self.env.now() + self.DEFER_HALF_DAY
+            self.production_queue.append(job)
+            self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
+            return False
 
         # --- 2. consume ---
         self._consume_materials(required)
@@ -311,13 +301,14 @@ class ProductionNode(sim.Component):
             "sku": job.sku,
             "quantity": job.quantity,
         })
+        return True
 
     # ------------------------------------------------------------------
     # SALABIM process
     # ------------------------------------------------------------------
 
     def process(self):
-        """SALABIM coroutine: pick eligible jobs and execute them."""
+        """SALABIM coroutine: iterate eligible jobs by order_id, defer on material failure."""
         while True:
             eligible = [
                 j for j in self.production_queue
@@ -325,11 +316,42 @@ class ProductionNode(sim.Component):
             ]
 
             if not eligible:
-                yield self.hold(1.0)
+                yield self.hold(self.WAIT_HOLD)
                 continue
 
             eligible.sort(key=lambda j: j.order_id)
-            job = eligible[0]
-            self.production_queue.remove(job)
 
-            yield from self._execute_job(job)
+            executed = False
+            for job in eligible:
+                bom_entry = self.bom[job.sku]
+                required: dict[str, int] = {}
+                for input_sku, qty_per in bom_entry["inputs"].items():
+                    required[input_sku] = qty_per * job.quantity
+
+                if self._check_materials(required):
+                    self.production_queue.remove(job)
+                    success = yield from self._execute_job(job)
+                    if success:
+                        executed = True
+                        break
+                else:
+                    self.log.append({
+                        "time": self.env.now(),
+                        "type": "production_deferred",
+                        "subject": self.node_name,
+                        "order_id": job.order_id,
+                        "sku": job.sku,
+                        "reason": "insufficient_material",
+                        "required": dict(required),
+                        "available": {
+                            sku: self.upstream_node.available_qty(sku)
+                            for sku in required
+                        },
+                        "defer_minutes": self.DEFER_HALF_DAY,
+                    })
+                    job.activate_time = self.env.now() + self.DEFER_HALF_DAY
+
+            self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
+
+            if not executed:
+                yield self.hold(self.IDLE_HOLD)

@@ -971,6 +971,12 @@ a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
       return 'production_failed: ' + sku + ' — ' + (ev.reason || '') + ' (required: {' + req_s.join(', ') + '}, available: {' + ava_s.join(', ') + '})';
     }
 
+    if (etype === 'production_deferred') {
+      var req_s = []; if (ev.required) for (var k in ev.required) req_s.push(k + ': ' + ev.required[k]);
+      var ava_s = []; if (ev.available) for (var k in ev.available) ava_s.push(k + ': ' + ev.available[k]);
+      return 'production_deferred: ' + sku + ' — ' + (ev.reason || '') + ' (defer ' + (ev.defer_minutes || 0) + ' min, required: {' + req_s.join(', ') + '}, available: {' + ava_s.join(', ') + '})';
+    }
+
     if (etype === 'transport_order_added') return 'transport_order_added: #' + (ev.order_id || '') + ' ' + sku + ' × ' + qty + ' from ' + (ev.from_node || '') + ' → ' + (ev.to_node || '');
     if (etype === 'transport_started') return 'transport_started: #' + (ev.order_id || '') + ' ' + sku + ' × ' + qty + ' from ' + (ev.from_node || '') + ' → ' + (ev.to_node || '') + ' (' + (ev.pallets_count || 0) + ' pallets)';
     if (etype === 'transport_completed') return 'transport_completed: #' + (ev.order_id || '') + ' ' + sku + ' × ' + qty + ' from ' + (ev.from_node || '') + ' → ' + (ev.to_node || '');
