@@ -17,6 +17,7 @@ from src.management.static_order import StaticOrderManagement
 from src.management.safe_stock_management import SafeStockManagement
 from src.management.trace_management import TraceManagement
 from src.management.weigh_safe_stock_management import WeighSafeStockManagement
+from src.management.excess_management import ExcessManagement
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +192,18 @@ def create_management(
             demand_orders=demand_orders,
             trace_mode=mgmt_cfg.get("trace_mode", "full"),
             transport_mode=mgmt_cfg.get("transport_mode", "full_tree"),
+            decision_interval=di,
+            env=env,
+        )
+
+    if mgmt_type == "excess":
+        if safe_stock_module is None:
+            raise ValueError("safe_stock_module is required for excess management")
+        return ExcessManagement(
+            safe_stock_config=safe_stock_module.SAFE_STOCK,
+            nodes=nodes,
+            edges=edges,
+            demand_orders=demand_orders,
             decision_interval=di,
             env=env,
         )

@@ -85,13 +85,17 @@ def load_skus_and_bom(data_dir: Path | None = None,
 # ── Demand orders ──────────────────────────────────────────────────────────
 
 def load_demand(data_dir: Path | None = None) -> list[dict]:
-    """Load demand orders from *data_dir*/demand.xlsx.
+    """Load demand orders from *data_dir*/demand.xlsx or a direct file path.
 
     Returns a list of dicts with keys ``sku``, ``quantity``, ``from_node``,
     ``to_node``, ``start_time``.
     """
     d = data_dir or _data_dir()
-    df = pd.read_excel(d / "demand.xlsx", sheet_name="DEMAND")
+    if d.is_file():
+        xlsx_path = d
+    else:
+        xlsx_path = d / "demand.xlsx"
+    df = pd.read_excel(xlsx_path, sheet_name="DEMAND")
 
     orders: list[dict] = []
     total = 0

@@ -96,6 +96,8 @@ class ProductionNode(sim.Component):
         self.edges_out: list = []
         self.edges_in: list = []
         self.log: list[dict] = []
+        self.production_excess: dict[str, float] = {}
+        self.max_retries: int = 3
 
     # ------------------------------------------------------------------
     # properties
@@ -227,10 +229,21 @@ class ProductionNode(sim.Component):
                     for sku in required
                 },
             })
-            # Requeue so production retries when materials arrive
-            job.activate_time = self.env.now() + self.retry_delay
-            self.production_queue.append(job)
-            self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
+            retries = job.metadata.get("_retries", 0) + 1
+            if retries <= self.max_retries:
+                job.metadata["_retries"] = retries
+                job.activate_time = self.env.now() + self.retry_delay
+                self.production_queue.append(job)
+                self.production_queue.sort(key=lambda j: (j.activate_time, j.order_id))
+            else:
+                self.log.append({
+                    "time": self.env.now(),
+                    "type": "production_dropped",
+                    "subject": self.node_name,
+                    "order_id": job.order_id,
+                    "sku": job.sku,
+                    "reason": "max_retries_exceeded",
+                })
             return
 
         # --- 2. consume ---

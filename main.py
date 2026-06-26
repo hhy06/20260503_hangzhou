@@ -207,9 +207,12 @@ def run_scenario(scenario_name: str) -> SimulationResult:
             )
 
     # -- demand fulfillment report -----------------------------------------
+    _sim_dur = config.SIM_DURATION
     if hasattr(demand_module, "DEMAND_ORDERS") and demand_module.DEMAND_ORDERS:
         _demand_total: dict[str, int] = {}
         for d in demand_module.DEMAND_ORDERS:
+            if d["start_time"] > _sim_dur:
+                continue
             s = d["sku"]
             _demand_total[s] = _demand_total.get(s, 0) + d["quantity"]
 

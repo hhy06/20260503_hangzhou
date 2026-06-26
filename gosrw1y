@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+python3 -m scenario.srw_hangzhou1_oneyear.dump_scenario
+python3 main.py scenario.srw_hangzhou1_oneyear 2>&1 | tee /tmp/.run_output.txt
+run_dir=$(grep 'Unified output written to:' /tmp/.run_output.txt | sed 's/^.*: //')
+if [ -n "$run_dir" ]; then
+  python3 -m src.seta "$run_dir"
+  python3 -m src.report "$run_dir"
+  python3 -m src.sseta "$run_dir"
+  python3 jsonl_count.py "$run_dir/sim.jsonl"
+  #visidata "$run_dir/subject_type_counts.csv"
+fi
+rm -f /tmp/.run_output.txt
