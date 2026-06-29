@@ -16,7 +16,11 @@ def get_speed(line_bom_entry: dict, sku_registry: dict[str, SKU], sku: str) -> f
     sku_obj = sku_registry.get(sku)
     if sku_obj and sku_obj.bom_speed > 0:
         return sku_obj.bom_speed
-    return 1.0
+    raise ValueError(
+        f"SKU {sku} has no valid speed — "
+        f"topology speed={speed}, "
+        f"bom_speed={sku_obj.bom_speed if sku_obj else 'SKU_NOT_IN_REGISTRY'}"
+    )
 
 
 def group_capacity(
