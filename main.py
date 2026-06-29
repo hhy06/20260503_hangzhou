@@ -103,6 +103,18 @@ def run_scenario(scenario_name: str) -> SimulationResult:
     orders_module = importlib.import_module(f"{scenario_name}.config_static_jobs")
     demand_module = importlib.import_module(f"{scenario_name}.demand")
 
+    # ── optionally fit simulation duration to the demand horizon ──────────
+    _DEMAND_OVERRIDE_SIM_DURATION = True
+    if _DEMAND_OVERRIDE_SIM_DURATION:
+        if hasattr(demand_module, "DEMAND_ORDERS") and demand_module.DEMAND_ORDERS:
+            last_t = max(d["start_time"] for d in demand_module.DEMAND_ORDERS)
+            new_dur = int(last_t + 1440)
+            if new_dur != ctx.config.SIM_DURATION:
+                print(f"[CONFIG] SIM_DURATION: {ctx.config.SIM_DURATION} → {new_dur} "
+                      f"({new_dur//1440}d) based on demand horizon")
+                ctx.config.SIM_DURATION = new_dur
+    # ──────────────────────────────────────────────────────────────────────
+
     config = ctx.config
     env = ctx.env
     nodes = ctx.nodes
