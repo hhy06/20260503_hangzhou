@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+DAYS="${1:-30}"
+OUTFILE="/tmp/.psp_output_$$.txt"
+echo "=== PSP Planner :: scenario/psp :: ${DAYS} days ==="
+echo ""
+python3 psp_main.py psp "${DAYS}" 2>&1 | tee "$OUTFILE"
+run_dir=$(grep 'Results written to:' "$OUTFILE" | sed 's/^.*: //')
+if [ -n "$run_dir" ]; then
+  echo ""
+  head -20 "$run_dir/summary.txt"
+  echo ""
+  echo "Full report in: $run_dir"
+fi
+rm -f "$OUTFILE"
