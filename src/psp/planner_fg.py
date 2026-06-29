@@ -66,6 +66,7 @@ def run(
     line_skus: dict[str, list[str]],
     capacity: dict[str, dict[str, int]],
     all_fg_skus: set[str],
+    decision_mode: int = 1,
 ) -> tuple[list[LineAssignment], dict[str, int], dict[str, int],
            dict[int, int], dict[int, int], dict[int, int]]:
     fg_stock: dict[str, int] = dict(init_stock.get("fg_storage", {}))
@@ -97,6 +98,10 @@ def run(
     window_demand: dict[str, int] = defaultdict(int)
     window_ptr: int = 0
 
+    roll_demand: dict[str, int] = defaultdict(int)
+    roll_ptr_add: int = 0
+    roll_ptr_rem: int = 0
+
     fg_plan: list[LineAssignment] = []
 
     for shift in shifts:
@@ -107,6 +112,20 @@ def run(
             for sku, qty in demand_by_time[t].items():
                 window_demand[sku] += qty
             window_ptr += 1
+
+        past = shift.start_time
+        while (roll_ptr_rem < len(shipment_times)
+               and shipment_times[roll_ptr_rem] < past):
+            t = shipment_times[roll_ptr_rem]
+            for sku, qty in demand_by_time[t].items():
+                roll_demand[sku] -= qty
+            roll_ptr_rem += 1
+        while (roll_ptr_add < len(shipment_times)
+               and shipment_times[roll_ptr_add] <= cutoff):
+            t = shipment_times[roll_ptr_add]
+            for sku, qty in demand_by_time[t].items():
+                roll_demand[sku] += qty
+            roll_ptr_add += 1
 
         if shift.type == "day":
             ship_time = shift.start_time
@@ -140,13 +159,33 @@ def run(
                 continue
             cap = capacity[lid]
             best_sku = None
-            best_need = -float('inf')
 
-            for sku in eligible:
-                need = window_demand.get(sku, 0) - produced_so_far.get(sku, 0)
-                if need > best_need:
-                    best_need = need
-                    best_sku = sku
+            if decision_mode == 1:
+                best_val = -float('inf')
+                for sku in eligible:
+                    need = window_demand.get(sku, 0) - produced_so_far.get(sku, 0)
+                    if need > best_val:
+                        best_val = need
+                        best_sku = sku
+            elif decision_mode == 2:
+                best_score = (float('inf'), float('inf'))
+                for sku in eligible:
+                    nd = roll_demand.get(sku, 0)
+                    bucket = 0 if fg_stock.get(sku, 0) < nd else 1
+                    score = (bucket, -nd)
+                    if score < best_score:
+                        best_score = score
+                        best_sku = sku
+            else:
+                best_score = (float('inf'), float('inf'))
+                for sku in eligible:
+                    nd = roll_demand.get(sku, 0)
+                    bucket = 0 if fg_stock.get(sku, 0) < nd else 1
+                    coverage = fg_stock.get(sku, 0) / max(nd, 1)
+                    score = (bucket, coverage)
+                    if score < best_score:
+                        best_score = score
+                        best_sku = sku
 
             qty = cap.get(best_sku, 0)
             if qty <= 0:

@@ -53,7 +53,7 @@ def build_daily_report(
     return report
 
 
-def run_plan(scenario_path: Path, num_days: int) -> PspPlan:
+def run_plan(scenario_path: Path, num_days: int, decision_mode: int = 1) -> PspPlan:
     print(f"[PSP] Loading scenario: {scenario_path.name}")
     sku_registry: dict[str, SKU] = loader.load_skus_and_bom(scenario_path)
     demand_orders = loader.load_demand(scenario_path)
@@ -72,6 +72,7 @@ def run_plan(scenario_path: Path, num_days: int) -> PspPlan:
     fg_plan, shortages, shipment_delivered, daily_demand, daily_delivered, daily_shortage = run_fg(
         shifts, topology_nodes, sku_registry, init_stock,
         demand_orders, x_lines, line_skus, fg_capacity, all_fg_skus,
+        decision_mode=decision_mode,
     )
     total_fg = sum(a.quantity for a in fg_plan)
     print(f"[PSP] FG plan: {len(fg_plan)} assignments, {total_fg} total units")

@@ -1,7 +1,7 @@
 """PSP Planner — shift-level production planning without simulation.
 
 Usage:
-    python psp_main.py [scenario_name] [num_days]
+    python psp_main.py [scenario_name] [num_days] [--mode 1|2|3]
 """
 
 import sys
@@ -20,8 +20,14 @@ SCENARIO_MAP = {
 
 
 def main():
-    scenario_key = sys.argv[1] if len(sys.argv) > 1 else "psp"
-    num_days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+    args = sys.argv[1:]
+    scenario_key = args[0] if len(args) > 0 and args[0] not in ("--mode",) else "psp"
+    num_days = int(args[1]) if len(args) > 1 and args[1] not in ("--mode",) else 30
+
+    decision_mode = 1
+    for i, a in enumerate(args):
+        if a == "--mode" and i + 1 < len(args):
+            decision_mode = int(args[i + 1])
 
     rel_path = SCENARIO_MAP.get(scenario_key, scenario_key)
     scenario_path = Path(__file__).resolve().parent / rel_path
@@ -30,7 +36,8 @@ def main():
         print(f"Scenario not found: {scenario_path}")
         sys.exit(1)
 
-    plan = run_plan(scenario_path, num_days)
+    print(f"[PSP] Decision mode: {decision_mode}")
+    plan = run_plan(scenario_path, num_days, decision_mode=decision_mode)
     write(plan, scenario_path)
 
 
