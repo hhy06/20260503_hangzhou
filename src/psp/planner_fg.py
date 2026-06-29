@@ -7,6 +7,7 @@ from src.psp.types import Shift, LineAssignment
 
 
 SHIFT_DURATION = 690
+LOOKAHEAD = 3600  # 2.5 days × 1440 min/day
 
 
 def get_speed(line_bom_entry: dict, sku_registry: dict[str, SKU], sku: str) -> float:
@@ -95,15 +96,10 @@ def run(
     window_demand: dict[str, int] = defaultdict(int)
     window_ptr: int = 0
 
-    line_rr_pos: dict[str, int] = {}
     fg_plan: list[LineAssignment] = []
 
     for shift in shifts:
-        next_idx = shift.index + 1
-        if next_idx < len(shifts):
-            cutoff = shifts[next_idx].end_time
-        else:
-            cutoff = shifts[-1].end_time
+        cutoff = shift.start_time + LOOKAHEAD
         while (window_ptr < len(shipment_times)
                and shipment_times[window_ptr] <= cutoff):
             t = shipment_times[window_ptr]
@@ -143,18 +139,13 @@ def run(
                 continue
             cap = capacity[lid]
             best_sku = None
-            best_need = -1
+            best_need = -float('inf')
 
             for sku in eligible:
                 need = window_demand.get(sku, 0) - produced_so_far.get(sku, 0)
                 if need > best_need:
                     best_need = need
                     best_sku = sku
-
-            if best_sku is None or best_need <= 0:
-                pos = line_rr_pos.get(lid, 0)
-                best_sku = eligible[pos % len(eligible)]
-                line_rr_pos[lid] = (pos + 1) % len(eligible)
 
             qty = cap.get(best_sku, 0)
             if qty <= 0:
