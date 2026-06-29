@@ -36,12 +36,16 @@ def build_daily_report(
             if si in {s.index for s in day_shifts}
         )
 
+        demand_qty = daily_demand.get(day, 0)
+        short_qty = daily_shortage.get(day, 0)
+        short_pct = round(100.0 * short_qty / demand_qty, 2) if demand_qty > 0 else 0.0
         report.append({
             "day": day,
-            "demand_qty": daily_demand.get(day, 0),
+            "demand_qty": demand_qty,
             "fg_produced": day_fg,
             "fg_delivered": daily_delivered.get(day, 0),
-            "fg_shortage": daily_shortage.get(day, 0),
+            "fg_shortage": short_qty,
+            "fg_short_pct": short_pct,
             "wip_needed": round(day_wip_needed),
             "wip_produced": day_wip,
         })

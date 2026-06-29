@@ -35,7 +35,7 @@ def write(plan: PspPlan, scenario_path: Path) -> Path:
     with open(run_dir / "daily_report.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["day", "demand_qty", "fg_produced", "fg_delivered", "fg_shortage",
-                     "wip_needed", "wip_produced"])
+                     "fg_short_pct", "wip_needed", "wip_produced"])
         cum_fg = plan.init_fg_stock
         cum_wip_needed = 0
         cum_wip_produced = 0
@@ -49,6 +49,7 @@ def write(plan: PspPlan, scenario_path: Path) -> Path:
                 r["fg_produced"],
                 r["fg_delivered"],
                 r["fg_shortage"],
+                r["fg_short_pct"],
                 r["wip_needed"],
                 r["wip_produced"],
             ])
@@ -65,9 +66,12 @@ def write(plan: PspPlan, scenario_path: Path) -> Path:
         f.write(f"\nInitial FG stock: {plan.init_fg_stock:,}\n")
         f.write(f"Total demand: {total_demand:,}\n")
         f.write(f"Total delivered: {total_delivered:,}\n")
+        total_short = sum(plan.shortages.values())
         if total_demand > 0:
             pct = 100.0 * total_delivered / total_demand
             f.write(f"Fulfillment rate: {pct:.2f}%\n")
+            short_pct = 100.0 * total_short / total_demand
+            f.write(f"FG shortage ratio: {short_pct:.2f}%\n")
         else:
             f.write("Fulfillment rate: N/A (no demand)\n")
 
@@ -87,8 +91,8 @@ def write(plan: PspPlan, scenario_path: Path) -> Path:
 
         f.write(f"\n=== Daily Report ===\n")
         f.write(f"{'Day':>4} {'Demand':>10} {'FG_Prod':>10} {'FG_Delv':>10} {'Short':>8} "
-                f"{'WIP_Need':>10} {'WIP_Prod':>10}\n")
-        f.write(f"{'─'*4} {'─'*10} {'─'*10} {'─'*10} {'─'*8} {'─'*10} {'─'*10}\n")
+                f"{'Short%':>7} {'WIP_Need':>10} {'WIP_Prod':>10}\n")
+        f.write(f"{'─'*4} {'─'*10} {'─'*10} {'─'*10} {'─'*8} {'─'*7} {'─'*10} {'─'*10}\n")
         cum_fg = plan.init_fg_stock
         for r in plan.daily_report:
             cum_fg += r["fg_produced"] - r["fg_delivered"]
@@ -96,9 +100,11 @@ def write(plan: PspPlan, scenario_path: Path) -> Path:
             fp = r["fg_produced"]
             fd = r["fg_delivered"]
             fs = r["fg_shortage"]
+            sp = r["fg_short_pct"]
             wn = r["wip_needed"]
             wp = r["wip_produced"]
-            f.write(f"{r['day']:>4d} {d:>10,} {fp:>10,} {fd:>10,} {fs:>8,} {wn:>10,} {wp:>10,}\n")
+            f.write(f"{r['day']:>4d} {d:>10,} {fp:>10,} {fd:>10,} {fs:>8,} "
+                    f"{sp:>6.2f}% {wn:>10,} {wp:>10,}\n")
 
     print(f"[PSP] Results written to {run_dir}")
     return run_dir

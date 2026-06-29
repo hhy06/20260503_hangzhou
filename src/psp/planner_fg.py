@@ -7,7 +7,8 @@ from src.psp.types import Shift, LineAssignment
 
 
 SHIFT_DURATION = 690
-LOOKAHEAD = 3600  # 2.5 days × 1440 min/day
+_DAY_MIN=1440
+LOOKAHEAD = 3 * _DAY_MIN   # 2.5 days × 1440 min/day
 
 
 def get_speed(line_bom_entry: dict, sku_registry: dict[str, SKU], sku: str) -> float:
