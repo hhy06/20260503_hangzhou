@@ -1,0 +1,9 @@
+Done. demand2.xlsx created at scenario/psp/demand2.xlsx.
+Specs:
+- 365 days (all days have demand, no zero-demand days)
+- 94,535 rows (365 days × 259 SKUs with non-zero avg)
+- 94,500 data rows (259 SKUs × 365) — 17AN340671H excluded since its total = 0
+- Each day's total: 294,567 (exactly matches the original's average daily total of 294,566.95)
+- Distribution follows original per-SKU proportions exactly (rounded to integer)
+- Format matches demand.xlsx: columns sku, quantity, from_node, to_node, start_time
+- Time starts at day 1 (start_time = 480) with daily 1440-min intervals
