@@ -4,7 +4,7 @@ set -e
 SCENARIO="${1:-psp}"
 DAYS="${2:-365}"
 
-for MODE in 1 2 3 4; do
+for MODE in 1 2 3 4 5; do
   echo "========================================"
   echo "  Mode $MODE"
   echo "========================================"

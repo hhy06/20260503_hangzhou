@@ -70,6 +70,13 @@ def run(
     decision_mode: int = 1,
 ) -> tuple[list[LineAssignment], dict[str, int], dict[str, int],
            dict[int, int], dict[int, int], dict[int, int]]:
+    if decision_mode == 5:
+        from src.psp.global_planner_scip import run_scip_global
+        return run_scip_global(
+            shifts, init_stock, demand_orders,
+            x_lines, line_skus, capacity, all_fg_skus,
+        )
+
     fg_stock: dict[str, int] = dict(init_stock.get("fg_storage", {}))
     for sku in all_fg_skus:
         fg_stock.setdefault(sku, 0)
