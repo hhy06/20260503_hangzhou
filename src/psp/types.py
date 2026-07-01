@@ -37,6 +37,16 @@ class InventoryEntry:
 
 
 @dataclass
+class MaterialMovement:
+    shift_index: int
+    from_node: str
+    to_node: str
+    sku: str
+    quantity: float
+    movement_type: str
+
+
+@dataclass
 class PspPlan:
     shifts: list[Shift] = field(default_factory=list)
     fg_assignments: list[LineAssignment] = field(default_factory=list)
@@ -47,3 +57,4 @@ class PspPlan:
     shipment_delivered: dict[str, int] = field(default_factory=dict)
     daily_report: list[dict] = field(default_factory=list)
     init_fg_stock: int = 0
+    movements: list[MaterialMovement] = field(default_factory=list)

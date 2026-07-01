@@ -7,6 +7,8 @@ Usage:
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 from src.psp.planner import run_plan
 from src.psp.output import write
 
@@ -38,7 +40,13 @@ def main():
 
     print(f"[PSP] Decision mode: {decision_mode}")
     plan = run_plan(scenario_path, num_days, decision_mode=decision_mode)
-    write(plan, scenario_path)
+
+    sku_xlsx = scenario_path / "skus.xlsx"
+    sku_name_map: dict[str, str] = {}
+    if sku_xlsx.exists():
+        sku_df = pd.read_excel(sku_xlsx, sheet_name="SKUS")
+        sku_name_map = dict(zip(sku_df["sku_id"].astype(str), sku_df["name"].astype(str)))
+    write(plan, scenario_path, sku_name_map=sku_name_map)
 
 
 if __name__ == "__main__":
