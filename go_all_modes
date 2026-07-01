@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+SCENARIO="${1:-psp}"
+DAYS="${2:-365}"
+
+for MODE in 1 2 3 4; do
+  echo "========================================"
+  echo "  Mode $MODE"
+  echo "========================================"
+  python3 psp_main.py "$SCENARIO" "$DAYS" --mode "$MODE" 2>&1 | tail -1
+  RUN_DIR=$(ls -td scenario/"$SCENARIO"/run_psp_* 2>/dev/null | head -1)
+  if [ -f "$RUN_DIR/summary.txt" ]; then
+    sed -n '/^=== Daily Report ===/q;p' "$RUN_DIR/summary.txt"
+  fi
+  echo ""
+done
