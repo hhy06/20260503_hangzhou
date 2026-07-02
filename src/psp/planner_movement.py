@@ -68,6 +68,7 @@ def derive_movements(
     shifts: list,
     demand_orders: list[dict] | None = None,
     shortages: dict[str, int] | None = None,
+    init_stock: dict[str, dict[str, int]] | None = None,
 ) -> list[MaterialMovement]:
     movements: list[MaterialMovement] = []
     wip_producible = build_wip_producible_set(topology_nodes)
@@ -251,6 +252,95 @@ def derive_movements(
                             movement_type="fg_shipment",
                         ))
                 break
+
+    # ================================================================
+    # 5) Initial WIP stock: spread from wip_storage → prep_storage
+    #    across shifts matching FG consumption, so prep_storage has
+    #    stock when FG lines consume it.
+    # ================================================================
+    if init_stock:
+        fg_consume: dict[int, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+        for shift, fg_list in fg_by_shift.items():
+            for fg in fg_list:
+                if not fg.feasible:
+                    continue
+                bom_inputs = get_bom_inputs(topology_nodes, fg.line_id, fg.sku)
+                for input_sku, input_qty in bom_inputs.items():
+                    if input_sku in wip_producible:
+                        fg_consume[shift][input_sku] += fg.quantity * input_qty
+
+        def _spread_init_wip(warehouse: str, sku: str, qty: float):
+            remaining = qty
+            for shift in range(num_shifts):
+                consumption = fg_consume.get(shift, {}).get(sku, 0.0)
+                if consumption <= 0 or remaining <= 0:
+                    continue
+                transfer_qty = min(remaining, consumption)
+                prep_shift = shift - 1
+                if prep_shift >= 0:
+                    split = _compute_wip_prep_split(
+                        sku, transfer_qty,
+                        fg_by_shift.get(shift, []),
+                        topology_nodes, wip_producible, line_prep_map,
+                    )
+                    for prep_wh, alloc in split.items():
+                        if alloc > 0:
+                            movements.append(MaterialMovement(
+                                shift_index=prep_shift,
+                                from_node=warehouse,
+                                to_node=prep_wh,
+                                sku=sku,
+                                quantity=alloc,
+                                movement_type="wip_to_prep",
+                            ))
+                remaining -= transfer_qty
+
+        for sku, qty in init_stock.get("wip_storage", {}).items():
+            if qty > 0 and sku in wip_producible:
+                _spread_init_wip("wip_storage", sku, float(qty))
+        for sku, qty in init_stock.get("veg_wip_storage", {}).items():
+            if qty > 0 and sku in wip_producible:
+                _spread_init_wip("veg_wip_storage", sku, float(qty))
+
+        # Rebalance initial stock between prep_storage_1 and prep_storage_2
+        # to match the FG consumption pattern (init stock is often 50/50
+        # but FG need may be entirely from one prep_storage).
+        for sku in set(init_stock.get("prep_storage_1", {})) | set(init_stock.get("prep_storage_2", {})):
+            if sku not in wip_producible:
+                continue
+            total_p1 = init_stock.get("prep_storage_1", {}).get(sku, 0)
+            total_p2 = init_stock.get("prep_storage_2", {}).get(sku, 0)
+            if total_p1 <= 0 or total_p2 <= 0:
+                continue
+            need_p1 = 0.0
+            need_p2 = 0.0
+            for fg in fg_plan:
+                if not fg.feasible:
+                    continue
+                prep = line_prep_map.get(fg.line_id, "prep_storage_1")
+                bom = get_bom_inputs(topology_nodes, fg.line_id, fg.sku)
+                qty = bom.get(sku, 0.0)
+                if qty > 0:
+                    if prep == "prep_storage_1":
+                        need_p1 += fg.quantity * qty
+                    else:
+                        need_p2 += fg.quantity * qty
+            total_need = need_p1 + need_p2
+            if total_need <= 0:
+                continue
+            target_p1 = (total_p1 + total_p2) * need_p1 / total_need
+            if total_p1 < target_p1 - 0.5:
+                deficit = target_p1 - total_p1
+                transfer_qty = min(deficit, total_p2)
+                if transfer_qty > 0.5:
+                    movements.append(MaterialMovement(
+                        shift_index=0,
+                        from_node="prep_storage_2",
+                        to_node="prep_storage_1",
+                        sku=sku,
+                        quantity=round(transfer_qty, 4),
+                        movement_type="wip_to_prep",
+                    ))
 
     movements.sort(key=lambda m: (m.shift_index, m.movement_type, m.from_node, m.to_node, m.sku))
     return movements

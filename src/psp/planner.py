@@ -230,6 +230,7 @@ def run_plan(scenario_path: Path, num_days: int, decision_mode: int = 1) -> PspP
         fg_plan, wip_plan, material_orders, topology_nodes,
         sku_registry, all_fg_skus, shipment_delivered, shifts,
         demand_orders=demand_orders, shortages=shortages,
+        init_stock=init_stock,
     )
     print(f"[PSP] Material movements: {len(movements)}")
 
