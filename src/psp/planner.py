@@ -202,6 +202,7 @@ def run_plan(scenario_path: Path, num_days: int, decision_mode: int = 1) -> PspP
     wip_plan, wip_need_by_shift = run_wip(
         shifts, fg_plan, topology_nodes, sku_registry,
         init_stock, all_fg_skus,
+        decision_mode=decision_mode,
     )
     total_wip = sum(a.quantity for a in wip_plan)
     print(f"[PSP] WIP plan: {len(wip_plan)} assignments, {total_wip} total units")

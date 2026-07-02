@@ -1,12 +1,15 @@
 """Sweep 2: WIP production planning — derive from FG plan via BOM."""
 
+from bisect import bisect_left
 from collections import defaultdict
 
 from src.model.sku import SKU
+from src.psp.planner_selection import pick_sku
 from src.psp.types import Shift, LineAssignment
 
 
 SHIFT_DURATION = 690
+LOOKAHEAD_SHIFTS = 6
 
 
 def get_speed(line_bom_entry: dict, sku_registry: dict[str, SKU], sku: str) -> float:
@@ -106,10 +109,10 @@ def run(
     sku_registry: dict[str, SKU],
     init_stock: dict[str, dict[str, int]],
     all_fg_skus: set[str],
+    decision_mode: int = 1,
 ) -> tuple[list[LineAssignment], dict[int, dict[str, float]]]:
     wip_lines, line_skus, capacity = build_wip_lines(topology_nodes, sku_registry)
     wip_producible = build_wip_producible_set(topology_nodes)
-
     wip_need_by_shift = compute_wip_need(fg_plan, topology_nodes, wip_producible)
 
     init_wip: dict[str, float] = defaultdict(float)
@@ -117,18 +120,75 @@ def run(
         for sku, qty in init_stock.get(wh, {}).items():
             init_wip[sku] += qty
 
-    remaining: dict[str, float] = defaultdict(float)
-    for sku, qty in init_wip.items():
-        remaining[sku] = qty
-
     wip_plan: list[LineAssignment] = []
 
-    line_rr_pos: dict[str, int] = {}
+    # --- Build WIP demand analogues (mirroring FG's demand_by_time) ---
+    wip_need_times = sorted(wip_need_by_shift.keys())
+
+    wip_need_days: list[int] = []
+    shift_index_to_day: dict[int, int] = {s.index: s.day for s in shifts}
+    for si in wip_need_times:
+        wip_need_days.append(shift_index_to_day.get(si, 1))
+
+    cum_wip_need: dict[str, list[float]] = {}
+    all_wip_skus: set[str] = set()
+    for skus in wip_need_by_shift.values():
+        all_wip_skus.update(skus.keys())
+    for skus in line_skus.values():
+        all_wip_skus.update(skus)
+    for sku in sorted(all_wip_skus):
+        running = 0.0
+        series: list[float] = []
+        for si in wip_need_times:
+            running += wip_need_by_shift[si].get(sku, 0.0)
+            series.append(running)
+        cum_wip_need[sku] = series
+
+    # --- Initialize WIP stock and produced-so-far ---
+    wip_stock: dict[str, float] = defaultdict(float)
+    wip_produced: dict[str, float] = defaultdict(float)
+    for sku, qty in init_wip.items():
+        wip_stock[sku] = qty
+        wip_produced[sku] = qty
+
+    # --- Window/rolling pointers for WIP need ---
+    window_wip_need: dict[str, float] = defaultdict(float)
+    window_ptr: int = 0
+
+    roll_wip_need: dict[str, float] = defaultdict(float)
+    roll_ptr_add: int = 0
+    roll_ptr_rem: int = 0
 
     for shift in shifts:
-        need_this_shift = wip_need_by_shift.get(shift.index, {})
+        si = shift.index
+
+        # Advance window: include WIP need from si to si + LOOKAHEAD_SHIFTS
+        while (window_ptr < len(wip_need_times)
+               and wip_need_times[window_ptr] <= si + LOOKAHEAD_SHIFTS):
+            t = wip_need_times[window_ptr]
+            for sku, qty in wip_need_by_shift[t].items():
+                window_wip_need[sku] += qty
+            window_ptr += 1
+
+        # Advance rolling window: remove WIP need before si
+        while (roll_ptr_rem < len(wip_need_times)
+               and wip_need_times[roll_ptr_rem] < si):
+            t = wip_need_times[roll_ptr_rem]
+            for sku, qty in wip_need_by_shift[t].items():
+                roll_wip_need[sku] -= qty
+            roll_ptr_rem += 1
+        # Add WIP need up to si + LOOKAHEAD_SHIFTS
+        while (roll_ptr_add < len(wip_need_times)
+               and wip_need_times[roll_ptr_add] <= si + LOOKAHEAD_SHIFTS):
+            t = wip_need_times[roll_ptr_add]
+            for sku, qty in wip_need_by_shift[t].items():
+                roll_wip_need[sku] += qty
+            roll_ptr_add += 1
+
+        # Consume WIP stock by this shift's WIP need (analogous to FG demand fulfillment)
+        need_this_shift = wip_need_by_shift.get(si, {})
         for sku, qty in need_this_shift.items():
-            remaining[sku] += qty
+            wip_stock[sku] -= qty
 
         lines_this_shift = list(wip_lines)
         lines_this_shift.sort()
@@ -137,32 +197,33 @@ def run(
             eligible = line_skus.get(lid, [])
             if not eligible:
                 continue
+
+            best_sku = pick_sku(
+                eligible, decision_mode,
+                stock=wip_stock,
+                window_demand=window_wip_need,
+                roll_demand=roll_wip_need,
+                produced_so_far=wip_produced,
+                cum_demand_series=cum_wip_need,
+                shipment_days=wip_need_days,
+            )
+            if best_sku is None:
+                best_sku = eligible[0]
+
             cap = capacity[lid]
-
-            best_sku = None
-            best_need = -1.0
-            pos = line_rr_pos.get(lid, 0)
-            for i in range(len(eligible)):
-                sku = eligible[(pos + i) % len(eligible)]
-                need = remaining.get(sku, 0.0)
-                if need > best_need:
-                    best_need = need
-                    best_sku = sku
-            line_rr_pos[lid] = (pos + 1) % len(eligible) if best_sku else 0
-
-            sku = best_sku or eligible[0]
-            qty = cap.get(sku, 0)
+            qty = cap.get(best_sku, 0)
             if qty <= 0:
                 qty = 1
 
             wip_plan.append(LineAssignment(
                 shift_index=shift.index,
                 line_id=lid,
-                sku=sku,
+                sku=best_sku,
                 quantity=qty,
                 feasible=True,
             ))
 
-            remaining[sku] = max(0.0, remaining[sku] - qty)
+            wip_stock[best_sku] += qty
+            wip_produced[best_sku] += qty
 
     return wip_plan, wip_need_by_shift

@@ -1,9 +1,9 @@
 """Sweep 1: FG production planning — optimistic, pure demand-driven."""
 
-from bisect import bisect_left
 from collections import defaultdict
 
 from src.model.sku import SKU
+from src.psp.planner_selection import pick_sku
 from src.psp.types import Shift, LineAssignment
 
 
@@ -180,56 +180,15 @@ def run(
             if not eligible:
                 continue
             cap = capacity[lid]
-            best_sku = None
-
-            if decision_mode == 1:
-                best_val = -float('inf')
-                for sku in eligible:
-                    need = window_demand.get(sku, 0) - produced_so_far.get(sku, 0)
-                    if need > best_val:
-                        best_val = need
-                        best_sku = sku
-            elif decision_mode == 2:
-                best_score = (float('inf'), float('inf'))
-                for sku in eligible:
-                    nd = roll_demand.get(sku, 0)
-                    bucket = 0 if fg_stock.get(sku, 0) < nd else 1
-                    score = (bucket, -nd)
-                    if score < best_score:
-                        best_score = score
-                        best_sku = sku
-            elif decision_mode == 3:
-                best_score = (float('inf'), float('inf'))
-                for sku in eligible:
-                    nd = roll_demand.get(sku, 0)
-                    bucket = 0 if fg_stock.get(sku, 0) < nd else 1
-                    coverage = fg_stock.get(sku, 0) / max(nd, 1)
-                    score = (bucket, coverage)
-                    if score < best_score:
-                        best_score = score
-                        best_sku = sku
-            elif decision_mode == 4:
-                best_day = float('inf')
-                best_deficit = 0
-                for sku in eligible:
-                    cum = cum_demand_series[sku]
-                    produced = produced_so_far.get(sku, 0)
-                    idx = bisect_left(cum, produced + 1)
-                    if idx < len(cum):
-                        fail_day = shipment_days[idx]
-                        deficit = cum[idx] - produced
-                        if (fail_day < best_day
-                                or (fail_day == best_day and deficit > best_deficit)):
-                            best_day = fail_day
-                            best_deficit = deficit
-                            best_sku = sku
-                if best_sku is None:
-                    best_val = -float('inf')
-                    for sku in eligible:
-                        need = window_demand.get(sku, 0) - produced_so_far.get(sku, 0)
-                        if need > best_val:
-                            best_val = need
-                            best_sku = sku
+            best_sku = pick_sku(
+                eligible, decision_mode,
+                stock=fg_stock,
+                window_demand=window_demand,
+                roll_demand=roll_demand,
+                produced_so_far=produced_so_far,
+                cum_demand_series=cum_demand_series,
+                shipment_days=shipment_days,
+            )
 
             qty = cap.get(best_sku, 0)
             if qty <= 0:
