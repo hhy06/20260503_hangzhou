@@ -183,9 +183,10 @@ def derive_movements(
             for input_sku, input_qty in bom_inputs.items():
                 total_input = fg_qty * input_qty
                 mt = "wip_to_lineside" if input_sku in wip_producible else "direct_to_lineside"
+                from_wh = prep_wh if input_sku in wip_producible else "raw_material_storage"
                 movements.append(MaterialMovement(
                     shift_index=mat_shift,
-                    from_node=prep_wh,
+                    from_node=from_wh,
                     to_node=f"lineside_{line_id}",
                     sku=input_sku,
                     quantity=total_input,

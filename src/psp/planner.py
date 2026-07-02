@@ -69,24 +69,24 @@ def _compute_pallet_stats_and_inventory(
         shortage_nodes: set[str] = set()
 
         for shift_idx in range(day_shift_idx + 1):
-            for m in movements_by_shift.get(shift_idx, []):
-                to_node = m.to_node
+            ms = movements_by_shift.get(shift_idx, [])
+            # Credits first: material arrives at warehouse
+            for m in ms:
+                if m.to_node in storage_nodes and m.to_node not in pass_through:
+                    inventory[m.to_node][m.sku] += m.quantity
+            # Debits second: material consumed from warehouse
+            for m in ms:
                 from_node = m.from_node
-                sku = m.sku
-                qty = m.quantity
-
-                if to_node in storage_nodes and to_node not in pass_through:
-                    inventory[to_node][sku] += qty
                 if from_node in storage_nodes and from_node not in pass_through:
-                    inventory[from_node][sku] -= qty
-                    if inventory[from_node][sku] < -0.001:
+                    inventory[from_node][m.sku] -= m.quantity
+                    if inventory[from_node][m.sku] < -0.001:
                         shortage_nodes.add(from_node)
 
                 if shift_idx in day_shift_indices:
                     if m.movement_type == "purchase_receipt":
-                        source_out_pallets += _to_pallets(qty, sku, sku_registry)
+                        source_out_pallets += _to_pallets(m.quantity, m.sku, sku_registry)
                     if m.movement_type in CONSUMPTION_MOVEMENTS:
-                        consumed_pallets += _to_pallets(qty, sku, sku_registry)
+                        consumed_pallets += _to_pallets(m.quantity, m.sku, sku_registry)
 
         for node in pass_through:
             inventory[node].clear()
