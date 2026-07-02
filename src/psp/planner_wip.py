@@ -110,7 +110,8 @@ def run(
     init_stock: dict[str, dict[str, int]],
     all_fg_skus: set[str],
     decision_mode: int = 1,
-) -> tuple[list[LineAssignment], dict[int, dict[str, float]]]:
+) -> tuple[list[LineAssignment], dict[int, dict[str, float]],
+           dict[int, float], dict[int, float]]:
     wip_lines, line_skus, capacity = build_wip_lines(topology_nodes, sku_registry)
     wip_producible = build_wip_producible_set(topology_nodes)
     wip_need_by_shift = compute_wip_need(fg_plan, topology_nodes, wip_producible)
@@ -159,8 +160,18 @@ def run(
     roll_ptr_add: int = 0
     roll_ptr_rem: int = 0
 
+    wip_shortage_by_day: dict[int, float] = defaultdict(float)
+    wip_day_end_stock: dict[int, float] = {}
+    prev_day = 0
+
     for shift in shifts:
         si = shift.index
+        d = shift.day
+
+        # Snapshot previous day's closing stock at day boundary
+        if d != prev_day and prev_day > 0:
+            wip_day_end_stock[prev_day] = sum(max(0, v) for v in wip_stock.values())
+        prev_day = d
 
         # Advance window: include WIP need from si to si + LOOKAHEAD_SHIFTS
         while (window_ptr < len(wip_need_times)
@@ -185,9 +196,12 @@ def run(
                 roll_wip_need[sku] += qty
             roll_ptr_add += 1
 
-        # Consume WIP stock by this shift's WIP need (analogous to FG demand fulfillment)
+        # Consume WIP stock (track shortage like FG: unmet need = demand - available stock)
         need_this_shift = wip_need_by_shift.get(si, {})
         for sku, qty in need_this_shift.items():
+            available = max(0, wip_stock[sku])
+            if qty > available:
+                wip_shortage_by_day[d] += qty - available
             wip_stock[sku] -= qty
 
         lines_this_shift = list(wip_lines)
@@ -226,4 +240,8 @@ def run(
             wip_stock[best_sku] += qty
             wip_produced[best_sku] += qty
 
-    return wip_plan, wip_need_by_shift
+    # Snapshot final day's closing stock
+    if prev_day > 0:
+        wip_day_end_stock[prev_day] = sum(max(0, v) for v in wip_stock.values())
+
+    return wip_plan, wip_need_by_shift, wip_shortage_by_day, wip_day_end_stock

@@ -124,6 +124,8 @@ def build_daily_report(
     wip_need_by_shift: dict[int, dict[str, float]],
     init_fg_stock: dict[str, int],
     all_fg_skus: set[str],
+    wip_shortage_by_day: dict[int, float] | None = None,
+    wip_day_end_stock: dict[int, float] | None = None,
     movements: list | None = None,
     sku_registry: dict[str, SKU] | None = None,
     init_stock: dict[str, dict[str, int]] | None = None,
@@ -152,6 +154,15 @@ def build_daily_report(
         demand_qty = daily_demand.get(day, 0)
         short_qty = daily_shortage.get(day, 0)
         short_pct = round(100.0 * short_qty / demand_qty, 2) if demand_qty > 0 else 0.0
+
+        wip_short = round(wip_shortage_by_day.get(day, 0.0)) if wip_shortage_by_day else None
+        wip_short_pct = (
+            round(100.0 * wip_short / day_wip_needed, 2)
+            if wip_shortage_by_day and day_wip_needed > 0
+            else None
+        )
+        wip_stock = round(wip_day_end_stock.get(day, 0.0)) if wip_day_end_stock else None
+
         entry = {
             "day": day,
             "demand_qty": demand_qty,
@@ -161,6 +172,9 @@ def build_daily_report(
             "fg_short_pct": short_pct,
             "wip_needed": round(day_wip_needed),
             "wip_produced": day_wip,
+            "wip_shortage": wip_short,
+            "wip_short_pct": wip_short_pct,
+            "wip_stock_end": wip_stock,
         }
 
         if pallet_stats:
@@ -199,7 +213,7 @@ def run_plan(scenario_path: Path, num_days: int, decision_mode: int = 1) -> PspP
     print(f"[PSP] FG plan: {len(fg_plan)} assignments, {total_fg} total units")
 
     print("[PSP] === Sweep 2: WIP Planning ===")
-    wip_plan, wip_need_by_shift = run_wip(
+    wip_plan, wip_need_by_shift, wip_shortage_by_day, wip_day_end_stock = run_wip(
         shifts, fg_plan, topology_nodes, sku_registry,
         init_stock, all_fg_skus,
         decision_mode=decision_mode,
@@ -228,6 +242,8 @@ def run_plan(scenario_path: Path, num_days: int, decision_mode: int = 1) -> PspP
         num_days, shifts, fg_plan, wip_plan,
         daily_demand, daily_delivered, daily_shortage,
         wip_need_by_shift, init_fg, all_fg_skus,
+        wip_shortage_by_day=wip_shortage_by_day,
+        wip_day_end_stock=wip_day_end_stock,
         movements=movements, sku_registry=sku_registry,
         init_stock=init_stock, topology_nodes=topology_nodes,
     )

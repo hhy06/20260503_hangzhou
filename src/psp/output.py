@@ -45,7 +45,8 @@ def write(plan: PspPlan, scenario_path: Path, sku_name_map: dict[str, str] | Non
     with open(run_dir / "daily_report.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["day", "demand_qty", "fg_produced", "fg_delivered", "fg_shortage",
-                     "fg_short_pct", "wip_needed", "wip_produced"])
+                     "fg_short_pct", "wip_needed", "wip_produced",
+                     "wip_shortage", "wip_short_pct", "wip_stock_end"])
         cum_fg = plan.init_fg_stock
         cum_wip_needed = 0
         cum_wip_produced = 0
@@ -62,6 +63,9 @@ def write(plan: PspPlan, scenario_path: Path, sku_name_map: dict[str, str] | Non
                 r["fg_short_pct"],
                 r["wip_needed"],
                 r["wip_produced"],
+                r.get("wip_shortage", ""),
+                r.get("wip_short_pct", ""),
+                r.get("wip_stock_end", ""),
             ])
 
     with open(run_dir / "summary.txt", "w") as f:
@@ -101,8 +105,10 @@ def write(plan: PspPlan, scenario_path: Path, sku_name_map: dict[str, str] | Non
 
         f.write(f"\n=== Daily Report ===\n")
         f.write(f"{'Day':>4} {'Demand':>10} {'FG_Prod':>10} {'FG_Delv':>10} {'Short':>8} "
-                f"{'Short%':>7} {'WIP_Need':>10} {'WIP_Prod':>10}\n")
-        f.write(f"{'─'*4} {'─'*10} {'─'*10} {'─'*10} {'─'*8} {'─'*7} {'─'*10} {'─'*10}\n")
+                f"{'Short%':>7} {'WIP_Need':>10} {'WIP_Prod':>10} "
+                f"{'WIP_Short':>10} {'WShort%':>8} {'WIP_Stock':>10}\n")
+        f.write(f"{'─'*4} {'─'*10} {'─'*10} {'─'*10} {'─'*8} {'─'*7} "
+                f"{'─'*10} {'─'*10} {'─'*10} {'─'*8} {'─'*10}\n")
         cum_fg = plan.init_fg_stock
         for r in plan.daily_report:
             cum_fg += r["fg_produced"] - r["fg_delivered"]
@@ -113,8 +119,17 @@ def write(plan: PspPlan, scenario_path: Path, sku_name_map: dict[str, str] | Non
             sp = r["fg_short_pct"]
             wn = r["wip_needed"]
             wp = r["wip_produced"]
+
+            ws_val = r.get("wip_shortage")
+            wsp_val = r.get("wip_short_pct")
+            wst_val = r.get("wip_stock_end")
+            ws_str = f"{ws_val:>10,}" if isinstance(ws_val, int) else "       N/A"
+            wsp_str = f"{wsp_val:>7.2f}%" if isinstance(wsp_val, float) else "     N/A"
+            wst_str = f"{wst_val:>10,}" if isinstance(wst_val, int) else "       N/A"
+
             f.write(f"{r['day']:>4d} {d:>10,} {fp:>10,} {fd:>10,} {fs:>8,} "
-                    f"{sp:>6.2f}% {wn:>10,} {wp:>10,}\n")
+                    f"{sp:>6.2f}% {wn:>10,} {wp:>10,} "
+                    f"{ws_str} {wsp_str} {wst_str}\n")
 
         # ── Material Movement Summary (pallets) ─────────────────────
         if plan.daily_report and "source_out_pallets" in plan.daily_report[0]:
