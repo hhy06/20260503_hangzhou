@@ -8,17 +8,12 @@ from src.psp.planner_wip import build_wip_producible_set
 
 
 def build_line_prep_map(topology_nodes: dict) -> dict[str, str]:
+    line_type_map = build_line_type_map(topology_nodes)
     prep_map: dict[str, str] = {}
-    for name, cfg in topology_nodes.items():
-        if cfg.get("type") != "production":
-            continue
-        lid = name.replace("workstation_", "")
-        if not lid.startswith("X") or lid.startswith("XC"):
-            continue
-        upstream = cfg.get("upstream", "")
-        if "prep_storage_1" in upstream:
+    for lid, lt in line_type_map.items():
+        if lt == "X1":
             prep_map[lid] = "prep_storage_1"
-        elif "prep_storage_2" in upstream:
+        elif lt == "X2":
             prep_map[lid] = "prep_storage_2"
     return prep_map
 
@@ -38,6 +33,10 @@ def build_line_type_map(topology_nodes: dict) -> dict[str, str]:
             type_map[lid] = "C"
         elif "lineside_XC" in upstream:
             type_map[lid] = "XC"
+        elif "lineside_X1" in upstream:
+            type_map[lid] = "X1"
+        elif "lineside_X2" in upstream:
+            type_map[lid] = "X2"
         elif "lineside_X" in upstream:
             type_map[lid] = "X"
     return type_map
@@ -128,7 +127,7 @@ def derive_movements(
                 movements.append(MaterialMovement(
                     shift_index=mat_shift,
                     from_node=raw_wh,
-                    to_node=f"lineside_{line_id}",
+                    to_node=f"lineside_{line_type_map.get(line_id, 'X')}",
                     sku=input_sku,
                     quantity=total_input,
                     movement_type="material_to_lineside",
@@ -137,7 +136,7 @@ def derive_movements(
         # 2b) WIP output at shift T
         movements.append(MaterialMovement(
             shift_index=shift_t,
-            from_node=f"output_{line_id}",
+            from_node=f"output_{line_type_map.get(line_id, 'X')}",
             to_node=wip_wh,
             sku=sku,
             quantity=float(qty),
@@ -185,19 +184,21 @@ def derive_movements(
                 total_input = fg_qty * input_qty
                 mt = "wip_to_lineside" if input_sku in wip_producible else "direct_to_lineside"
                 from_wh = prep_wh if input_sku in wip_producible else "raw_material_storage"
+                lt = line_type_map.get(line_id, "X")
                 movements.append(MaterialMovement(
                     shift_index=mat_shift,
                     from_node=from_wh,
-                    to_node=f"lineside_{line_id}",
+                    to_node=f"lineside_{lt}",
                     sku=input_sku,
                     quantity=total_input,
                     movement_type=mt,
                 ))
 
         # 3b) FG output at shift T
+        lt = line_type_map.get(line_id, "X")
         movements.append(MaterialMovement(
             shift_index=shift_t,
-            from_node=f"output_{line_id}",
+            from_node=f"output_{lt}",
             to_node="fg_storage",
             sku=fg_sku,
             quantity=float(fg_qty),
